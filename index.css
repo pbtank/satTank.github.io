@@ -1,0 +1,40 @@
+p {
+	font-family: sans-serif;
+	font-size: 24px;
+	padding: 2px;
+	margin: 0;
+
+}
+
+table.time {
+	position: absolute;
+	border-color: black;
+	text-align: center;
+	right: 0px;
+}
+
+#UTC {
+	color: red;
+	font: bold;
+}
+
+body {
+	font-family: monospace;
+	font-size: 16px;
+	padding: 2px;
+	margin: 8px;
+	width: 100%;
+	align-self: center;
+}
+
+table {
+	justify-content: center;
+}
+
+table.info {
+	position: absolute;
+	text-align: justify;
+	top: 64px;
+}
+
+
