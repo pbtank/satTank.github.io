@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title id="satNameTitle">satTank</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
+        <script src="library/jquery-3.6.0.min.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+            integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+            crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+        <script src="https://cdn.jsdelivr.net/npm/leaflet.geodesic" type="text/javascript"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet-gesture-handling/dist/leaflet-gesture-handling.min.css" type="text/css">
+        <script src="https://unpkg.com/leaflet-gesture-handling"></script>
+        <script src="satPage.js"></script>
+    </head>
+    <body style="background-color: #D5F7F3">
+        <header>
+            <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
+                <tr>
+                    <td>
+                        <h1 style="font-weight: normal; margin-bottom: 0px">satTank</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: middle; color: gray">CATALOGUES | TRACKING</td>
+                </tr>
+                <tr>
+                    <td>
+                        <hr>
+                    </td>
+                </tr>
+            </table>
+        </header>
+        <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
+            <tr>
+                <td id="left-pad" rowspan="10" style="vertical-align: top;width: 100px;">
+                    <table style="margin: auto;">
+                        <tr>
+                            <td>Current time(UTC)</td>
+                        </tr>
+                        <tr>
+                            <td id="UTC">--:--:--</td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="text-align: left;">
+                    <table>
+                        <tr>
+                            <td id="satName"></td>
+                        </tr>
+                        <tr>
+                            <td>Ground trace</td>
+                        </tr>
+                        <tr>
+                            <td id="p5canvas"></td>
+                        </tr>
+                        <tr>
+                            <td>Current Position</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table style="font-family: monospace;">
+                                    <tr>
+                                        <td>Latitude</td>
+                                        <td>:<span id="lat">--</span>&deg</td>
+                                        <td>Xpos</td>
+                                        <td>:<span id="xPos">--</span>km</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Longitude</td>
+                                        <td>:<span id="long">--</span>&deg</td>
+                                        <td>Ypos</td>
+                                        <td>:<span id="yPos">--</span>km</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Height</td>
+                                        <td>:<span id="height">--</span>km</td>
+                                        <td>Zpos</td>
+                                        <td>:<span id="zPos">--</span>km</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Orbital Information</td>
+                        </tr>
+                        <tr>
+                            <td>TLE at Epoch Time (UTC):<span id="epochTime">--</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table style="font-family: monospace;">
+                                    <tr>
+                                        <td>--</td>
+                                    </tr>
+                                    <tr>
+                                        <td>--</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                               <table style="font-family: monospace;">
+                            <tr>
+                                <td>Eccentricity</td>
+                                <td>:<span id="eccen">--</span></td>
+                            </tr>
+                            <tr>
+                                <td>Perigee Height</td>
+                                <td>:<span id="per">--</span>km</td>
+                            </tr>
+                            <tr>
+                                <td>Apogee Height</td>
+                                <td>:<span id="apg">--</span>km</td>
+                            </tr>
+                            <tr>
+                                <td>Right Ascension of Ascending Node</td>
+                                <td>:<span id="node">--</span>&deg</td>
+                            </tr>
+                            <tr>
+                                <td>Argument of Perigee</td>
+                                <td>:<span id="aop">--</span>&deg</td>
+                            </tr>
+                            <tr>
+                                <td>Revolutions/day</td>
+                                <td>:<span id="mnm">--</span>rev/day</td>
+                            </tr>
+                            <tr>
+                                <td>Mean anomaly at epoch</td>
+                                <td>:<span id="mna">--</span>&deg</td>
+                            </tr>
+                            <tr>
+                                <td>Orbit number at epoch</td>
+                                <td>:<span id="revNum">--</span></td>
+                            </tr>
+                        </table> 
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+                <td id="right-pad" rowspan="10" style="width: 100px;"></td>
+            </tr>
+        </table>
+        <footer>
+            <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
+                <tr>
+                    <td>
+                        <hr>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
+                            <tr>
+                                <td style="width: 200px; font-family: monospace;">Version: 2.0</td>
+                                <td>Created by: <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu Tank</a></td>
+                                <td style="width: 200px;"><img src="F:\PRIYANSU\tankSat\workflow\online\src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">  Proud to be Indian...</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </footer>
+        <script type="text/javascript">
+            $(document).ready(function() {
+              var IDx = document.URL.indexOf('?ID=');
+              ID = document.URL.substring(IDx+4, IDx+10);
+              var namex = document.URL.indexOf('name=');
+              name = decodeURIComponent(document.URL.substring(namex+5));
+              console.log(name);
+            
+              $('#satName').text(name);
+              $('#satNameTitle').text('satTank | ' + name);
+            });
+        </script>
+    </body>
+</html>
