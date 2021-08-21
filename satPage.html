@@ -170,7 +170,7 @@
         <script type="text/javascript">
             $(document).ready(function() {
               var IDx = document.URL.indexOf('?ID=');
-              ID = document.URL.substring(IDx+4, IDx+10);
+              ID = '0' + document.URL.substring(IDx+4, IDx+9);
               var namex = document.URL.indexOf('name=');
               name = decodeURIComponent(document.URL.substring(namex+5));
               console.log(name);
