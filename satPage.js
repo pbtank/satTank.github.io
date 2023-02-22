@@ -58,7 +58,6 @@ class Satellite {
 	constructor(_id, _satJson, _layerMarkerGrp) {
 		this.l1 = _satJson.tle[0];
 		this.l1 = _satJson.tle[1];
-		print(this.l1);
 		this.satID = _satJson.satID;		//satellite id
 		this.epoch = _satJson.epoch;		//array of epoch [year, mon, day, hr,min, sec]
 		this.eccen = _satJson.eccen;		//eccentricity
@@ -151,6 +150,8 @@ class Satellite {
 		}
 
 		// document.getElementById("satName").innerHTML = this.satName;
+		document.getElementById("l1").innerHTML = this.l1;
+		document.getElementById("l2").innerHTML = this.l2;
 		document.getElementById("epochTime").innerHTML = d1.toUTCString();
 		document.getElementById("lat").innerHTML = nfc(intLat, 3);
 		document.getElementById("long").innerHTML = nfc(intLong, 3);
