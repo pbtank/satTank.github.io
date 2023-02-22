@@ -57,7 +57,7 @@ function onMapClick(e) {
 class Satellite {
 	constructor(_id, _satJson, _layerMarkerGrp) {
 		this.l1 = _satJson.tle[0];
-		this.l1 = _satJson.tle[1];
+		this.l2 = _satJson.tle[1];
 		this.satID = _satJson.satID;		//satellite id
 		this.epoch = _satJson.epoch;		//array of epoch [year, mon, day, hr,min, sec]
 		this.eccen = _satJson.eccen;		//eccentricity
