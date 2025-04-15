@@ -1,180 +1,237 @@
 <!DOCTYPE html>
 <html lang="">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>satTank</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
-        <script src="library/jquery-3.6.0.min.js"></script>
-        <script src="index.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/jquery.fancytable/dist/fancyTable.min.js"></script>
-    </head>
-    <body style="background-color: #D5F7F3">
-        <header>
-            <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
-                <tr>
-                    <td>
-                        <h1 style="font-weight: normal; margin-bottom: 0px">satTank</h1>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: middle; color: gray">CATALOGUES | TRACKING</td>
-                </tr>
-                <tr>
-                    <td>
-                        <hr>
-                    </td>
-                </tr>
-            </table>
-        </header>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>satTank</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
+    <script src="library/jquery-3.6.0.min.js"></script>
+    <script src="library/satellite.min.js"></script>
+    <script src="index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytable/dist/fancyTable.min.js"></script>
+</head>
+
+<body style="background-color: #D5F7F3">
+    <header>
         <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
             <tr>
-                <td id="left-pad" rowspan="10" style="vertical-align: top;width: 100px;">
-                    <table style="margin: auto;">
-                        <tr>
-                            <td>Current time(UTC)</td>
-                        </tr>
-                        <tr>
-                            <td id="UTC">--:--:--</td>
-                        </tr>
-                    </table>
-                </td>
                 <td>
-                    <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 600px">
-                        <tr>
-                            <td>
-                                Search: <a id="search"></a><!-- <input id="satSearch" type="input" placeholder="Type name of satellite you wanna search!" style="width: 60%"> -->
-                            </td>
-                            <td style="width: 30%">
-                                Input type: 
-                                <select id="inputType" onchange="makeTable()">
-                                    <option value="-1">--</option>
+                    <h1 style="font-weight: normal; margin-bottom: 0px">satTank</h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: middle; color: gray">CATALOGUES | TRACKING</td>
+            </tr>
+            <tr>
+                <td>
+                    <hr>
+                </td>
+            </tr>
+        </table>
+    </header>
+    <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
+        <tr>
+            <td id="left-pad" rowspan="10" style="vertical-align: top;width: 100px;">
+                <table style="margin: auto;">
+                    <tr>
+                        <td>Current time(UTC)</td>
+                    </tr>
+                    <tr>
+                        <td id="UTC">--:--:--</td>
+                    </tr>
+                </table>
+            </td>
+            <td>
+                <table border="0"
+                    style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 600px">
+                    <tr>
+                        <td>
+                            Search: <a
+                                id="search"></a><!-- <input id="satSearch" type="input" placeholder="Type name of satellite you wanna search!" style="width: 60%"> -->
+                        </td>
+                        <td style="width: 30%">
+                            Input type:
+                            <select id="inputType" onchange="makeTable()">
+                                <option value="-1">--</option>
+                                <option value="0">Satellite ID</option>
+                                <option value="1">Name</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Result per page:
+                            <select id="resPerPage" onchange="makeTable()">
+                                <option>10</option>
+                                <option>20</option>
+                                <option>50</option>
+                                <option>100</option>
+                            </select>
+                        </td>
+                        <td style="width: 60%">
+                            <a>
+                                Sort by:
+                                <select id="sortType" onchange="makeTable()">
                                     <option value="0">Satellite ID</option>
                                     <option value="1">Name</option>
                                 </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                Result per page: 
-                                <select id="resPerPage" onchange="makeTable()">
-                                    <option>10</option>
-                                    <option>20</option>
-                                    <option>50</option>
-                                    <option>100</option>
+                            </a>
+                            <a>
+                                Sort Order:
+                                <select id="sortOrder" onchange="makeTable()">
+                                    <option value="asc">Ascending</option>
+                                    <option value="desc">Descending</option>
                                 </select>
-                            </td>
-                            <td style="width: 60%">
-                                <a>
-                                    Sort by:
-                                    <select id="sortType" onchange="makeTable()">
-                                        <option value="0">Satellite ID</option>
-                                        <option value="1">Name</option>
-                                    </select>
-                                </a>
-                                <a>
-                                    Sort Order:
-                                    <select id="sortOrder" onchange="makeTable()">
-                                        <option value="asc">Ascending</option>
-                                        <option value="desc">Descending</option>
-                                    </select>
-                                </a>
-                            </td>
-                        </tr>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <button id="add-tle-btn" class="btn-light" style="margin-bottom: 10px;"
+                                onclick="toggleTleForm()">Add Custom TLE</button>
+                            <div id="tle-form"
+                                style="display: none; margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; text-align: left; background-color: #f9f9f9;">
+                                <h3 style="margin-top: 0;">Add Custom Satellite TLE</h3>
+                                <div style="margin-bottom: 10px;">
+                                    <label for="sat-name">Satellite Name:</label><br>
+                                    <input type="text" id="sat-name" style="width: 100%;">
+                                </div>
+                                <div style="margin-bottom: 10px;">
+                                    <label for="sat-id">Satellite NORAD ID (optional):</label><br>
+                                    <input type="text" id="sat-id" style="width: 100%;">
+                                </div>
+                                <div style="margin-bottom: 10px;">
+                                    <label for="tle-line1">TLE Line 1:</label><br>
+                                    <input type="text" id="tle-line1" style="width: 100%;"
+                                        placeholder="1 25544U 98067A   25105.53237150  .00014782  00000-0  27047-3 0  9994">
+                                </div>
+                                <div style="margin-bottom: 10px;">
+                                    <label for="tle-line2">TLE Line 2:</label><br>
+                                    <input type="text" id="tle-line2" style="width: 100%;"
+                                        placeholder="2 25544  51.6375 257.3560 0005276  47.8113  31.7820 15.49569282505441">
+                                </div>
+                                <button onclick="saveTLE()" class="btn-light">Save Satellite</button>
+                                <button onclick="toggleTleForm()" class="btn-light">Cancel</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <table id="table" border="0"
+                                style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
+                                <thead style="font-weight: bold;background-color: rgb(0, 255, 0);">
+                                    <tr id="th">
+                                        <td id="ID" onclick="sortTable(0)">Satellite IDs</td>
+                                        <td id="name" onclick="sortTable(1)">Name</td>
+                                    </tr>
+                                </thead>
+                                <tbody id="satTable"></tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td id="right-pad" rowspan="10" style="width: 100px;"></td>
+        </tr>
+    </table>
+    <footer>
+        <table border="0"
+            style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
+            <tr>
+                <td>
+                    <hr>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table border="0"
+                        style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
                         <tr>
-                            <td colspan="2">
-                                <table id="table" border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
-                                    <thead style="font-weight: bold;background-color: rgb(0, 255, 0);">
-                                        <tr id="th">
-                                            <td id="ID" onclick="sortTable(0)">Satellite IDs</td>
-                                            <td id="name" onclick="sortTable(1)">Name</td>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="satTable"></tbody>
-                                </table>
-                            </td>
+                            <td style="width: 200px; font-family: monospace;">Version: 2.0</td>
+                            <td>Created by: <a href="https://pbtank.github.io/Tank_Priyansu/"
+                                    style="text-decoration-line: underline;">Priyansu Tank</a></td>
+                            <td style="width: 200px;"><img src="src\images\india.png"
+                                    style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
+                                Proud to be Indian...</td>
                         </tr>
                     </table>
                 </td>
-                <td id="right-pad" rowspan="10" style="width: 100px;"></td>
             </tr>
         </table>
-        <footer>
-            <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
-                <tr>
-                    <td>
-                        <hr>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
-                            <tr>
-                                <td style="width: 200px; font-family: monospace;">Version: 2.0</td>
-                                <td>Created by: <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu Tank</a></td>
-                                <td style="width: 200px;"><img src="src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">  Proud to be Indian...</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </footer>
-        <style type="text/css">
-            #table {
+    </footer>
+    <style type="text/css">
+        #table {
             /*border: 1px solid black;*/
             /*border-spacing: 0px;*/
             border-collapse: collapse;
-            }
-            #satTable td, #satTable tr{
+        }
+
+        #satTable td,
+        #satTable tr {
             border: 1px solid black;
-            }
-            #table thead td {
+        }
+
+        #table thead td {
             border: 1px solid black;
             padding: 3px;
-            }
-            #table tbody td {
+        }
+
+        #table tbody td {
             padding: 3px;
-            }
-            #table tfoot tr {
+        }
+
+        #table tfoot tr {
             height: 50px;
             /*background: green;*/
-            }
-            .btn-light {
+        }
+
+        .btn-light {
             padding: 5px;
             margin: auto;
             border: 1px solid black;
             font-weight: bold;
-            }
-            .btn-light:hover {
+        }
+
+        .btn-light:hover {
             background-color: lightblue;
-            }
-            .btn-light:active {
+        }
+
+        .btn-light:active {
             background-color: blue;
             color: white;
-            }
-            .btn-active {
-            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19); 
+        }
+
+        .btn-active {
+            box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
             background-color: lightblue;
-            }
-        </style>
-        <script type="text/javascript">
-            $(document).ready(function () {
-            	$('#table tbody').delegate("tr", "click", function() {
-            		var ID=$(this).children('td:first').text();
-            		var name=$(this).children('td:nth-child(2)').text();
-            		window.location.href="satPage.html?ID="+ID+"&"+"name="+name;
-            	});
-            
+        }
+    </style>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#table tbody').delegate("tr", "click", function () {
+                var ID = $(this).children('td:first').text();
+                var name = $(this).children('td:nth-child(2)').text();
+                window.location.href = "satPage.html?ID=" + ID + "&" + "name=" + name;
             });
-            
-            
-            setInterval(function x() {
+        });
+
+        function toggleTleForm() {
+            var form = document.getElementById("tle-form");
+            form.style.display = form.style.display === "none" ? "block" : "none";
+            var btn = document.getElementById("add-tle-btn");
+            btn.innerText = form.style.display === "none" ? "Add Custom TLE" : "Hide Form";
+        }
+
+        setInterval(function x() {
             d = new Date();
             var hr = d.getUTCHours().toString();
             var min = d.getUTCMinutes().toString();
             var sec = d.getUTCSeconds().toString();
             document.getElementById("UTC").innerHTML = (hr + ':' + min + ':' + sec);
             return x;
-            }(), 1000);
-        </script>
-    </body>
+        }(), 1000);
+    </script>
+</body>
+
+</html>
