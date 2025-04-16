@@ -30,6 +30,16 @@ function loadMapImage() {
   mapImg = loadImage(`https://api.mapbox.com/styles/v1/mapbox/${mapStyle}/static/0,0,${zoom_level},0,0/1024x512?access_token=pk.eyJ1IjoicGJ0YW5rIiwiYSI6ImNrajVqeGNlMjB5MGYyc2szZXRkcDhmdWUifQ.2HXgavnvmmbxWHKHgwkilA`);
 }
 
+function setup() {
+  createCanvas(canWidth, canHeight);
+  
+  // Initialize with the default group
+  loadSatellites(selectedGroup);
+  
+  // Update time every second
+  setInterval(() => { d = new Date(); }, 1000);
+}
+
 async function loadSatellites(group) {
   try {
     const data = await celestrakAPI.fetchSatellitesByGroup(group, 'json');
@@ -40,145 +50,22 @@ async function loadSatellites(group) {
 }
 
 function processSatelliteData(data) {
-  satlist = [];
-  let i = 0;
-  for (let key in data) {
-    const sat = new Satellite(key, data[key]);
-    satlist[i] = sat;
-    activeSatellites[key] = true; // Default all satellites to active
-    i++;
-  }
-  console.log('Loaded satellites:', satlist);
-}
+  const satTable = document.getElementById('satTable');
+  satTable.innerHTML = ''; // Clear existing table rows
 
-function setup() {
-  createCanvas(canWidth, canHeight);
-  
-  // Initialize with the default group
-  loadSatellites(selectedGroup);
-  
-  // Create UI controls
-  createUI();
-  
-  // Update time every second
-  setInterval(() => { d = new Date(); }, 1000);
-}
+  for (let satData of data) {
+    const sat = new Satellite(satData);
+    const row = document.createElement('tr');
+    const idCell = document.createElement('td');
+    const nameCell = document.createElement('td');
 
-function createUI() {
-  // Create container for controls
-  const controlsContainer = createDiv();
-  controlsContainer.position(10, 10);
-  controlsContainer.style('background-color', 'rgba(0,0,0,0.7)');
-  controlsContainer.style('padding', '10px');
-  controlsContainer.style('border-radius', '5px');
-  controlsContainer.style('color', 'white');
-  
-  // Group selector
-  createP('Select Satellite Group:').parent(controlsContainer);
-  const groupSelect = createSelect();
-  groupSelect.parent(controlsContainer);
-  
-  // Add all satellite groups from celestrakAPI
-  for (const group in celestrakAPI.satelliteGroups) {
-    groupSelect.option(group);
-  }
-  
-  groupSelect.selected(selectedGroup);
-  groupSelect.changed(() => {
-    selectedGroup = groupSelect.value();
-    loadSatellites(selectedGroup);
-  });
-  
-  // Time span control
-  createP('Time Span (minutes):').parent(controlsContainer);
-  const timeSpanSlider = createSlider(10, 180, timeSpan, 10);
-  timeSpanSlider.parent(controlsContainer);
-  timeSpanSlider.style('width', '200px');
-  timeSpanSlider.input(() => {
-    timeSpan = timeSpanSlider.value();
-  });
-  
-  // Map style selector
-  createP('Map Style:').parent(controlsContainer);
-  const styleSelect = createSelect();
-  styleSelect.parent(controlsContainer);
-  
-  for (const style in mapStyles) {
-    styleSelect.option(style);
-  }
-  
-  styleSelect.changed(() => {
-    mapStyle = mapStyles[styleSelect.value()];
-    loadMapImage();
-  });
-  
-  // Zoom level control
-  createP('Zoom Level:').parent(controlsContainer);
-  const zoomSlider = createSlider(1, 5, zoom_level, 0.5);
-  zoomSlider.parent(controlsContainer);
-  zoomSlider.style('width', '200px');
-  zoomSlider.input(() => {
-    zoom_level = zoomSlider.value();
-    loadMapImage();
-  });
-  
-  // Satellite list container (will be populated after satellites are loaded)
-  const satListContainer = createDiv();
-  satListContainer.id('satList');
-  satListContainer.position(canWidth - 220, 10);
-  satListContainer.style('background-color', 'rgba(0,0,0,0.7)');
-  satListContainer.style('padding', '10px');
-  satListContainer.style('border-radius', '5px');
-  satListContainer.style('color', 'white');
-  satListContainer.style('max-height', '400px');
-  satListContainer.style('overflow-y', 'auto');
-  
-  createP('Active Satellites:').parent(satListContainer);
-}
+    idCell.textContent = sat.noradId;
+    nameCell.textContent = sat.satID;
 
-function updateSatelliteList() {
-  // Remove existing checkboxes
-  const satListDiv = select('#satList');
-  // Keep the title but remove checkboxes
-  while(satListDiv.child().length > 1) {
-    satListDiv.child(1).remove();
+    row.appendChild(idCell);
+    row.appendChild(nameCell);
+    satTable.appendChild(row);
   }
-  
-  // Add checkboxes for each satellite
-  satlist.forEach((sat, i) => {
-    const label = createDiv();
-    label.parent(satListDiv);
-    label.style('margin', '5px 0');
-    
-    const checkbox = createCheckbox(sat.satID, activeSatellites[sat.satID]);
-    checkbox.parent(label);
-    checkbox.changed(() => {
-      activeSatellites[sat.satID] = checkbox.checked();
-    });
-  });
-}
-
-function draw() {
-  // Draw the map
-  createCanvas(canWidth, canHeight);
-  translate(width/2, height/2);
-  imageMode(CENTER);
-  image(mapImg, 0, 0);
-  translate(-width/2, -height/2);
-  
-  // Update satellite list if it exists but is empty
-  const satListDiv = select('#satList');
-  if (satListDiv && satlist.length > 0 && satListDiv.child().length <= 1) {
-    updateSatelliteList();
-  }
-  
-  // Draw active satellites
-  var d = new Date();
-  satlist.forEach(sat => {
-    if (activeSatellites[sat.satID]) {
-      sat.groundTrace(d, timeSpan);
-    }
-  });
 }
 
 function proX(lon) {
@@ -196,93 +83,53 @@ function proY(lat) {
 }
 
 class Satellite {
-  constructor(_id, _satJson) {
+  constructor(_satJson) { // Changed parameter name to _satJson
     if (typeof _satJson === 'object' && _satJson !== null) {
-      // Handle Celestrak JSON format which is different
-      if (_satJson.OBJECT_NAME) {
-        // Process Celestrak format
-        this.satID = _satJson.OBJECT_NAME;
-        this.noradId = _satJson.NORAD_CAT_ID;
-        
-        // Extract epoch information
-        const epochDate = new Date(_satJson.EPOCH);
-        this.epoch = [
-          epochDate.getUTCFullYear(),
-          epochDate.getUTCMonth() + 1,
-          epochDate.getUTCDate(),
-          epochDate.getUTCHours(),
-          epochDate.getUTCMinutes(),
-          epochDate.getUTCSeconds()
-        ];
-        
-        this.eccen = _satJson.ECCENTRICITY;
-        this.incli = _satJson.INCLINATION;
-        this.node = _satJson.RA_OF_ASC_NODE;
-        this.aop = _satJson.ARG_OF_PERICENTER;
-        this.mnMotn = _satJson.MEAN_MOTION;
-        this.mnAnom = _satJson.MEAN_ANOMALY;
-        this.revNum = _satJson.REV_AT_EPOCH;
-        
-        // Generate path using satellite.js library
-        this.generatePath();
-      } else {
-        // Handle legacy format
-        this.satID = _satJson.satID;
-        this.epoch = _satJson.epoch;
-        this.eccen = _satJson.eccen;
-        this.incli = _satJson.incli;
-        this.node = _satJson.node;
-        this.aop = _satJson.omega;
-        this.mnMotn = _satJson.mnMotion;
-        this.mnAnom = _satJson.mnAnomaly;
-        this.revNum = _satJson.revNum;
-        this.path = _satJson.path;
-      }
+      // Process Celestrak format
+      this.satID = _satJson.OBJECT_NAME;
+      this.noradId = _satJson.NORAD_CAT_ID;
+
+      // Generate TLE data using CelestrakAPI
+      const tle = celestrakAPI.jsonToTLE(_satJson);
+      this.tleLines = tle;
+
+      // Extract orbital parameters from TLE data
+      const orbitalParameters = CelestrakAPI.extractOrbitalParameters(this.tleLines[0], this.tleLines[1]);
+
+      this.epoch = orbitalParameters.epoch;
+      this.eccen = orbitalParameters.eccen;
+      this.incli = orbitalParameters.incli;
+      this.node = orbitalParameters.node;
+      this.aop = orbitalParameters.omega;
+      this.mnMotn = orbitalParameters.mnMotion;
+      this.mnAnom = orbitalParameters.mnAnomaly;
+      this.revNum = orbitalParameters.revNum;
+      this.satrec = orbitalParameters.satrec;
+
+      // Generate path using satellite.js library
+      this.generatePath();
     }
   }
 
   generatePath() {
-    // Convert parameters to TLE format needed by satellite.js
-    const tle = celestrakAPI.jsonToTLE({
-      OBJECT_NAME: this.satID,
-      OBJECT_ID: `${this.epoch[0]}-${this.noradId}`,
-      EPOCH: `${this.epoch[0]}-${this.epoch[1].toString().padStart(2, '0')}-${this.epoch[2].toString().padStart(2, '0')}T${this.epoch[3].toString().padStart(2, '0')}:${this.epoch[4].toString().padStart(2, '0')}:${this.epoch[5].toFixed(3)}`,
-      MEAN_MOTION: this.mnMotn,
-      ECCENTRICITY: this.eccen,
-      INCLINATION: this.incli,
-      RA_OF_ASC_NODE: this.node,
-      ARG_OF_PERICENTER: this.aop,
-      MEAN_ANOMALY: this.mnAnom,
-      EPHEMERIS_TYPE: '0',
-      CLASSIFICATION_TYPE: 'U',
-      NORAD_CAT_ID: this.noradId,
-      ELEMENT_SET_NO: '999',
-      REV_AT_EPOCH: this.revNum,
-      BSTAR: '0.000',
-      MEAN_MOTION_DOT: '0.00000000',
-      MEAN_MOTION_DDOT: '0.00000-0'
-    });
-
-    const satrec = satellite.twoline2satrec(tle[0], tle[1]);
-    
     // Generate path points for 24 hours (1440 minutes) with 1-minute intervals
     this.path = [];
-    
+
     const now = new Date();
     for (let i = 0; i < 1440; i++) {
       // Calculate position at each minute
       const time = new Date(now.getTime() + i * 60000);
-      
+
       // Get position data
-      const positionAndVelocity = satellite.propagate(satrec, time);
+      const positionAndVelocity = satellite.propagate(this.satrec, time);
       const gmst = satellite.gstime(time);
       const position = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
-      
+
       // Convert to degrees and store
       const lat = satellite.degreesLat(position.latitude);
       const long = satellite.degreesLong(position.longitude);
       const height = position.height; // in km
-      
+
       this.path.push({ lat, long, height });
     }
   }

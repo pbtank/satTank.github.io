@@ -2,14 +2,35 @@
 <html lang="">
 
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>satTank</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
+    <title>Satellite Tracker</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fancyTable@1.2/dist/fancyTable.min.css">
+    <script src="library/p5.js"></script>
+    <script src="library/p5.dom.js"></script>
     <script src="library/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fancyTable@1.2/dist/fancyTable.min.js"></script>
     <script src="library/satellite.min.js"></script>
-    <script src="index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytable/dist/fancyTable.min.js"></script>
+    <script src="CelestrakAPI.js"></script>
+    <script src="ISSTracker.js"></script>
+    <style>
+        .satelliteTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .satelliteTable th,
+        .satelliteTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .satelliteTable th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 
 <body style="background-color: #D5F7F3">

@@ -229,9 +229,10 @@ class CelestrakAPI {
         const launchPiece = idMatch ? idMatch[3].padEnd(3, ' ') : 'AAA';
         
         // Format TLE Line 1
+        const noradIdString = String(satJson.NORAD_CAT_ID).padStart(5, '0');
         const line1 = [
             '1 ',
-            NORAD_CAT_ID.padStart(5, '0'),
+            noradIdString,
             CLASSIFICATION_TYPE || 'U',
             ' ',
             launchYear,
@@ -247,7 +248,7 @@ class CelestrakAPI {
             formatScientific(BSTAR, 8, 1),
             ' ',
             EPHEMERIS_TYPE || '0',
-            ELEMENT_SET_NO.padStart(4, ' '),
+            String(ELEMENT_SET_NO).padStart(4, ' '),
             calculateChecksum(1, NORAD_CAT_ID, CLASSIFICATION_TYPE, launchYear, launchNum, launchPiece, 
                              EPOCH, MEAN_MOTION_DOT, MEAN_MOTION_DDOT, BSTAR, EPHEMERIS_TYPE, ELEMENT_SET_NO)
         ].join('');
@@ -255,7 +256,7 @@ class CelestrakAPI {
         // Format TLE Line 2
         const line2 = [
             '2 ',
-            NORAD_CAT_ID.padStart(5, '0'),
+            String(NORAD_CAT_ID).padStart(5, '0'),
             ' ',
             formatDegrees(INCLINATION, 8, 4),
             ' ',
@@ -268,7 +269,7 @@ class CelestrakAPI {
             formatDegrees(MEAN_ANOMALY, 8, 4),
             ' ',
             formatRevs(MEAN_MOTION, 11, 8),
-            REV_AT_EPOCH.padStart(5, '0'),
+            String(REV_AT_EPOCH).padStart(5, '0'),
             calculateChecksum(2, NORAD_CAT_ID, INCLINATION, RA_OF_ASC_NODE, ECCENTRICITY, 
                              ARG_OF_PERICENTER, MEAN_ANOMALY, MEAN_MOTION, REV_AT_EPOCH)
         ].join('');
@@ -321,7 +322,7 @@ class CelestrakAPI {
      * @param {string} line2 - TLE line 2
      * @returns {Object} - Object containing orbital parameters
      */
-    extractOrbitalParameters(line1, line2) {
+    static extractOrbitalParameters(line1, line2) {
         // Create a satellite record using satellite.js library
         const satrec = satellite.twoline2satrec(line1, line2);
         
@@ -369,6 +370,44 @@ class CelestrakAPI {
             revNum: revNum,
             satrec: satrec
         };
+    }
+
+    async fetchSatelliteById(id) {
+        try {
+            // Fetch all Celestrak data
+            const allSatellites = await this.loadAllCelestrakData();
+            
+            // Find the satellite by ID
+            const satellite = allSatellites.find(sat => sat.NORAD_CAT_ID === id);
+            
+            if (satellite) {
+                console.log(`Found satellite with ID ${id}:`, satellite);
+                return satellite;
+            } else {
+                console.log(`Satellite with ID ${id} not found in Celestrak data`);
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching satellite data:", error);
+            // Fallback to default data source
+            console.log("Falling back to default data source");
+            return null;
+        }
+    }
+
+    async loadAllCelestrakData() {
+        const categories = Object.keys(this.satelliteGroups);
+        const fetchPromises = categories.map(category => this.fetchSatellitesByGroup(category, 'json'));
+    
+        try {
+            const results = await Promise.all(fetchPromises);
+            // Flatten the array of arrays into a single array of satellites
+            const allSatellites = results.flat();
+            return allSatellites;
+        } catch (error) {
+            console.error('Error loading all Celestrak data:', error);
+            return [];
+        }
     }
 }
 
