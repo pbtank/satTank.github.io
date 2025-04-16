@@ -88,8 +88,12 @@
                     </tr>
                     <tr>
                         <td colspan="2">
-                            <button id="add-tle-btn" class="btn-light" style="margin-bottom: 10px;"
+                            <button id="add-tle-btn" class="btn-light" style="margin-bottom: 10px; margin-right: 5px;"
                                 onclick="toggleTleForm()">Add Custom TLE</button>
+                            <button id="export-satellites-btn" class="btn-light" style="margin-bottom: 10px; margin-right: 5px;"
+                                onclick="exportCustomSatellites()">Export Satellites</button>
+                            <button id="import-satellites-btn" class="btn-light" style="margin-bottom: 10px;"
+                                onclick="importCustomSatellites()">Import Satellites</button>
                             <div id="tle-form"
                                 style="display: none; margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; text-align: left; background-color: #f9f9f9;">
                                 <h3 style="margin-top: 0;">Add Custom Satellite TLE</h3>

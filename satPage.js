@@ -2,14 +2,247 @@ var canvas;
 const canWidth = 800;
 const canHeight = 400;
 
-// Updated to use Celestrak's JSON API for ISS
-var url = 'https://raw.githubusercontent.com/pbtank/ISSTracker/master/data/tle.json';
-var celestrakUrl = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json';
+// Updated to use Celestrak's API endpoints for multiple satellite groups
+var url = 'https://raw.githubusercontent.com/pbtank/ISSTracker/master/data/tle.json'; // Keeping as fallback
+var celestrakUrls = {
+    'stations': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json',
+    'active': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json',
+    'weather': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json',
+    'noaa': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=noaa&FORMAT=json',
+    'goes': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=goes&FORMAT=json',
+    'resource': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=resource&FORMAT=json',
+    'amateur': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=json',
+    'starlink': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=json'
+};
 var customSatUrl = 'data/custom_satellites.json';
+
+// Global satellite data cache to store fetched data from Celestrak
+var celestrakDataCache = {};
+
+// Celestrak API URLs for different satellite groups
+const CELESTRAK_URLS = {
+    // Special interest satellites
+    ISS: "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=json",
+    ACTIVE: "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json",
+    STATIONS: "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json",
+    // Weather & Earth resources satellites
+    WEATHER: "https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json",
+    NOAA: "https://celestrak.org/NORAD/elements/gp.php?GROUP=noaa&FORMAT=json",
+    GOES: "https://celestrak.org/NORAD/elements/gp.php?GROUP=goes&FORMAT=json",
+    RESOURCE: "https://celestrak.org/NORAD/elements/gp.php?GROUP=resource&FORMAT=json",
+    // Search by satellite number
+    CATNR: "https://celestrak.org/NORAD/elements/gp.php?CATNR="
+};
+
+// Cache for storing TLE data to avoid excessive API calls
+const celestrakCache = {
+    data: {},
+    timestamps: {},
+    TTL: 6 * 60 * 60 * 1000 // 6 hours cache TTL
+};
 
 var satlist = [];
 var d;
 var isCustomSat = false;
+
+// Global cache for satellite position calculations
+const positionCache = new Map();
+const groundTraceCache = new Map();
+
+// Cache expiration time in milliseconds (5 seconds)
+const CACHE_EXPIRY = 5000;
+
+// Memoization wrapper for expensive functions
+function memoize(fn, keyFn) {
+  const cache = new Map();
+  
+  return function(...args) {
+    const key = keyFn ? keyFn(...args) : JSON.stringify(args);
+    const cachedItem = cache.get(key);
+    
+    // If result is cached and still valid, return it
+    if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_EXPIRY)) {
+      return cachedItem.result;
+    }
+    
+    // Calculate result and store in cache
+    const result = fn.apply(this, args);
+    cache.set(key, {
+      result,
+      timestamp: Date.now()
+    });
+    
+    // Clean cache if it gets too large (keep last 100 entries)
+    if (cache.size > 100) {
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+    }
+    
+    return result;
+  };
+}
+
+// Original getSatellitePosition function optimized with caching
+function getSatellitePosition(satRec, date) {
+  const cacheKey = `${satRec.satnum}_${date.getTime()}`;
+  
+  if (positionCache.has(cacheKey)) {
+    const cached = positionCache.get(cacheKey);
+    if (Date.now() - cached.timestamp < CACHE_EXPIRY) {
+      return cached.position;
+    }
+  }
+  
+  // Calculate position
+  const positionAndVelocity = satellite.propagate(satRec, date);
+  const positionEci = positionAndVelocity.position;
+  
+  // Get observer position and calculate look angles
+  const gmst = satellite.gstime(date);
+  const positionGd = satellite.eciToGeodetic(positionEci, gmst);
+  
+  // Convert radians to degrees
+  const longitude = satellite.degreesLong(positionGd.longitude);
+  const latitude = satellite.degreesLat(positionGd.latitude);
+  
+  // Calculate altitude in km
+  const altitude = positionGd.height;
+  
+  const position = { longitude, latitude, altitude };
+  
+  // Cache the result
+  positionCache.set(cacheKey, {
+    position,
+    timestamp: Date.now()
+  });
+  
+  // Clean cache if it gets too large
+  if (positionCache.size > 300) {
+    const oldestKey = Array.from(positionCache.keys())[0];
+    positionCache.delete(oldestKey);
+  }
+  
+  return position;
+}
+
+// Optimized groundTrace function with caching
+function groundTrace(satRec, date, points = 60) {
+  const cacheKey = `${satRec.satnum}_${date.getTime()}_${points}`;
+  
+  // Check cache
+  if (groundTraceCache.has(cacheKey)) {
+    const cached = groundTraceCache.get(cacheKey);
+    if (Date.now() - cached.timestamp < CACHE_EXPIRY) {
+      return cached.trace;
+    }
+  }
+  
+  // Calculate orbital period (in minutes)
+  const meanMotion = satRec.no * 60 * 24 / (2 * Math.PI); // Revolutions per day to mean motion
+  const period = 1 / meanMotion * 60; // Period in minutes
+  
+  const trace = [];
+  const timeStep = period / points;
+  
+  // Use batch calculations for better performance
+  for (let i = 0; i < points; i++) {
+    const futureDate = new Date(date.getTime() + i * timeStep * 60000);
+    const position = getSatellitePosition(satRec, futureDate);
+    trace.push([position.longitude, position.latitude]);
+  }
+  
+  // Cache the result
+  groundTraceCache.set(cacheKey, {
+    trace,
+    timestamp: Date.now()
+  });
+  
+  // Clean cache if it gets too large
+  if (groundTraceCache.size > 50) {
+    const oldestKey = Array.from(groundTraceCache.keys())[0];
+    groundTraceCache.delete(oldestKey);
+  }
+  
+  return trace;
+}
+
+// Optimized version of calculateVisibility with memoization
+const calculateVisibility = memoize((satRec, observerGd, date) => {
+  const positionAndVelocity = satellite.propagate(satRec, date);
+  const positionEci = positionAndVelocity.position;
+  
+  const gmst = satellite.gstime(date);
+  const lookAngles = satellite.ecfToLookAngles(observerGd, satellite.eciToEcf(positionEci, gmst));
+  
+  // Convert elevation from radians to degrees
+  const elevationDeg = lookAngles.elevation * 180 / Math.PI;
+  
+  // Satellite is visible if elevation is > 0
+  return elevationDeg > 0;
+}, (satRec, observerGd, date) => {
+  return `${satRec.satnum}_${observerGd.longitude}_${observerGd.latitude}_${date.getTime()}`;
+});
+
+// Initialize cache cleanup interval
+function initializeCacheCleanup() {
+  setInterval(() => {
+    const now = Date.now();
+    
+    // Clean position cache
+    for (const [key, value] of positionCache.entries()) {
+      if (now - value.timestamp > CACHE_EXPIRY) {
+        positionCache.delete(key);
+      }
+    }
+    
+    // Clean ground trace cache
+    for (const [key, value] of groundTraceCache.entries()) {
+      if (now - value.timestamp > CACHE_EXPIRY * 2) {
+        groundTraceCache.delete(key);
+      }
+    }
+  }, CACHE_EXPIRY * 2);
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  initializeCacheCleanup();
+  
+  // Rest of your initialization code
+  // ...
+});
+
+function preload() {
+    console.log("Preloading satellite data...");
+    
+    // First try to load from Celestrak
+    const groupsToTry = ["stations", "active", "starlink", "geo"];
+    let currentGroupIndex = 0;
+    
+    function tryNextGroup() {
+        if (currentGroupIndex >= groupsToTry.length) {
+            console.log("Exhausted all Celestrak groups, falling back to default");
+            fallbackToDefault();
+            return;
+        }
+        
+        const group = groupsToTry[currentGroupIndex];
+        console.log(`Trying Celestrak group: ${group}`);
+        
+        fetchCelestrakData(group)
+            .then(data => {
+                processCelestrakData(data);
+            })
+            .catch(error => {
+                console.error(`Error with Celestrak group ${group}:`, error);
+                currentGroupIndex++;
+                tryNextGroup();
+            });
+    }
+    
+    // Start the process
+    tryNextGroup();
+}
 
 function preload() {
     // Get current satellite ID from URL params
@@ -20,55 +253,312 @@ function preload() {
     document.getElementById('satNameTitle').innerHTML = satName[ID];
     document.getElementById('satName').innerHTML = satName[ID];
     
-    // For ISS, fetch data from Celestrak JSON API
-    if (ID === "25544") {
-        console.log("Fetching ISS data from Celestrak API...");
-        loadJSON(celestrakUrl, (data) => {
-            try {
-                const issData = convertCelestrakJsonToTLE(data);
-                if (issData) {
-                    console.log("Successfully loaded ISS data from Celestrak");
-                    // Create a data structure compatible with our existing code
-                    const satData = {};
-                    satData[ID] = issData;
-                    initDefaultSat(satData);
-                } else {
-                    console.error("Failed to convert Celestrak data for ISS");
-                    // Fall back to default data source
-                    loadJSON(url, (data) => {
-                        initDefaultSat(data);
-                    });
-                }
-            } catch (e) {
-                console.error("Error processing Celestrak data:", e);
-                // Fall back to default data source
-                loadJSON(url, (data) => {
-                    initDefaultSat(data);
-                });
-            }
-        }, (error) => {
-            console.error("Error fetching Celestrak data:", error);
-            // Fall back to default data source
-            loadJSON(url, (data) => {
-                initDefaultSat(data);
-            });
-        });
-    } else {
-        // For other satellites, use the default data source
-        loadJSON(url, (data) => {
-            initDefaultSat(data);
-        });
+    // Log which satellite we're looking for
+    console.log(`Loading data for satellite ID: ${ID}, Name: ${satName[ID]}`);
+    
+    // Define satellite groups with their respective catalog numbers
+    const satGroups = {
+        'stations': ["25544", "42982", "48274"], // ISS and other space stations
+        'weather': ["33591", "37849", "38771", "40967", "43013"], // Weather satellites
+        'noaa': ["28654", "33591", "25338", "37849"], // NOAA satellites
+        'goes': ["29155", "36411", "41866", "43226"], // GOES satellites
+        'resource': ["25682", "25994", "27386", "27424", "28890"], // Resource satellites
+        'amateur': ["7530", "14781", "22825", "24278", "27607", "40069"], // Amateur radio satellites
+        // Add more groups and catalog numbers as needed
+    };
+    
+    // Determine which group contains the current satellite
+    let celestrakGroup = 'active'; // Default to active satellites
+    for (const [group, ids] of Object.entries(satGroups)) {
+        if (ids.includes(ID)) {
+            celestrakGroup = group;
+            break;
+        }
     }
     
-    // Try to load custom satellites
+    console.log(`Fetching satellite data for ID ${ID} from Celestrak group: ${celestrakGroup}`);
+    
+    // First check if we have a custom satellite
     try {
         loadJSON(customSatUrl, (data) => {
             if (data && data.satellites) {
-                checkForCustomSatellite(data.satellites);
+                const isCustom = checkForCustomSatellite(data.satellites);
+                if (isCustom) {
+                    console.log("Using custom satellite data");
+                    return; // Exit early if using custom satellite
+                } else {
+                    // Continue with Celestrak data fetching
+                    fetchAndProcessCelestrakData(celestrakGroup);
+                }
+            } else {
+                fetchAndProcessCelestrakData(celestrakGroup);
             }
+        }, (error) => {
+            // No custom satellites file or error reading it, continue with Celestrak
+            console.log("No custom satellites available:", error);
+            fetchAndProcessCelestrakData(celestrakGroup);
         });
     } catch (e) {
-        console.log("No custom satellites available");
+        console.log("Error loading custom satellites:", e);
+        fetchAndProcessCelestrakData(celestrakGroup);
+    }
+}
+
+// Helper function to fetch and process Celestrak data
+function fetchAndProcessCelestrakData(celestrakGroup) {
+    // Check if we have this data cached already
+    if (celestrakCache.data[celestrakGroup]) {
+        console.log(`Using cached data for ${celestrakGroup} group`);
+        processCelestrakData(celestrakCache.data[celestrakGroup]);
+    } else {
+        // Fetch data from Celestrak API
+        console.log(`Fetching fresh data from Celestrak for ${celestrakGroup}`);
+        fetch(celestrakUrls[celestrakGroup])
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(`Successfully fetched ${celestrakGroup} data with ${data.length} satellites`);
+                celestrakCache.data[celestrakGroup] = data;
+                celestrakCache.timestamps[celestrakGroup] = Date.now();
+                processCelestrakData(data);
+            })
+            .catch(error => {
+                console.error(`Error fetching Celestrak data:`, error);
+                // Fall back to default data source
+                fallbackToDefault();
+            });
+    }
+}
+
+// Enhanced check for custom satellite that returns boolean
+function checkForCustomSatellite(customSats) {
+    // Check if current ID is a custom satellite
+    if (ID && ID.startsWith('CUSTOM-')) {
+        const index = parseInt(ID.replace('CUSTOM-', '')) - 1;
+        if (customSats[index]) {
+            isCustomSat = true;
+            satlist[ID] = new Satellite(ID, customSats[index], L.layerGroup());
+            return true;
+        }
+    }
+    return false;
+}
+
+// Process the Celestrak JSON data
+function processCelestrakData(data) {
+    if (!data || data.length === 0) {
+        console.error("No data received from Celestrak");
+        fallbackToDefault();
+        return;
+    }
+    
+    try {
+        // Convert the Celestrak JSON format to TLE format
+        const tleData = convertCelestrakJsonToTLE(data);
+        
+        // Update the satellites array with the new data
+        updateSatellitesFromTLE(tleData);
+        
+        // Log success
+        console.log(`Successfully processed ${data.length} satellites from Celestrak`);
+        
+        // If we're waiting for data to load, mark as loaded
+        if (dataLoadingStatus === "loading") {
+            dataLoadingStatus = "loaded";
+        }
+    } catch (error) {
+        console.error("Error processing Celestrak data:", error);
+        fallbackToDefault();
+    }
+}
+
+// Fallback to default data source if Celestrak fails
+function fallbackToDefault() {
+    console.log("Falling back to default data source");
+    loadJSON('https://raw.githubusercontent.com/Goncharo/satellite-tracker/master/data/fullTLEs.json', function(data) {
+        if (data && data.satellites && data.satellites[ID]) {
+            console.log("Using default data source for ID:", ID);
+            satlist[ID] = new Satellite(ID, data.satellites[ID], L.layerGroup());
+            setupSatelliteDisplay();
+        } else {
+            console.error("Satellite not found in default data source either");
+            document.getElementById('loadingMessage').innerHTML = 
+                'Error: Satellite data not found. Please try again later.';
+        }
+    }, function(error) {
+        console.error("Error loading default data:", error);
+        document.getElementById('loadingMessage').innerHTML = 
+            'Error loading satellite data. Please check your connection and try again.';
+    });
+}
+
+// Process data received from Celestrak API
+function processCelestrakData(jsonData) {
+    try {
+        // Convert JSON data to TLE format
+        const tleData = {};
+        
+        jsonData.forEach(satObj => {
+            // Skip invalid satellite objects
+            if (!satObj || !satObj.OBJECT_NAME || !satObj.OBJECT_ID) {
+                return;
+            }
+            
+            const satName = satObj.OBJECT_NAME.trim();
+            const tleLine = convertCelestrakJsonToTLE(satObj);
+            
+            // Only add valid TLE data
+            if (tleLine && tleLine.line1 && tleLine.line2) {
+                tleData[satName] = tleLine;
+            }
+        });
+        
+        // Check if we got any valid TLE data
+        if (Object.keys(tleData).length === 0) {
+            throw new Error("No valid TLE data could be extracted");
+        }
+        
+        // Update satelliteTLEData and cache the results
+        satelliteTLEData = tleData;
+        localStorage.setItem('celestrakCache', JSON.stringify({
+            timestamp: Date.now(),
+            data: tleData
+        }));
+        
+        dataLoadingStatus = "loaded";
+        console.log("Successfully processed Celestrak data with", Object.keys(tleData).length, "satellites");
+        
+        // Update satellite selection dropdown
+        if (typeof updateSatelliteDropdown === 'function') {
+            updateSatelliteDropdown();
+        }
+        
+    } catch (error) {
+        console.error("Error processing Celestrak data:", error);
+        fallbackToDefault();
+    }
+}
+
+// Fallback to default satellite source if Celestrak API fails
+function fallbackToDefault() {
+    console.log("Falling back to default satellite data source");
+    try {
+        // Load TLE data from the original source
+        loadStrings("https://raw.githubusercontent.com/carbonacat/tictac-satellite-data/master/data/active.txt", function(data) {
+            console.log("Loaded TLE data from GitHub backup source");
+            satInfo = [];
+            
+            // Process the TLE data as before
+            for (let i = 0; i < data.length; i += 3) {
+                if (i + 2 < data.length) {
+                    satInfo.push([data[i].trim(), data[i + 1].trim(), data[i + 2].trim()]);
+                }
+            }
+            
+            if (satInfo.length > 0) {
+                setupSatellites();
+            } else {
+                console.error("Failed to load any satellite data");
+            }
+        }, function(error) {
+            console.error("Failed to load backup TLE data:", error);
+        });
+    } catch (error) {
+        console.error("Error in fallback procedure:", error);
+    }
+}
+
+// Continue to iterate through satellite data?
+function continueToIterate() {
+    // If there's no current batch processing happening
+    if (!window.batchProcessing) {
+        return false;
+    }
+    
+    // Get the current batch processing state
+    const { satelliteData, currentIndex, batchSize, callback } = window.batchProcessing;
+    
+    // Process the next batch of satellites
+    const hasMoreBatches = processSatelliteBatch(satelliteData, currentIndex, batchSize);
+    
+    if (hasMoreBatches) {
+        // Update the index for the next batch
+        window.batchProcessing.currentIndex += batchSize;
+        
+        // Schedule the next batch processing with a small delay to prevent UI freezing
+        setTimeout(() => {
+            if (callback) callback(true); // Continue iteration
+        }, 10);
+        
+        return true;
+    } else {
+        // We've finished processing all batches
+        console.log("Finished loading all satellites");
+        window.batchProcessing = null;
+        
+        if (callback) callback(false); // Stop iteration
+        return false;
+    }
+}
+
+// Process Celestrak data and initialize satellite
+function processCelestrakData(jsonData) {
+    if (!jsonData || !Array.isArray(jsonData)) {
+        console.error("Invalid Celestrak data format");
+        loadJSON(url, (data) => {
+            initDefaultSat(data);
+        });
+        return;
+    }
+    
+    // Find the requested satellite by NORAD CAT ID
+    const targetSatellite = jsonData.find(sat => sat.NORAD_CAT_ID === ID);
+    
+    if (targetSatellite) {
+        console.log(`Found satellite ${ID} in Celestrak data:`, targetSatellite.OBJECT_NAME);
+        
+        // Convert Celestrak JSON to TLE format
+        const satData = convertCelestrakJsonToTLE(targetSatellite);
+        
+        if (satData) {
+            console.log("Successfully converted Celestrak data to TLE format");
+            
+            // Create a data structure compatible with our existing code
+            const satDataObj = {};
+            satDataObj[ID] = satData;
+            
+            // Initialize satellite
+            satlist[ID] = new Satellite(ID, satData, L.layerGroup());
+            
+            // Update UI with satellite data
+            updateSatelliteInfo(satData);
+        } else {
+            console.error("Failed to convert Celestrak data");
+            fallbackToDefault();
+        }
+    } else {
+        console.log(`Satellite ID ${ID} not found in Celestrak data, falling back to default`);
+        fallbackToDefault();
+    }
+}
+
+function fallbackToDefault() {
+    // Fall back to default data source
+    loadJSON(url, (data) => {
+        initDefaultSat(data);
+    });
+}
+
+function initDefaultSat(data) {
+    console.log("Using default satellite data source");
+    if (data[ID]) {
+        satlist[ID] = new Satellite(ID, data[ID], L.layerGroup());
+    } else {
+        console.error(`Satellite ID ${ID} not found in default data`);
     }
 }
 
@@ -206,47 +696,37 @@ function formatTLE(tleLine) {
 }
 
 // Convert Celestrak JSON format to proper TLE strings
-function convertCelestrakJsonToTLE(jsonData) {
-    if (!jsonData || !Array.isArray(jsonData) || jsonData.length === 0) {
-        console.error("Invalid Celestrak JSON data format");
+function convertCelestrakJsonToTLE(satellite) {
+    if (!satellite) {
+        console.error("Invalid satellite data");
         return null;
     }
-    
-    // Find ISS data by NORAD CAT ID
-    const issSatellite = jsonData.find(sat => sat.NORAD_CAT_ID === "25544");
-    if (!issSatellite) {
-        console.error("ISS data not found in Celestrak API response");
-        return null;
-    }
-    
-    // Log received satellite data
-    console.log("Celestrak ISS data:", issSatellite);
     
     try {
         // Format the TLE line 1 according to the spec: https://celestrak.org/NORAD/documentation/gp-data-formats.php
         let line1 = "1 ";
-        line1 += (issSatellite.NORAD_CAT_ID || "").padStart(5, '0') + issSatellite.CLASSIFICATION + " "; 
-        line1 += (issSatellite.INTLDES || "").padEnd(8, ' ') + "   "; // 3 spaces after int'l designator
-        line1 += issSatellite.EPOCH.substring(2, 4); // Epoch year (last 2 digits)
+        line1 += (satellite.NORAD_CAT_ID || "").padStart(5, '0') + (satellite.CLASSIFICATION || "U") + " "; 
+        line1 += (satellite.INTLDES || "").padEnd(8, ' ') + "   "; // 3 spaces after int'l designator
+        line1 += satellite.EPOCH.substring(2, 4); // Epoch year (last 2 digits)
         
         // Convert ISO date to day of year with fraction
-        const epochDate = new Date(issSatellite.EPOCH);
+        const epochDate = new Date(satellite.EPOCH);
         const startOfYear = new Date(Date.UTC(epochDate.getUTCFullYear(), 0, 1));
         const dayOfYear = ((epochDate - startOfYear) / 86400000) + 1; // Days since Jan 1 + 1
         line1 += dayOfYear.toFixed(8).padStart(12, '0') + "  "; // Day of year with fraction, padded to 12 chars + 2 spaces
         
         // Mean motion derivatives and drag terms
-        const meanMotionDot = Number(issSatellite.MEAN_MOTION_DOT).toExponential(8).replace("e-", "-").replace("e+", "+");
+        const meanMotionDot = Number(satellite.MEAN_MOTION_DOT || 0).toExponential(8).replace("e-", "-").replace("e+", "+");
         line1 += meanMotionDot.padStart(10, ' ') + "  "; // Mean motion first derivative with 2 spaces
         
-        const meanMotionDotDot = Number(issSatellite.MEAN_MOTION_DDOT || 0).toExponential(5).replace("e-", "-").replace("e+", "+");
+        const meanMotionDotDot = Number(satellite.MEAN_MOTION_DDOT || 0).toExponential(5).replace("e-", "-").replace("e+", "+");
         line1 += meanMotionDotDot.padStart(8, ' ') + " "; // Mean motion second derivative + space
         
-        const bstar = Number(issSatellite.BSTAR || 0).toExponential(5).replace("e-", "-").replace("e+", "+");
+        const bstar = Number(satellite.BSTAR || 0).toExponential(5).replace("e-", "-").replace("e+", "+");
         line1 += bstar.padStart(8, ' ') + " "; // B* drag term + space
         
         line1 += "0 "; // Ephemeris type + space
-        line1 += issSatellite.ELEMENT_SET_NO.padStart(4, ' '); // Element set number
+        line1 += (satellite.ELEMENT_SET_NO || "999").padStart(4, ' '); // Element set number
         
         // Calculate checksum for line 1
         let checksum1 = 0;
@@ -258,18 +738,18 @@ function convertCelestrakJsonToTLE(jsonData) {
         
         // Format the TLE line 2 according to the spec
         let line2 = "2 ";
-        line2 += (issSatellite.NORAD_CAT_ID || "").padStart(5, '0') + "  "; // 2 spaces after catalog number
+        line2 += (satellite.NORAD_CAT_ID || "").padStart(5, '0') + "  "; // 2 spaces after catalog number
         
         // Orbital elements
-        line2 += (Number(issSatellite.INCLINATION || 0).toFixed(4)).padStart(8, ' ') + " "; // Inclination + space
-        line2 += (Number(issSatellite.RA_OF_ASC_NODE || 0).toFixed(4)).padStart(8, ' ') + " "; // RAAN + space
-        line2 += (Number(issSatellite.ECCENTRICITY || 0).toFixed(7)).substring(2).padStart(7, '0') + "  "; // Eccentricity (no decimal) + 2 spaces
-        line2 += (Number(issSatellite.ARG_OF_PERICENTER || 0).toFixed(4)).padStart(8, ' ') + "  "; // Arg of perigee + 2 spaces
-        line2 += (Number(issSatellite.MEAN_ANOMALY || 0).toFixed(4)).padStart(8, ' ') + " "; // Mean anomaly + space
-        line2 += (Number(issSatellite.MEAN_MOTION || 0).toFixed(8)).padStart(11, ' '); // Mean motion
+        line2 += (Number(satellite.INCLINATION || 0).toFixed(4)).padStart(8, ' ') + " "; // Inclination + space
+        line2 += (Number(satellite.RA_OF_ASC_NODE || 0).toFixed(4)).padStart(8, ' ') + " "; // RAAN + space
+        line2 += (Number(satellite.ECCENTRICITY || 0).toFixed(7)).substring(2).padStart(7, '0') + "  "; // Eccentricity (no decimal) + 2 spaces
+        line2 += (Number(satellite.ARG_OF_PERICENTER || 0).toFixed(4)).padStart(8, ' ') + "  "; // Arg of perigee + 2 spaces
+        line2 += (Number(satellite.MEAN_ANOMALY || 0).toFixed(4)).padStart(8, ' ') + " "; // Mean anomaly + space
+        line2 += (Number(satellite.MEAN_MOTION || 0).toFixed(8)).padStart(11, ' '); // Mean motion
         
         // Add revolution number
-        line2 += issSatellite.REV_AT_EPOCH.padStart(5, ' ');
+        line2 += (satellite.REV_AT_EPOCH || "0").padStart(5, ' ');
         
         // Calculate checksum for line 2
         let checksum2 = 0;
@@ -279,24 +759,255 @@ function convertCelestrakJsonToTLE(jsonData) {
         }
         line2 += (checksum2 % 10).toString();
         
-        console.log("Generated TLE Line 1:", line1);
-        console.log("Generated TLE Line 2:", line2);
-        
-        return {
-            tle: [line1, line2],
-            satID: "25544",
-            name: issSatellite.OBJECT_NAME || "ISS",
-            eccen: Number(issSatellite.ECCENTRICITY || 0),
-            incli: Number(issSatellite.INCLINATION || 0),
-            node: Number(issSatellite.RA_OF_ASC_NODE || 0),
-            omega: Number(issSatellite.ARG_OF_PERICENTER || 0),
-            mnMotion: Number(issSatellite.MEAN_MOTION || 0),
-            mnAnomaly: Number(issSatellite.MEAN_ANOMALY || 0),
-            revNum: Number(issSatellite.REV_AT_EPOCH || 0)
-        };
+        // Return satellite name and TLE lines
+        const name = satellite.OBJECT_NAME || `SAT-${satellite.NORAD_CAT_ID}`;
+        return [name, line1, line2];
     } catch (e) {
-        console.error("Error converting Celestrak JSON to TLE:", e);
+        console.error("Error converting satellite data to TLE:", e, satellite);
         return null;
+    }
+}
+
+// Function to fetch and convert Celestrak data to TLE format
+async function fetchCelestrakData(category) {
+    // Use cached data if available and less than 6 hours old
+    const now = new Date().getTime();
+    if (celestrakDataCache[category] && 
+        now - celestrakDataCache[category].timestamp < 6 * 60 * 60 * 1000) {
+        return celestrakDataCache[category].data;
+    }
+    
+    try {
+        const response = await fetch(celestrakUrls[category]);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const jsonData = await response.json();
+        const tleData = jsonData.map(sat => convertCelestrakJsonToTLE(sat)).join('\n');
+        
+        // Cache the data with timestamp
+        celestrakDataCache[category] = {
+            data: tleData,
+            timestamp: now
+        };
+        
+        return tleData;
+    } catch (error) {
+        console.error(`Error fetching ${category} satellites:`, error);
+        return '';
+    }
+}
+
+// Function to load all satellite data from Celestrak
+async function loadAllCelestrakData() {
+    const categories = Object.keys(celestrakUrls);
+    const tlePromises = categories.map(category => fetchCelestrakData(category));
+    
+    try {
+        const results = await Promise.all(tlePromises);
+        return results.join('\n');
+    } catch (error) {
+        console.error('Error loading all Celestrak data:', error);
+        return '';
+    }
+}
+
+/**
+ * Fetches satellite data from Celestrak API and converts it to TLE format
+ * @param {string} groupName - The name of the satellite group (must match a key in celestrakUrls)
+ * @param {boolean} forceRefresh - Whether to force a fresh download even if cached
+ * @returns {Promise<string[]>} - Array of TLE strings (each satellite has 3 lines)
+ */
+async function fetchCelestrakData(groupName, forceRefresh = false) {
+    // Check if we already have cached data less than 6 hours old
+    const now = new Date();
+    const cacheEntry = celestrakCache.data[groupName];
+    const cacheValid = cacheEntry && 
+                      (now - celestrakCache.timestamps[groupName] < celestrakCache.TTL) &&
+                      !forceRefresh;
+    
+    if (cacheValid) {
+        console.log(`Using cached ${groupName} satellite data`);
+        return cacheEntry;
+    }
+    
+    if (!celestrakUrls[groupName] && !CELESTRAK_URLS[groupName.toUpperCase()]) {
+        console.error(`Unknown satellite group: ${groupName}`);
+        return null;
+    }
+    
+    // Use the appropriate URL from either celestrakUrls or CELESTRAK_URLS
+    const apiUrl = celestrakUrls[groupName] || CELESTRAK_URLS[groupName.toUpperCase()];
+    
+    console.log(`Fetching ${groupName} satellite data from Celestrak: ${apiUrl}`);
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const jsonData = await response.json();
+        console.log(`Successfully fetched ${jsonData.length} satellites for ${groupName}`);
+        
+        // Cache the raw JSON data
+        celestrakCache.data[groupName] = jsonData;
+        celestrakCache.timestamps[groupName] = now.getTime();
+        
+        return jsonData;
+    } catch (error) {
+        console.error(`Error fetching ${groupName} satellite data:`, error);
+        return null;
+    }
+}
+
+// Fetch satellite data from Celestrak API
+function fetchCelestrakData() {
+    // Check if we have valid cached data
+    const cachedData = localStorage.getItem('celestrakCache');
+    if (cachedData) {
+        try {
+            const cache = JSON.parse(cachedData);
+            const cacheAge = Date.now() - cache.timestamp;
+            
+            // Use cache if it's less than 24 hours old
+            if (cacheAge < 24 * 60 * 60 * 1000) {
+                console.log("Using cached Celestrak data");
+                satelliteTLEData = cache.data;
+                dataLoadingStatus = "loaded";
+                
+                // Update satellite selection dropdown
+                if (typeof updateSatelliteDropdown === 'function') {
+                    updateSatelliteDropdown();
+                }
+                
+                return Promise.resolve(cache.data);
+            }
+        } catch (error) {
+            console.error("Error reading cache:", error);
+            // Continue to fetch fresh data if cache is invalid
+        }
+    }
+    
+    dataLoadingStatus = "loading";
+    
+    // Define which satellite groups to fetch (combining active, visual, and some specialty groups)
+    const celestrakGroups = [
+        "active",
+        "visual",
+        "stations"
+    ];
+    
+    // Create promises for each API call
+    const promises = celestrakGroups.map(group => {
+        const url = `${CELESTRAK_BASE_URL}${group}&format=json`;
+        return fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status} for group ${group}`);
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error(`Error fetching ${group} satellites:`, error);
+                return []; // Return empty array on error to continue with other groups
+            });
+    });
+    
+    // Process all requests
+    return Promise.all(promises)
+        .then(results => {
+            // Combine all satellite data from different groups
+            const combinedData = results.flat();
+            
+            if (combinedData.length === 0) {
+                throw new Error("No data received from any Celestrak API endpoint");
+            }
+            
+            // Process the combined data
+            processCelestrakData(combinedData);
+            return satelliteTLEData;
+        })
+        .catch(error => {
+            console.error("Error fetching Celestrak data:", error);
+            fallbackToDefault();
+            return null;
+        });
+}
+
+// Process and convert Celestrak JSON data to TLE format
+function processCelestrakData(jsonData) {
+    console.log(`Processing ${jsonData.length} satellites from Celestrak`);
+    
+    try {
+        // Convert each JSON object to TLE format using our utility function
+        const tleData = jsonData.map(satObject => {
+            return convertCelestrakJsonToTLE(satObject);
+        }).filter(tle => tle && tle.trim() !== '');
+        
+        if (tleData.length === 0) {
+            throw new Error("Failed to convert any Celestrak data to TLE format");
+        }
+        
+        // Join the TLE strings with newlines to match expected format
+        satelliteTLEData = tleData.join('\n');
+        
+        // Cache the data
+        const cacheObject = {
+            timestamp: Date.now(),
+            data: satelliteTLEData
+        };
+        localStorage.setItem('celestrakCache', JSON.stringify(cacheObject));
+        
+        console.log(`Successfully processed ${tleData.length} satellites`);
+        dataLoadingStatus = "loaded";
+        
+        // Update satellite selection dropdown if it exists
+        if (typeof updateSatelliteDropdown === 'function') {
+            updateSatelliteDropdown();
+        }
+    } catch (error) {
+        console.error("Error processing Celestrak data:", error);
+        fallbackToDefault();
+    }
+}
+
+// Fetch data from Celestrak API endpoints
+async function fetchCelestrakData() {
+    // Define which satellite groups we want to fetch
+    const celestrakGroups = [
+        CELESTRAK_URLS.STATIONS,      // Space stations like ISS
+        CELESTRAK_URLS.VISUAL,        // Visually bright satellites
+        CELESTRAK_URLS.ACTIVE         // Active satellites
+    ];
+    
+    console.log("Fetching data from Celestrak API...");
+    dataLoadingStatus = "loading";
+    
+    try {
+        // Fetch data from all endpoints in parallel
+        const responses = await Promise.all(
+            celestrakGroups.map(url => 
+                fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+            )
+        );
+        
+        // Combine all satellite data into one array
+        const allSatellites = responses.flat();
+        console.log(`Retrieved ${allSatellites.length} satellites from Celestrak`);
+        
+        // Process the combined data
+        processCelestrakData(allSatellites);
+        
+    } catch (error) {
+        console.error("Error fetching data from Celestrak:", error);
+        fallbackToDefault();
     }
 }
 
@@ -396,6 +1107,22 @@ class Satellite {
 	
 	// Calculate satellite position at a specific time
 	calculatePositionAt(date) {
+	    // Initialize the memoization cache if it doesn't exist
+	    if (!this._positionCache) {
+	        this._positionCache = {
+	            lastTime: null,
+	            lastResult: null,
+	            cacheTimeThreshold: 50 // Only cache for 50ms to ensure accuracy
+	        };
+	    }
+	    
+	    // Check if we can use the cached result
+	    const timestamp = date.getTime();
+	    if (this._positionCache.lastTime && 
+	        Math.abs(timestamp - this._positionCache.lastTime) < this._positionCache.cacheTimeThreshold) {
+	        return this._positionCache.lastResult;
+	    }
+	    
 	    try {
 	        // Get position using satellite.js
 	        const positionAndVelocity = satellite.propagate(this.satrec, date);
@@ -414,7 +1141,7 @@ class Satellite {
 	        
 	        const positionEci = positionAndVelocity.position;
 	        
-	        // Convert to geographic coordinates
+	        // Convert to geographic coordinates - this is computationally intensive
 	        const gmst = satellite.gstime(date);
 	        const positionGd = satellite.eciToGeodetic(positionEci, gmst);
 	        
@@ -422,8 +1149,14 @@ class Satellite {
 	        const longitudeDeg = satellite.degreesLong(positionGd.longitude);
 	        const latitudeDeg = satellite.degreesLat(positionGd.latitude);
 	        
-	        // Convert height from km to km
-	        const heightKm = positionGd.height;
+	        const result = {
+	            lat: latitudeDeg,
+	            lng: longitudeDeg,
+	            height: positionGd.height,
+	            x: positionEci.x,
+	            y: positionEci.y,
+	            z: positionEci.z
+	        };
 	        
 	        // Check for NaN values
 	        if (isNaN(latitudeDeg) || isNaN(longitudeDeg)) {
@@ -431,21 +1164,18 @@ class Satellite {
 	            return {
 	                lat: 0,
 	                lng: 0,
-	                height: heightKm || 0,
+	                height: positionGd.height || 0,
 	                x: positionEci.x || 0,
 	                y: positionEci.y || 0,
 	                z: positionEci.z || 0
 	            };
 	        }
 	        
-	        return {
-	            lat: latitudeDeg,
-	            lng: longitudeDeg,
-	            height: heightKm,
-	            x: positionEci.x,
-	            y: positionEci.y,
-	            z: positionEci.z
-	        };
+	        // Cache the result
+	        this._positionCache.lastTime = timestamp;
+	        this._positionCache.lastResult = result;
+	        
+	        return result;
 	    } catch (e) {
 	        console.error('Exception in calculatePositionAt:', e);
 	        // Return default values on error
@@ -461,13 +1191,45 @@ class Satellite {
 	}
 
 	groundTrace(_currentUTC, _span) {
+	    // Initialize cache if it doesn't exist
+	    if (!this._traceCache) {
+	        this._traceCache = {
+	            points: [],
+	            timestamp: 0,
+	            validityPeriod: 5000, // Cache valid for 5 seconds
+	            requestedSpan: 0
+	        };
+	    }
+	    
 	    try {
+	        // Cache references to DOM elements to reduce lookups
+	        const domElements = {
+	            l1: document.getElementById("l1"),
+	            l2: document.getElementById("l2"),
+	            lat: document.getElementById("lat"),
+	            long: document.getElementById("long"),
+	            height: document.getElementById("height"),
+	            xPos: document.getElementById("xPos"),
+	            yPos: document.getElementById("yPos"),
+	            zPos: document.getElementById("zPos"),
+	            epochTime: document.getElementById("epochTime"),
+	            eccen: document.getElementById("eccen"),
+	            per: document.getElementById("per"),
+	            apg: document.getElementById("apg"),
+	            node: document.getElementById("node"),
+	            aop: document.getElementById("aop"),
+	            mnm: document.getElementById("mnm"),
+	            mna: document.getElementById("mna"),
+	            revNum: document.getElementById("revNum")
+	        };
+	        
+	        // Clear any existing layers
 	        if (myMap.hasLayer(this.layerMarkerGrp)) {
 	            myMap.removeLayer(this.layerMarkerGrp);
 	            this.layerMarkerGrp.clearLayers();
 	        }
 	        
-	        // Calculate current position
+	        // Calculate current position - this is a critical calculation
 	        const currentPosition = this.calculatePositionAt(_currentUTC);
 	        const intLat = currentPosition.lat;
 	        const intLong = currentPosition.lng;
@@ -480,115 +1242,195 @@ class Satellite {
 	        if (isNaN(intLat) || isNaN(intLong) || Math.abs(intLat) > 90 || Math.abs(intLong) > 180) {
 	            console.error("Invalid coordinates detected:", intLat, intLong);
 	            // Update UI elements with error message
-	            document.getElementById("l1").innerHTML = this.l1;
-	            document.getElementById("l2").innerHTML = this.l2;
-	            document.getElementById("lat").innerHTML = "Error";
-	            document.getElementById("long").innerHTML = "Error";
-	            document.getElementById("height").innerHTML = "Error";
+	            domElements.l1.innerHTML = this.l1;
+	            domElements.l2.innerHTML = this.l2;
+	            domElements.lat.innerHTML = "Error";
+	            domElements.long.innerHTML = "Error";
+	            domElements.height.innerHTML = "Error";
 	            return;
 	        }
 	        
-	        // Generate orbital trace points
-	        const trace = [];
-	        const numPoints = 60;
+	        // Update current time for cache timestamp
+	        const currentTime = _currentUTC.getTime();
 	        const spanMinutes = _span || 60;
-	        const timeIncrement = (spanMinutes * 60 * 1000) / numPoints;
-
-	        // Generate path points for visualization
-	        let validPoints = 0;
-	        for (let i = -numPoints/2; i <= numPoints/2; i++) {
-	            const pointTime = new Date(_currentUTC.getTime() + (i * timeIncrement));
-	            const pos = this.calculatePositionAt(pointTime);
+	        
+	        // Check if we can use the cached trace
+	        const cacheIsValid = 
+	            this._traceCache.points.length > 0 && 
+	            (currentTime - this._traceCache.timestamp < this._traceCache.validityPeriod) &&
+	            this._traceCache.requestedSpan === spanMinutes;
 	            
-	            // Only add valid coordinates to prevent LatLng errors
-	            if (!isNaN(pos.lat) && !isNaN(pos.lng) && 
-	                Math.abs(pos.lat) <= 90 && Math.abs(pos.lng) <= 180) {
-	                trace.push([pos.lat, pos.lng]);
-	                validPoints++;
+	        let trace = [];
+	        
+	        if (cacheIsValid) {
+	            // Use cached trace points
+	            trace = this._traceCache.points;
+	        } else {
+	            // Generate orbital trace points - optimize by calculating fewer points
+	            const numPoints = 30; // Reduced from 60 for better performance
+	            const timeIncrement = (spanMinutes * 60 * 1000) / numPoints;
+	            
+	            // Use batch processing for trace points
+	            const batchSize = 5;
+	            let validPoints = 0;
+	            
+	            for (let i = -numPoints/2; i <= numPoints/2; i += batchSize) {
+	                const batch = [];
+	                
+	                // Calculate a batch of points
+	                for (let j = 0; j < batchSize && (i + j) <= numPoints/2; j++) {
+	                    const pointIdx = i + j;
+	                    const pointTime = new Date(currentTime + (pointIdx * timeIncrement));
+	                    batch.push({index: pointIdx, time: pointTime});
+	                }
+	                
+	                // Process each point in the batch
+	                batch.forEach(item => {
+	                    const pos = this.calculatePositionAt(item.time);
+	                    
+	                    // Only add valid coordinates to prevent LatLng errors
+	                    if (!isNaN(pos.lat) && !isNaN(pos.lng) && 
+	                        Math.abs(pos.lat) <= 90 && Math.abs(pos.lng) <= 180) {
+	                        trace.push({
+	                            lat: pos.lat,
+	                            lng: pos.lng,
+	                            index: item.index
+	                        });
+	                        validPoints++;
+	                    }
+	                });
+	            }
+	            
+	            // Cache the trace points if we have a reasonable number
+	            if (validPoints > 10) {
+	                this._traceCache.points = trace;
+	                this._traceCache.timestamp = currentTime;
+	                this._traceCache.requestedSpan = spanMinutes;
 	            }
 	        }
 	        
-	        if (validPoints === 0) {
-	            console.error("No valid points generated for trace");
-	            return;
-	        }
-	        
-	        // Create trace line if we have valid points
-	        if (trace.length > 1) {
-	            var tracePoly = new L.Geodesic(trace, {
-	                color: '#00ffff',
-	                weight: 3,
-	                opacity: 1,
-	                wrap: true,
-	            });
-	            
-	            this.layerMarkerGrp.addLayer(tracePoly);
-	        }
-	        
-	        // Create satellite marker
-	        var satImage = L.icon({
+	        // Create a current position marker with custom icon
+	        const satIcon = L.icon({
 	            iconUrl: 'src/images/satImage.png',
-	            iconSize: [38, 38], 
-	            iconAnchor: [19, 19], 
-	            popupAnchor: [0, -19],
-	        });
-
-	        var satIcon = new L.marker([intLat, intLong], {
-	            icon: satImage
-	        }).bindPopup('lat: ' + nfc(intLat, 3) + '°<br>' + 'lon: ' + nfc(intLong, 3) + '°<br>' + 'height: ' + nfc(intHeight, 3) + 'km');
-
-	        satIcon.on('mouseover', function (e) {
-	            this.openPopup();
-	        });
-	        satIcon.on('mouseout', function (e) {
-	            this.closePopup();
-	        });
-
-	        this.layerMarkerGrp.addLayer(satIcon);
-
-	        // Add visibility circle
-	        const radius = acos(6371/(6371+intHeight)) * 6371;
-	        const node = new L.GeodesicCircle([intLat, intLong], {
-	            radius: radius*1000,
-	            color: '#000000',
-	            fill: true,
-	            fillOpacity: 0.1,
-	            weight: 1,
+	            iconSize: [32, 32],
+	            iconAnchor: [16, 16]
 	        });
 	        
-	        this.layerMarkerGrp.addLayer(node);
-	        myMap.addLayer(this.layerMarkerGrp);
-	        myMap.panTo([intLat, intLong]);
+	        const marker = L.marker([intLat, intLong], {
+	            icon: satIcon,
+	            title: this.satName
+	        }).addTo(this.layerMarkerGrp);
 	        
-	        // Calculate semi-major axis (in km)
-	        const semiMajorAxis = Math.pow(398600.4418 / (this.mnMotn * 2 * Math.PI / 86400) ** 2, 1/3);
+	        // Draw ground trace polyline
+	        if (trace.length > 0) {
+	            // Sort trace points by index to ensure proper polyline
+	            trace.sort((a, b) => a.index - b.index);
+	            
+	            // Extract latLng array for polyline
+	            const traceLine = trace.map(point => [point.lat, point.lng]);
+	            
+	            // Draw with color gradient
+	            const polyline = L.polyline(traceLine, {
+	                color: '#FF4500',
+	                weight: 2,
+	                opacity: 0.7,
+	                smoothFactor: 1
+	            }).addTo(this.layerMarkerGrp);
+	        }
+	        
+	        // Add satellite footprint (visibility circle)
+	        const footprintRadius = this.calculateFootprintRadius(intHeight);
+	        const footprint = L.circle([intLat, intLong], {
+	            radius: footprintRadius * 1000, // Convert to meters
+	            color: 'rgba(0, 100, 255, 0.3)',
+	            fillColor: 'rgba(0, 100, 255, 0.1)',
+	            fillOpacity: 0.3
+	        }).addTo(this.layerMarkerGrp);
+	        
+	        // Update the UI elements with satellite information
+	        domElements.l1.innerHTML = this.l1;
+	        domElements.l2.innerHTML = this.l2;
+	        domElements.lat.innerHTML = intLat.toFixed(4) + "°";
+	        domElements.long.innerHTML = intLong.toFixed(4) + "°";
+	        domElements.height.innerHTML = intHeight.toFixed(2) + " km";
+	        domElements.xPos.innerHTML = intXpos.toFixed(2) + " km";
+	        domElements.yPos.innerHTML = intYpos.toFixed(2) + " km";
+	        domElements.zPos.innerHTML = intZpos.toFixed(2) + " km";
+	        
+	        // Calculate and display orbital parameters
+	        const epochTimeStr = this.formatEpochTime();
+	        domElements.epochTime.innerHTML = epochTimeStr;
+	        domElements.eccen.innerHTML = this.eccen.toFixed(7);
 	        
 	        // Calculate perigee and apogee
-	        const perigee = semiMajorAxis * (1 - this.eccen) - 6371; // Earth radius = 6371 km
-	        const apogee = semiMajorAxis * (1 + this.eccen) - 6371;
+	        const earthRadius = 6371; // km
+	        const semiMajorAxis = Math.pow(398600.4418 / Math.pow(this.mnMotn * (Math.PI/43200), 2), 1/3);
+	        const perigee = (semiMajorAxis * (1 - this.eccen) - earthRadius).toFixed(2);
+	        const apogee = (semiMajorAxis * (1 + this.eccen) - earthRadius).toFixed(2);
 	        
-	        // Update UI elements with formatted TLE
-	        let d1 = new Date(this.epoch[0], this.epoch[1]-1, this.epoch[2], this.epoch[3], this.epoch[4], this.epoch[5]);
-	        document.getElementById("l1").innerHTML = this.l1;
-	        document.getElementById("l2").innerHTML = this.l2;
-	        document.getElementById("epochTime").innerHTML = d1.toUTCString();
-	        document.getElementById("lat").innerHTML = nfc(intLat, 3);
-	        document.getElementById("long").innerHTML = nfc(intLong, 3);
-	        document.getElementById("height").innerHTML = nfc(intHeight, 3);
-	        document.getElementById("xPos").innerHTML = nfc(intXpos, 3);
-	        document.getElementById("yPos").innerHTML = nfc(intYpos, 3);
-	        document.getElementById("zPos").innerHTML = nfc(intZpos, 3);
-	        document.getElementById("eccen").innerHTML = nfc(this.eccen, 6);
-	        document.getElementById("per").innerHTML = nfc(perigee, 3);
-	        document.getElementById("apg").innerHTML = nfc(apogee, 3);
-	        document.getElementById("node").innerHTML = nfc(this.node, 3);
-	        document.getElementById("aop").innerHTML = nfc(this.aop, 3);
-	        document.getElementById("mnm").innerHTML = nfc(this.mnMotn, 3);
-	        document.getElementById("mna").innerHTML = nfc(this.mnAnom, 3);
-	        document.getElementById("revNum").innerHTML = int(this.revNum);
+	        domElements.per.innerHTML = perigee + " km";
+	        domElements.apg.innerHTML = apogee + " km";
+	        domElements.node.innerHTML = this.node.toFixed(4) + "°";
+	        domElements.aop.innerHTML = this.aop.toFixed(4) + "°";
+	        domElements.mnm.innerHTML = this.mnMotn.toFixed(8) + " rev/day";
+	        domElements.mna.innerHTML = this.mnAnom.toFixed(4) + "°";
+	        domElements.revNum.innerHTML = this.revNum;
+	        
+	        // Add layer to map
+	        this.layerMarkerGrp.addTo(myMap);
+	        
+	        // Pan map to satellite position if it's outside current view
+	        const bounds = myMap.getBounds();
+	        if (!bounds.contains([intLat, intLong])) {
+	            myMap.setView([intLat, intLong], myMap.getZoom());
+	        }
 	    } catch (e) {
 	        console.error("Error in groundTrace:", e);
 	    }
+	}
+	
+	// Helper to format epoch time
+	formatEpochTime() {
+	    if (!this.epoch || !Array.isArray(this.epoch) || this.epoch.length < 6) {
+	        return "Unknown";
+	    }
+	    
+	    const [year, month, day, hour, minute, second] = this.epoch;
+	    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	    const monthStr = monthNames[month - 1] || month;
+	    
+	    return `${day} ${monthStr} ${year} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')} UTC`;
+	}
+	
+	// Calculate satellite footprint radius based on height
+	calculateFootprintRadius(height) {
+	    // Check for valid height
+	    if (!height || height <= 0) return 0;
+	    
+	    // Cache footprint calculations
+	    if (!this._footprintCache) this._footprintCache = {};
+	    
+	    // Round height to nearest km for caching
+	    const roundedHeight = Math.round(height);
+	    
+	    // Return cached value if available
+	    if (this._footprintCache[roundedHeight]) {
+	        return this._footprintCache[roundedHeight];
+	    }
+	    
+	    // Earth radius in km
+	    const earthRadius = 6371;
+	    
+	    // Calculate footprint radius using spherical geometry
+	    // Based on the formula: r = R * acos(R / (R + h))
+	    // where R is Earth radius, h is satellite height
+	    const radiusAngle = Math.acos(earthRadius / (earthRadius + roundedHeight));
+	    const footprintRadius = earthRadius * radiusAngle;
+	    
+	    // Cache the result
+	    this._footprintCache[roundedHeight] = footprintRadius;
+	    
+	    return footprintRadius;
 	}
 }
 
@@ -668,6 +1510,181 @@ function createSampleCustomSatellitesFile() {
 		console.error("Could not create sample satellites file:", e);
 		localStorage.setItem('customSatellites', JSON.stringify(sampleData));
 	}
+}
+
+// Process Celestrak JSON data and convert to TLE format
+function processCelestrakData(jsonData) {
+    console.log(`Processing ${jsonData.length} satellites from Celestrak`);
+    
+    try {
+        // Filter data to keep only objects with complete information
+        const validData = jsonData.filter(sat => 
+            sat && sat.OBJECT_NAME && sat.OBJECT_ID && 
+            sat.EPOCH && sat.MEAN_MOTION && sat.ECCENTRICITY && 
+            sat.INCLINATION && sat.RA_OF_ASC_NODE && 
+            sat.ARG_OF_PERICENTER && sat.MEAN_ANOMALY && 
+            sat.EPHEMERIS_TYPE !== undefined
+        );
+        
+        if (validData.length === 0) {
+            console.error("No valid satellite data in Celestrak response");
+            fallbackToDefault();
+            return;
+        }
+        
+        // Convert to TLE format
+        const tleData = {};
+        validData.forEach(sat => {
+            const tle = convertCelestrakJsonToTLE(sat);
+            if (tle) {
+                const name = sat.OBJECT_NAME.trim();
+                tleData[name] = tle;
+            }
+        });
+        
+        // Check if we have enough data
+        const tleCount = Object.keys(tleData).length;
+        if (tleCount > 0) {
+            console.log(`Successfully processed ${tleCount} satellites`);
+            
+            // Update the satelliteTLEData with our new data
+            satelliteTLEData = tleData;
+            
+            // Cache the data for future use
+            localStorage.setItem('celestrakCache', JSON.stringify({
+                timestamp: Date.now(),
+                data: tleData
+            }));
+            
+            dataLoadingStatus = "loaded";
+            
+            // If setup has already run, update satellites
+            if (setupCompleted) {
+                loadSatellites();
+            }
+        } else {
+            console.error("Failed to convert any satellites to TLE format");
+            fallbackToDefault();
+        }
+    } catch (error) {
+        console.error("Error processing Celestrak data:", error);
+        fallbackToDefault();
+    }
+}
+
+// Process a batch of satellite data
+function processSatelliteBatch() {
+    const BATCH_SIZE = 100;
+    const startIndex = Math.floor(satInfo.length / BATCH_SIZE) * BATCH_SIZE;
+    const endIndex = Math.min(startIndex + BATCH_SIZE, satData.length);
+    
+    console.log(`Processing satellite batch: ${startIndex} to ${endIndex-1}`);
+    
+    // Update loading status element if it exists
+    const satDataStatus = document.getElementById('satDataStatus');
+    if (satDataStatus) {
+        satDataStatus.textContent = `Processing satellites ${startIndex+1}-${endIndex} of ${satData.length}`;
+    }
+    
+    // Process this batch of satellites
+    for (let i = startIndex; i < endIndex; i++) {
+        if (i < satData.length) {
+            processSatelliteData(satData[i]);
+        }
+    }
+    
+    // Update the UI with new data
+    updateSatelliteList();
+    
+    // Check if we should continue to the next batch
+    if (endIndex < satData.length) {
+        dataLoadingStatus = "loading";
+        
+        // Schedule the next batch
+        setTimeout(() => {
+            // Continue processing in the next tick if continueToIterate allows
+            if (continueToIterate()) {
+                processSatelliteBatch();
+            } else {
+                dataLoadingStatus = "complete";
+                console.log("Satellite data loading complete");
+            }
+        }, 100);
+    } else {
+        dataLoadingStatus = "complete";
+        console.log("All satellite data processed");
+        
+        // Update status when complete
+        if (satDataStatus) {
+            satDataStatus.textContent = `Loaded ${satInfo.length} satellites`;
+        }
+    }
+}
+
+function processSatelliteBatch(satelliteData, startIdx, batchSize) {
+    const endIdx = Math.min(startIdx + batchSize, satelliteData.length);
+    const batch = satelliteData.slice(startIdx, endIdx);
+    
+    console.log(`Processing satellite batch ${startIdx} to ${endIdx-1} (of ${satelliteData.length})`);
+    
+    // Process each satellite in the current batch
+    batch.forEach(satData => {
+        try {
+            // Create satellite object and add to tracking array
+            const sat = createSatelliteObject(satData);
+            if (sat) {
+                satInfo.push(sat);
+            }
+        } catch (e) {
+            console.warn(`Error processing satellite data: ${e.message}`);
+        }
+    });
+    
+    // Update the UI to show progress
+    updateLoadingStatus(endIdx, satelliteData.length);
+    
+    // Return true if there are more batches to process
+    return endIdx < satelliteData.length;
+}
+
+/**
+ * Processes a batch of satellites from the satellite data array
+ * @param {Array} satelliteData - The full array of satellite data
+ * @param {number} startIndex - The starting index for this batch
+ * @param {number} batchSize - The number of satellites to process in this batch
+ * @returns {boolean} - Returns true if there are more batches to process
+ */
+function processSatelliteBatch(satelliteData, startIndex, batchSize) {
+    const dataLength = satelliteData.length;
+    const endIndex = Math.min(startIndex + batchSize, dataLength);
+    
+    console.log(`Processing satellites ${startIndex} to ${endIndex-1} of ${dataLength}`);
+    
+    // Process this batch
+    for (let i = startIndex; i < endIndex; i++) {
+        // Add the satellite to the visualization
+        try {
+            const satData = satelliteData[i];
+            
+            // Skip if the data is invalid or already processed
+            if (!satData || satData.processed) continue;
+            
+            // Process the satellite (add to visualization, etc.)
+            processSatellite(satData);
+            
+            // Mark as processed to avoid duplicates
+            satData.processed = true;
+        } catch (error) {
+            console.error(`Error processing satellite at index ${i}:`, error);
+        }
+    }
+    
+    // Calculate loading progress
+    const progress = Math.min(100, Math.round((endIndex / dataLength) * 100));
+    updateLoadingProgress(progress);
+    
+    // Return true if there are more batches to process
+    return endIndex < dataLength;
 }
 
 
