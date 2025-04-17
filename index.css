@@ -3,7 +3,6 @@ p {
 	font-size: 24px;
 	padding: 2px;
 	margin: 0;
-
 }
 
 table.time {
@@ -23,18 +22,237 @@ body {
 	font-size: 16px;
 	padding: 2px;
 	margin: 8px;
+	background-color: white !important; /* Ensure default background is white */
+	color: #333; /* Default text color */
+	transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+}
+
+#pageHeader,
+#pageFooter {
+	width: 1000px;
+	margin: 0 auto;
+	text-align: center;
+	font-family: sans-serif;
+}
+
+#headerTable,
+#footerTable {
 	width: 100%;
-	align-self: center;
+	margin: auto;
+	font-family: sans-serif;
+	text-align: center;
 }
 
-table {
-	justify-content: center;
+#headerTable h1 {
+	font-weight: normal;
+	margin-bottom: 0px;
 }
 
-table.info {
-	position: absolute;
-	text-align: justify;
-	top: 64px;
+#headerTable td[style*="color: gray"] {
+	vertical-align: middle;
+	color: gray !important;
+}
+
+#footerTable td[style*="width: 200px"] {
+	width: 200px !important;
+	font-family: monospace !important;
+}
+
+#footerTable a {
+	text-decoration-line: underline;
+}
+
+#footerTable img {
+	width: 50px;
+	box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+}
+
+#utc-clock-container {
+	text-align: center;
+	margin: 15px 0;
+	font-size: 18px;
+	font-weight: bold;
+}
+
+#utc-clock {
+	color: blue;
+	padding: 2px 5px;
+	background-color: #eee;
+	border-radius: 3px;
+}
+
+#addTleButtonContainer,
+#categoryDropdownContainer,
+#sortingControlsContainer {
+	text-align: center;
+	margin: 15px auto;
+	max-width: 400px; /* Reduced max-width for dropdown container */
+}
+
+#categoryDropdown {
+	/* width: 300px; */ /* Example: Set a fixed width if needed */
+	/* display: inline-block; */ /* Adjust display if necessary */
+}
+
+#tle-form {
+	display: none;
+	max-width: 600px;
+	margin: 15px auto;
+	padding: 20px;
+	border: 1px solid #ccc;
+	background-color: #f9f9f9;
+	border-radius: 5px;
+}
+
+#satelliteTableContainer {
+	padding: 10px;
+	margin: 10px auto;
+	max-width: 1000px;
+}
+
+.dataTables_wrapper {
+	margin: 0 auto;
+}
+
+/* Default mode table row styling */
+table.dataTable tbody tr,
+table.dataTable tbody tr.odd,
+table.dataTable tbody tr.even {
+	background-color: transparent !important; /* Let TD rule handle background */
+	color: #333 !important; /* Ensure default text color */
+}
+
+/* Default mode table row/cell styling */
+table.dataTable tbody tr.odd td,
+table.dataTable tbody tr.even td,
+table.dataTable tbody tr.odd td:first-child, /* Target first cell specifically */
+table.dataTable tbody tr.even td:first-child {
+	background-color: white !important; /* Force white background for all cells */
+	color: #333 !important; /* Ensure default text color */
+}
+
+/* --- Dark Mode Styles --- */
+body.dark-mode {
+	background-color: black !important; /* Ensure dark background is black */
+	color: #e0e0e0; /* Light text */
+}
+
+body.dark-mode #pageHeader,
+body.dark-mode #pageFooter {
+	/* Adjust header/footer if needed */
+}
+
+body.dark-mode #headerTable h1,
+body.dark-mode #headerTable td[style*="color: gray"] {
+	color: #c0c0c0 !important; /* Lighter gray for dark mode */
+}
+
+body.dark-mode #utc-clock-container {
+	color: #e0e0e0;
+}
+
+body.dark-mode #utc-clock {
+	background-color: #333;
+	color: #a6d8ff;
+}
+
+body.dark-mode #addTleButtonContainer button,
+body.dark-mode #sortingControlsContainer button,
+body.dark-mode #tle-form button {
+	/* Adjust button styles if needed */
+}
+
+body.dark-mode #tle-form {
+	background-color: #2a2a2a;
+	border-color: #555;
+}
+
+body.dark-mode #categoryDropdownContainer label,
+body.dark-mode #sortingControlsContainer label {
+	color: #e0e0e0;
+}
+
+body.dark-mode select.form-control-sm,
+body.dark-mode input.form-control {
+	background-color: #333;
+	color: #e0e0e0;
+	border-color: #555;
+}
+
+/* Dark Mode for DataTables */
+body.dark-mode .dataTables_wrapper {
+	color: #e0e0e0;
+}
+
+body.dark-mode table.dataTable thead th {
+	color: #e0e0e0 !important; /* Ensure header text is visible */
+	background-color: #2a2a2a; /* Darker header background */
+	border-bottom: 1px solid #555;
+}
+
+body.dark-mode table.dataTable tbody tr,
+body.dark-mode table.dataTable tbody tr.odd,
+body.dark-mode table.dataTable tbody tr.even {
+	background-color: transparent !important; /* Let TD rule handle background */
+	color: white !important; /* Ensure text is white */
+}
+
+/* Dark Mode for DataTables Cells */
+body.dark-mode table.dataTable tbody tr.odd td,
+body.dark-mode table.dataTable tbody tr.even td,
+body.dark-mode table.dataTable tbody tr.odd td:first-child, /* Target first cell specifically */
+body.dark-mode table.dataTable tbody tr.even td:first-child {
+	background-color: black !important; /* Force black background for all cells */
+	color: white !important; /* Ensure text is white */
+}
+
+body.dark-mode table.dataTable tbody tr:hover td,
+body.dark-mode table.dataTable tbody tr:hover td:first-child { /* Target first cell on hover */
+	background-color: #222 !important; /* Slightly lighter black for hover on cells */
+}
+
+body.dark-mode table.dataTable tbody td {
+	border-top: 1px solid #444;
+}
+
+body.dark-mode table.dataTable tbody td a {
+	color: #77b3ff; /* Lighter link color */
+}
+
+body.dark-mode .dataTables_length label,
+body.dark-mode .dataTables_filter label,
+body.dark-mode .dataTables_info {
+	color: #e0e0e0 !important;
+}
+
+body.dark-mode .dataTables_length select,
+body.dark-mode .dataTables_filter input {
+	background-color: #333;
+	color: #e0e0e0;
+	border: 1px solid #555;
+}
+
+body.dark-mode .dataTables_paginate .paginate_button {
+	color: #e0e0e0 !important; /* Ensure text is light */
+	background: #333;
+	border: 1px solid #555;
+}
+
+body.dark-mode .dataTables_paginate .paginate_button.disabled {
+	color: #777 !important;
+	background: #2a2a2a;
+	border-color: #444;
+}
+
+body.dark-mode .dataTables_paginate .paginate_button:hover {
+	background: #444;
+	border-color: #666;
+}
+
+body.dark-mode .dataTables_paginate .paginate_button.current {
+	background: #555;
+	border-color: #777;
+	color: #fff !important;
 }
 
 
