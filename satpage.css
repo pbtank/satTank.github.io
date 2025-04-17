@@ -1,0 +1,4 @@
+#p5canvas {
+    height: 500px; /* Increased height for better visibility */
+    width: 100%; /* Ensure it takes available width */
+  }

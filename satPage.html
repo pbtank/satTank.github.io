@@ -6,18 +6,27 @@
         <title id="satNameTitle">satTank</title>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
         <script src="library/jquery-3.6.0.min.js"></script>
-        <script src="library/satellite.min.js"></script>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
             integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
             crossorigin=""/>
+        <!-- Corrected link tag for local CSS - REMOVED integrity/crossorigin -->
+        <link rel="stylesheet" href="satpage.css">
+        <!-- Load Dependencies FIRST -->
+        <script src="library/satellite.min.js"></script>
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
             integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
             crossorigin=""></script>
+        <!-- Load Leaflet plugins AFTER Leaflet core -->
         <script src="https://cdn.jsdelivr.net/npm/leaflet.geodesic" type="text/javascript"></script>
         <link rel="stylesheet" href="https://unpkg.com/leaflet-gesture-handling/dist/leaflet-gesture-handling.min.css" type="text/css">
         <script src="https://unpkg.com/leaflet-gesture-handling"></script>
-        <script src="CelestrakAPI.js"></script>
+
+        <!-- Load custom code that defines classes/functions needed by others -->
+        <script src="TLE.js"></script> <!-- Contains Satellite class -->
+
+        <!-- Load main page script LAST -->
         <script src="satPage.js"></script>
+        <!-- Removed unused CelestrakAPI.js script tag -->
     </head>
     <body style="background-color: #D5F7F3">
         <header>

@@ -99,7 +99,7 @@ function displaySatelliteTable(satellites) {
     let detailsCell = row.insertCell();
     let satLink = document.createElement('a');
     satLink.href = `satPage.html?ID=${encodeURIComponent(sat.NORAD_CAT_ID || sat.id)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
-    satLink.textContent = 'View Details';
+    satLink.textContent = 'Track it!';
     detailsCell.appendChild(satLink);
   });
   tableContainer.appendChild(table);
@@ -370,7 +370,7 @@ function displaySatelliteTableForCategory(category) {
     let thead = table.createTHead();
     let headerRow = thead.insertRow();
     // Add Launch Year header
-    let headers = ['Name', 'NORAD ID', 'Details', 'Launch Year'];
+    let headers = ['Name', 'NORAD ID', 'Tracking', 'Launch Year'];
     headers.forEach(headerText => {
         let header = document.createElement('th');
         header.textContent = headerText;
@@ -387,7 +387,7 @@ function displaySatelliteTableForCategory(category) {
         let detailsCell = row.insertCell();
         let satLink = document.createElement('a');
         satLink.href = `satPage.html?ID=${encodeURIComponent(sat.NORAD_CAT_ID || sat.id)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
-        satLink.textContent = 'View Details';
+        satLink.textContent = 'Track it!';
         detailsCell.appendChild(satLink);
         // Launch Year
         row.insertCell().textContent = sat.LAUNCH_YEAR || 'N/A'; // Display launch year
