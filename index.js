@@ -1,15 +1,50 @@
-var url = 'https://raw.githubusercontent.com/pbtank/ISSTracker/master/data/satInfo.json';
-var satInfo;
-var customSatellites = [];
+// List of local JSON files for satellite categories
+const localJsonFiles = [
+    'data/active.json',
+    'data/stations.json',
+    'data/weather.json',
+    'data/noaa.json',
+    'data/goes.json',
+    'data/resource.json',
+    'data/amateur.json',
+    'data/starlink.json',
+    'data/custom_satellites.json'
+];
+
+// Helper to load all local JSON files and merge them
+async function loadAllLocalSatellites() {
+    let allSats = [];
+    for (const file of localJsonFiles) {
+        try {
+            const res = await fetch(file);
+            if (res.ok) {
+                const data = await res.json();
+                // custom_satellites.json may have a 'satellites' array
+                if (Array.isArray(data)) {
+                    allSats = allSats.concat(data);
+                } else if (Array.isArray(data.satellites)) {
+                    allSats = allSats.concat(data.satellites);
+                } else if (data && typeof data === 'object') {
+                    // Some files may be objects with satellite arrays as values
+                    Object.values(data).forEach(arr => {
+                        if (Array.isArray(arr)) allSats = allSats.concat(arr);
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load', file, e);
+        }
+    }
+    return allSats;
+}
 
 // New function to load and classify satellites
 async function loadClassifiedSatellites() {
   try {
-    const classifiedData = await celestrakAPI.fetchAndClassifySatellites();
-    displaySatelliteTable(classifiedData);
+    const allSats = await loadAllLocalSatellites();
+    displaySatelliteTable(allSats);
   } catch (error) {
-    console.error('Failed to load and classify satellites:', error);
-    // Display error message on the page
+    console.error('Failed to load satellite data:', error);
     document.getElementById('satelliteTableContainer').innerHTML = '<p>Failed to load satellite data.</p>';
   }
 }
@@ -58,7 +93,7 @@ function makeTable() {
 		paginationClassActive:'btn btn-active',
 		inputPlaceholder: 'Search Sat!',
 		onUpdate:function () {
-				// Add navigation numbers below the table
+			// $('#satTable tr:nth-child(odd)').css("background color", "white");
       const table = document.querySelector('.satelliteTable');
       const tableContainer = document.getElementById('satelliteTableContainer');
       const navigationDiv = document.createElement('div');
@@ -139,50 +174,45 @@ function makeTable() {
 document.addEventListener('DOMContentLoaded', () => {
 });
 
-function displaySatelliteTable(classifiedData) {
+function displaySatelliteTable(satellites) {
   const tableContainer = document.getElementById('satelliteTableContainer');
-  tableContainer.innerHTML = ''; // Clear loading message
-
+  tableContainer.innerHTML = '';
   let table = document.createElement('table');
   table.className = 'satelliteTable';
-
-  // Create table header
+  table.id = 'satTable';
   let thead = table.createTHead();
   let headerRow = thead.insertRow();
-  let headers = ['Classification', 'Satellite Name', 'Actions'];
+  let headers = ['Name', 'NORAD ID', 'Details'];
   headers.forEach(headerText => {
     let header = document.createElement('th');
     header.textContent = headerText;
     headerRow.appendChild(header);
   });
-
-  // Create table body
   let tbody = table.createTBody();
-
-  // Populate table with satellite data
-  for (const classification in classifiedData) {
-    const satClass = classifiedData[classification];
-
-    // Add a row for each satellite
-    satClass.satellites.forEach(sat => {
-      let row = tbody.insertRow();
-
-      // Classification cell
-      let classCell = row.insertCell();
-      classCell.textContent = satClass.name;
-
-      // Satellite Name cell
-      let nameCell = row.insertCell();
-      nameCell.textContent = sat.name;
-
-      // Actions cell (link to satellite page)
-      let actionsCell = row.insertCell();
-      let satLink = document.createElement('a');
-      satLink.href = `satPage.html?id=${sat.id}&name=${encodeURIComponent(sat.name)}`;
-      satLink.textContent = 'View Details';
-      actionsCell.appendChild(satLink);
+  satellites.forEach(sat => {
+    let row = tbody.insertRow();
+    let nameCell = row.insertCell();
+    nameCell.textContent = sat.OBJECT_NAME || sat.name || '';
+    let idCell = row.insertCell();
+    idCell.textContent = sat.NORAD_CAT_ID || sat.id || '';
+    let detailsCell = row.insertCell();
+    let satLink = document.createElement('a');
+    satLink.href = `satPage.html?ID=${encodeURIComponent(sat.NORAD_CAT_ID || sat.id)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
+    satLink.textContent = 'View Details';
+    detailsCell.appendChild(satLink);
+  });
+  tableContainer.appendChild(table);
+  // Initialize DataTables if available
+  if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
+    $(table).DataTable({
+      pageLength: 25,
+      lengthMenu: [10, 25, 50, 100],
+      searching: true,
+      ordering: true
     });
   }
-
-  tableContainer.appendChild(table);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadClassifiedSatellites();
+});

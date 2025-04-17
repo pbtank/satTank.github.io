@@ -1,44 +1,47 @@
 const canWidth = 800;
 const canHeight = 400;
 
-// Updated to use Celestrak's API endpoints for multiple satellite groups
-var url = 'https://raw.githubusercontent.com/pbtank/ISSTracker/master/data/tle.json'; // Keeping as fallback
-var celestrakUrls = {
-    'stations': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json',
-    'active': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json',
-    'weather': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json',
-    'noaa': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=noaa&FORMAT=json',
-    'goes': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=goes&FORMAT=json',
-    'resource': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=resource&FORMAT=json',
-    'amateur': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=json',
-    'starlink': 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=json'
-};
+// List of local JSON files for satellite categories
+const localJsonFiles = [
+    'data/active.json',
+    'data/stations.json',
+    'data/weather.json',
+    'data/noaa.json',
+    'data/goes.json',
+    'data/resource.json',
+    'data/amateur.json',
+    'data/starlink.json',
+    'data/custom_satellites.json'
+];
+
+// Helper to load all local JSON files and merge them
+async function loadAllLocalSatellites() {
+    let allSats = [];
+    for (const file of localJsonFiles) {
+        try {
+            const res = await fetch(file);
+            if (res.ok) {
+                const data = await res.json();
+                // custom_satellites.json may have a 'satellites' array
+                if (Array.isArray(data)) {
+                    allSats = allSats.concat(data);
+                } else if (Array.isArray(data.satellites)) {
+                    allSats = allSats.concat(data.satellites);
+                } else if (data && typeof data === 'object') {
+                    // Some files may be objects with satellite arrays as values
+                    Object.values(data).forEach(arr => {
+                        if (Array.isArray(arr)) allSats = allSats.concat(arr);
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load', file, e);
+        }
+    }
+    return allSats;
+}
+
 var customSatUrl = 'data/custom_satellites.json';
-
-// Global satellite data cache to store fetched data from Celestrak
-var celestrakDataCache = {};
-
-// Celestrak API URLs for different satellite groups
-const CELESTRAK_URLS = {
-    // Special interest satellites
-    ISS: "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=json",
-    ACTIVE: "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json",
-    STATIONS: "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json",
-    // Weather & Earth resources satellites
-    WEATHER: "https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json",
-    NOAA: "https://celestrak.org/NORAD/elements/gp.php?GROUP=noaa&FORMAT=json",
-    GOES: "https://celestrak.org/NORAD/elements/gp.php?GROUP=goes&FORMAT=json",
-    RESOURCE: "https://celestrak.org/NORAD/elements/gp.php?GROUP=resource&FORMAT=json",
-    // Search by satellite number
-    CATNR: "https://celestrak.org/NORAD/elements/gp.php?CATNR="
-};
-
-// Cache for storing TLE data to avoid excessive API calls
-const celestrakCache = {
-    data: {},
-    timestamps: {},
-    TTL: 6 * 60 * 60 * 1000 // 6 hours cache TTL
-};
 
 var satlist = [];
 var d;
@@ -229,26 +232,23 @@ function preload() {
     // Display a loading message
     document.getElementById('loadingMessage').innerHTML = '<p>Loading satellite data...</p>';
     
-    // Fetch satellite data by ID using CelestrakAPI
-    celestrakAPI = new CelestrakAPI();
-    celestrakAPI.fetchSatelliteById(ID)
-        .then(sat => {
-            if (sat) {
-                satName[ID] = sat.OBJECT_NAME;
-                document.getElementById('satNameTitle').innerHTML = satName[ID];
-                document.getElementById('satName').innerHTML = satName[ID];
-                
-                // Process the satellite data
-                processSatelliteData(sat);
-            } else {
-                console.error('Satellite not found');
-                document.getElementById('loadingMessage').innerHTML = '<p>Satellite data not found.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Failed to load satellite data:', error);
-            document.getElementById('loadingMessage').innerHTML = '<p>Failed to load satellite data.</p>';
-        });
+    // Load all local satellites and find the one with the matching ID
+    loadAllLocalSatellites().then(allSats => {
+        // Try to find by NORAD_CAT_ID or id (for custom)
+        let sat = allSats.find(s => String(s.NORAD_CAT_ID) === ID || String(s.id) === ID);
+        if (sat) {
+            satName[ID] = sat.OBJECT_NAME || sat.name;
+            document.getElementById('satNameTitle').innerHTML = satName[ID];
+            document.getElementById('satName').innerHTML = satName[ID];
+            processSatelliteData(sat);
+        } else {
+            console.error('Satellite not found');
+            document.getElementById('loadingMessage').innerHTML = '<p>Satellite data not found.</p>';
+        }
+    }).catch(error => {
+        console.error('Failed to load satellite data:', error);
+        document.getElementById('loadingMessage').innerHTML = '<p>Failed to load satellite data.</p>';
+    });
 }
 
 function processSatelliteData(sat) {
@@ -287,36 +287,6 @@ function processSatelliteData(sat) {
     }
 }
 
-// Helper function to fetch and process Celestrak data
-function fetchAndProcessCelestrakData(celestrakGroup) {
-    // Check if we have this data cached already
-    if (celestrakCache.data[celestrakGroup]) {
-        console.log(`Using cached data for ${celestrakGroup} group`);
-        processCelestrakData(celestrakCache.data[celestrakGroup]);
-    } else {
-        // Fetch data from Celestrak API
-        console.log(`Fetching fresh data from Celestrak for ${celestrakGroup}`);
-        fetch(celestrakUrls[celestrakGroup])
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log(`Successfully fetched ${celestrakGroup} data with ${data.length} satellites`);
-                celestrakCache.data[celestrakGroup] = data;
-                celestrakCache.timestamps[celestrakGroup] = Date.now();
-                processCelestrakData(data);
-            })
-            .catch(error => {
-                console.error(`Error fetching Celestrak data:`, error);
-                // Fall back to default data source
-                fallbackToDefault();
-            });
-    }
-}
-
 // Enhanced check for custom satellite that returns boolean
 function checkForCustomSatellite(customSats) {
     // Check if current ID is a custom satellite
@@ -329,125 +299,6 @@ function checkForCustomSatellite(customSats) {
         }
     }
     return false;
-}
-
-// Process the Celestrak JSON data
-function processCelestrakData(data) {
-    if (!data || data.length === 0) {
-        console.error("No data received from Celestrak");
-        fallbackToDefault();
-        return;
-    }
-    
-    try {
-        // Convert the Celestrak JSON format to TLE format
-        const tleData = convertCelestrakJsonToTLE(data);
-        
-        // Update the satellites array with the new data
-        updateSatellitesFromTLE(tleData);
-        
-        // Log success
-        console.log(`Successfully processed ${data.length} satellites from Celestrak`);
-        
-        // If we're waiting for data to load, mark as loaded
-        if (dataLoadingStatus === "loading") {
-            dataLoadingStatus = "loaded";
-        }
-    } catch (error) {
-        console.error("Error processing Celestrak data:", error);
-        fallbackToDefault();
-    }
-}
-
-// Fallback to default data source if Celestrak fails
-function fallbackToDefault() {
-    console.log("Falling back to default data source");
-    loadJSON('https://raw.githubusercontent.com/Goncharo/satellite-tracker/master/data/fullTLEs.json', function(data) {
-        if (data && data.satellites && data.satellites[ID]) {
-            console.log("Using default data source for ID:", ID);
-            satlist[ID] = new Satellite(ID, data.satellites[ID], L.layerGroup());
-            setupSatelliteDisplay();
-        } else {
-            console.error("Satellite not found in default data source either");
-            document.getElementById('loadingMessage').innerHTML = 
-                'Error: Satellite data not found. Please try again later.';
-        }
-    }, function(error) {
-        console.error("Error loading default data:", error);
-        document.getElementById('loadingMessage').innerHTML = 
-            'Error loading satellite data. Please check your connection and try again.';
-    });
-}
-
-// Process data received from Celestrak API
-function processCelestrakData(jsonData) {
-    try {
-        // Convert JSON data to TLE format
-        const tleData = {};
-        
-        jsonData.forEach(satObj => {
-            // Skip invalid satellite objects
-            if (!satObj || !satObj.OBJECT_NAME || !satObj.OBJECT_ID) {
-                return;
-            }
-            
-            const satName = satObj.OBJECT_NAME.trim();
-            const tleLine = convertCelestrakJsonToTLE(satObj);
-            
-            // Only add valid TLE data
-            if (tleLine && tleLine.line1 && tleLine.line2) {
-                tleData[satName] = tleLine;
-            }
-        });
-        
-        // Check if we got any valid TLE data
-        if (Object.keys(tleData).length === 0) {
-            throw new Error("No valid TLE data could be extracted");
-        }
-        
-        // Update the satellites array with the new data
-        updateSatellitesFromTLE(tleData);
-        
-        // Log success
-        console.log(`Successfully processed ${jsonData.length} satellites from Celestrak`);
-        
-        // If we're waiting for data to load, mark as loaded
-        if (dataLoadingStatus === "loading") {
-            dataLoadingStatus = "loaded";
-        }
-    } catch (error) {
-        console.error("Error processing Celestrak data:", error);
-        fallbackToDefault();
-    }
-}
-
-// Fallback to default satellite source if Celestrak API fails
-function fallbackToDefault() {
-    console.log("Falling back to default satellite data source");
-    try {
-        // Load TLE data from the original source
-        loadStrings("https://raw.githubusercontent.com/carbonacat/tictac-satellite-data/master/data/active.txt", function(data) {
-            console.log("Loaded TLE data from GitHub backup source");
-            satInfo = [];
-            
-            // Process the TLE data as before
-            for (let i = 0; i < data.length; i += 3) {
-                if (i + 2 < data.length) {
-                    satInfo.push([data[i].trim(), data[i + 1].trim(), data[i + 2].trim()]);
-                }
-            }
-            
-            if (satInfo.length > 0) {
-                setupSatellites();
-            } else {
-                console.error("Failed to load any satellite data");
-            }
-        }, function(error) {
-            console.error("Failed to load backup TLE data:", error);
-        });
-    } catch (error) {
-        console.error("Error in fallback procedure:", error);
-    }
 }
 
 // Continue to iterate through satellite data?
@@ -747,249 +598,6 @@ function convertCelestrakJsonToTLE(satellite) {
     } catch (e) {
         console.error("Error converting satellite data to TLE:", e, satellite);
         return null;
-    }
-}
-
-// Function to fetch and convert Celestrak data to TLE format
-async function fetchCelestrakData(category) {
-    // Use cached data if available and less than 6 hours old
-    const now = new Date().getTime();
-    if (celestrakDataCache[category] && 
-        now - celestrakDataCache[category].timestamp < 6 * 60 * 60 * 1000) {
-        return celestrakDataCache[category].data;
-    }
-    
-    try {
-        const response = await fetch(celestrakUrls[category]);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const jsonData = await response.json();
-        const tleData = jsonData.map(sat => convertCelestrakJsonToTLE(sat)).join('\n');
-        
-        // Cache the data with timestamp
-        celestrakDataCache[category] = {
-            data: tleData,
-            timestamp: now
-        };
-        
-        return tleData;
-    } catch (error) {
-        console.error(`Error fetching ${category} satellites:`, error);
-        return '';
-    }
-}
-
-// Function to load all satellite data from Celestrak
-async function loadAllCelestrakData() {
-    const categories = Object.keys(celestrakUrls);
-    const tlePromises = categories.map(category => fetchCelestrakData(category));
-    
-    try {
-        const results = await Promise.all(tlePromises);
-        return results.join('\n');
-    } catch (error) {
-        console.error('Error loading all Celestrak data:', error);
-        return '';
-    }
-}
-
-/**
- * Fetches satellite data from Celestrak API and converts it to TLE format
- * @param {string} groupName - The name of the satellite group (must match a key in celestrakUrls)
- * @param {boolean} forceRefresh - Whether to force a fresh download even if cached
- * @returns {Promise<string[]>} - Array of TLE strings (each satellite has 3 lines)
- */
-async function fetchCelestrakData(groupName, forceRefresh = false) {
-    // Check if we already have cached data less than 6 hours old
-    const now = new Date();
-    const cacheEntry = celestrakCache.data[groupName];
-    const cacheValid = cacheEntry && 
-                      (now - celestrakCache.timestamps[groupName] < celestrakCache.TTL) &&
-                      !forceRefresh;
-    
-    if (cacheValid) {
-        console.log(`Using cached ${groupName} satellite data`);
-        return cacheEntry;
-    }
-    
-    if (!celestrakUrls[groupName] && !CELESTRAK_URLS[groupName.toUpperCase()]) {
-        console.error(`Unknown satellite group: ${groupName}`);
-        return null;
-    }
-    
-    // Use the appropriate URL from either celestrakUrls or CELESTRAK_URLS
-    const apiUrl = celestrakUrls[groupName] || CELESTRAK_URLS[groupName.toUpperCase()];
-    
-    console.log(`Fetching ${groupName} satellite data from Celestrak: ${apiUrl}`);
-    try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const jsonData = await response.json();
-        console.log(`Successfully fetched ${jsonData.length} satellites for ${groupName}`);
-        
-        // Cache the raw JSON data
-        celestrakCache.data[groupName] = jsonData;
-        celestrakCache.timestamps[groupName] = now.getTime();
-        
-        return jsonData;
-    } catch (error) {
-        console.error(`Error fetching ${groupName} satellite data:`, error);
-        return null;
-    }
-}
-
-// Fetch satellite data from Celestrak API
-function fetchCelestrakData() {
-    // Check if we have valid cached data
-    const cachedData = localStorage.getItem('celestrakCache');
-    if (cachedData) {
-        try {
-            const cache = JSON.parse(cachedData);
-            const cacheAge = Date.now() - cache.timestamp;
-            
-            // Use cache if it's less than 24 hours old
-            if (cacheAge < 24 * 60 * 60 * 1000) {
-                console.log("Using cached Celestrak data");
-                satelliteTLEData = cache.data;
-                dataLoadingStatus = "loaded";
-                
-                // Update satellite selection dropdown
-                if (typeof updateSatelliteDropdown === 'function') {
-                    updateSatelliteDropdown();
-                }
-                
-                return Promise.resolve(cache.data);
-            }
-        } catch (error) {
-            console.error("Error reading cache:", error);
-            // Continue to fetch fresh data if cache is invalid
-        }
-    }
-    
-    dataLoadingStatus = "loading";
-    
-    // Define which satellite groups to fetch (combining active, visual, and some specialty groups)
-    const celestrakGroups = [
-        "active",
-        "visual",
-        "stations"
-    ];
-    
-    // Create promises for each API call
-    const promises = celestrakGroups.map(group => {
-        const url = `${CELESTRAK_BASE_URL}${group}&format=json`;
-        return fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error ${response.status} for group ${group}`);
-                }
-                return response.json();
-            })
-            .catch(error => {
-                console.error(`Error fetching ${group} satellites:`, error);
-                return []; // Return empty array on error to continue with other groups
-            });
-    });
-    
-    // Process all requests
-    return Promise.all(promises)
-        .then(results => {
-            // Combine all satellite data from different groups
-            const combinedData = results.flat();
-            
-            if (combinedData.length === 0) {
-                throw new Error("No data received from any Celestrak API endpoint");
-            }
-            
-            // Process the combined data
-            processCelestrakData(combinedData);
-            return satelliteTLEData;
-        })
-        .catch(error => {
-            console.error("Error fetching Celestrak data:", error);
-            fallbackToDefault();
-            return null;
-        });
-}
-
-// Process and convert Celestrak JSON data to TLE format
-function processCelestrakData(jsonData) {
-    console.log(`Processing ${jsonData.length} satellites from Celestrak`);
-    
-    try {
-        // Convert each JSON object to TLE format using our utility function
-        const tleData = jsonData.map(satObject => {
-            return convertCelestrakJsonToTLE(satObject);
-        }).filter(tle => tle && tle.trim() !== '');
-        
-        if (tleData.length === 0) {
-            throw new Error("Failed to convert any Celestrak data to TLE format");
-        }
-        
-        // Join the TLE strings with newlines to match expected format
-        satelliteTLEData = tleData.join('\n');
-        
-        // Cache the data
-        const cacheObject = {
-            timestamp: Date.now(),
-            data: satelliteTLEData
-        };
-        localStorage.setItem('celestrakCache', JSON.stringify(cacheObject));
-        
-        console.log(`Successfully processed ${tleData.length} satellites`);
-        dataLoadingStatus = "loaded";
-        
-        // Update satellite selection dropdown if it exists
-        if (typeof updateSatelliteDropdown === 'function') {
-            updateSatelliteDropdown();
-        }
-    } catch (error) {
-        console.error("Error processing Celestrak data:", error);
-        fallbackToDefault();
-    }
-}
-
-// Fetch data from Celestrak API endpoints
-async function fetchCelestrakData() {
-    // Define which satellite groups we want to fetch
-    const celestrakGroups = [
-        CELESTRAK_URLS.STATIONS,      // Space stations like ISS
-        CELESTRAK_URLS.VISUAL,        // Visually bright satellites
-        CELESTRAK_URLS.ACTIVE         // Active satellites
-    ];
-    
-    console.log("Fetching data from Celestrak API...");
-    dataLoadingStatus = "loading";
-    
-    try {
-        // Fetch data from all endpoints in parallel
-        const responses = await Promise.all(
-            celestrakGroups.map(url => 
-                fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-            )
-        );
-        
-        // Combine all satellite data into one array
-        const allSatellites = responses.flat();
-        console.log(`Retrieved ${allSatellites.length} satellites from Celestrak`);
-        
-        // Process the combined data
-        processCelestrakData(allSatellites);
-        
-    } catch (error) {
-        console.error("Error fetching data from Celestrak:", error);
-        fallbackToDefault();
     }
 }
 
