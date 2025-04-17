@@ -213,6 +213,118 @@ function displaySatelliteTable(satellites) {
   }
 }
 
+// Map categories to their JSON files
+const categoryMap = {
+    'Active': 'data/active.json',
+    'Stations': 'data/stations.json',
+    'Weather': 'data/weather.json',
+    'NOAA': 'data/noaa.json',
+    'GOES': 'data/goes.json',
+    'Resource': 'data/resource.json',
+    'Amateur': 'data/amateur.json',
+    'Starlink': 'data/starlink.json',
+    'Custom': 'data/custom_satellites.json'
+};
+
+// Store loaded data for each category
+const categoryData = {};
+
+// Load all categories' data at startup
+async function preloadAllCategories() {
+    for (const [cat, file] of Object.entries(categoryMap)) {
+        try {
+            const res = await fetch(file);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    categoryData[cat] = data;
+                } else if (Array.isArray(data.satellites)) {
+                    categoryData[cat] = data.satellites;
+                } else if (data && typeof data === 'object') {
+                    // Some files may be objects with satellite arrays as values
+                    let arr = [];
+                    Object.values(data).forEach(val => {
+                        if (Array.isArray(val)) arr = arr.concat(val);
+                    });
+                    categoryData[cat] = arr;
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load', file, e);
+            categoryData[cat] = [];
+        }
+    }
+}
+
+// Create dropdown for categories
+function createCategoryDropdown() {
+    const container = document.getElementById('categoryDropdownContainer');
+    container.innerHTML = '';
+    const select = document.createElement('select');
+    select.id = 'categoryDropdown';
+    for (const cat of Object.keys(categoryMap)) {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+    }
+    container.appendChild(select);
+    return select;
+}
+
+// Display satellites for a given category
+function displaySatelliteTableForCategory(category) {
+    const satellites = categoryData[category] || [];
+    const tableContainer = document.getElementById('satelliteTableContainer');
+    tableContainer.innerHTML = '';
+    let table = document.createElement('table');
+    table.className = 'satelliteTable display';
+    table.id = 'satTable';
+    let thead = table.createTHead();
+    let headerRow = thead.insertRow();
+    let headers = ['Name', 'NORAD ID', 'Details'];
+    headers.forEach(headerText => {
+        let header = document.createElement('th');
+        header.textContent = headerText;
+        headerRow.appendChild(header);
+    });
+    let tbody = table.createTBody();
+    satellites.forEach(sat => {
+        let row = tbody.insertRow();
+        let nameCell = row.insertCell();
+        nameCell.textContent = sat.OBJECT_NAME || sat.name || '';
+        let idCell = row.insertCell();
+        idCell.textContent = sat.NORAD_CAT_ID || sat.id || '';
+        let detailsCell = row.insertCell();
+        let satLink = document.createElement('a');
+        satLink.href = `satPage.html?ID=${encodeURIComponent(sat.NORAD_CAT_ID || sat.id)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
+        satLink.textContent = 'View Details';
+        detailsCell.appendChild(satLink);
+    });
+    tableContainer.appendChild(table);
+    // Initialize DataTables if available
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
+        $(table).DataTable({
+            pageLength: 25,
+            lengthMenu: [10, 25, 50, 100],
+            searching: true,
+            ordering: true,
+            destroy: true // allow re-init
+        });
+    }
+}
+
+// Main initialization
+async function mainInit() {
+    await preloadAllCategories();
+    const select = createCategoryDropdown();
+    // Display default category (Active)
+    displaySatelliteTableForCategory(select.value);
+    select.addEventListener('change', function() {
+        displaySatelliteTableForCategory(this.value);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    loadClassifiedSatellites();
+    mainInit();
 });
