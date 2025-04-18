@@ -1,195 +1,170 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title id="satNameTitle">satTank</title>
+        <title>Satellite Tracker</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+        <link rel="stylesheet" href="satpage.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
         <script src="library/jquery-3.6.0.min.js"></script>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-            integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-            crossorigin=""/>
-        <!-- Corrected link tag for local CSS - REMOVED integrity/crossorigin -->
-        <link rel="stylesheet" href="satpage.css">
-        <!-- Load Dependencies FIRST -->
         <script src="library/satellite.min.js"></script>
-        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-            crossorigin=""></script>
-        <!-- Load Leaflet plugins AFTER Leaflet core -->
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/leaflet.geodesic" type="text/javascript"></script>
         <link rel="stylesheet" href="https://unpkg.com/leaflet-gesture-handling/dist/leaflet-gesture-handling.min.css" type="text/css">
         <script src="https://unpkg.com/leaflet-gesture-handling"></script>
-
-        <!-- Load custom code that defines classes/functions needed by others -->
-        <script src="TLE.js"></script> <!-- Contains Satellite class -->
-
-        <!-- Load main page script LAST -->
+        <script src="TLE.js"></script>
         <script src="satPage.js"></script>
-        <!-- Removed unused CelestrakAPI.js script tag -->
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+            }
+            .container {
+                display: flex;
+                flex: 1;
+            }
+            #p5canvas {
+                flex: 2;
+                height: 100%;
+                position: relative;
+            }
+            .info-panel {
+                flex: 1;
+                padding: 15px;
+                background-color: #f5f5f5;
+                overflow-y: auto;
+            }
+            .sat-data {
+                margin-bottom: 20px;
+            }
+            h1, h2 {
+                color: #2c3e50;
+            }
+            .data-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 8px;
+            }
+            .data-label {
+                font-weight: bold;
+            }
+            .header {
+                background-color: #2c3e50;
+                color: white;
+                padding: 10px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .time-display {
+                font-size: 1.2em;
+                font-weight: bold;
+            }
+        </style>
     </head>
-    <body style="background-color: #D5F7F3">
-        <header>
-            <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
-                <tr>
-                    <td>
-                        <h1 style="font-weight: normal; margin-bottom: 0px">satTank</h1>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: middle; color: gray">CATALOGUES | TRACKING</td>
-                </tr>
-                <tr>
-                    <td>
-                        <hr>
-                    </td>
-                </tr>
-            </table>
-        </header>
-        <div id="loadingMessage"></div>
-        <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
-            <tr>
-                <td id="left-pad" rowspan="10" style="vertical-align: top;width: 100px;">
-                    <table style="margin: auto;">
-                        <tr>
-                            <td>Current time(UTC)</td>
-                        </tr>
-                        <tr>
-                            <td id="UTC">--:--:--</td>
-                        </tr>
-                    </table>
-                </td>
-                <td style="text-align: left;">
-                    <table>
-                        <tr>
-                            <td id="satName"></td>
-                        </tr>
-                        <tr>
-                            <td>Ground trace</td>
-                        </tr>
-                        <tr>
-                            <td id="p5canvas"></td>
-                        </tr>
-                        <tr>
-                            <td>Current Position</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <table style="font-family: monospace;">
-                                    <tr>
-                                        <td>Latitude</td>
-                                        <td>:<span id="lat">--</span>&deg</td>
-                                        <td>Xpos</td>
-                                        <td>:<span id="xPos">--</span>km</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Longitude</td>
-                                        <td>:<span id="long">--</span>&deg</td>
-                                        <td>Ypos</td>
-                                        <td>:<span id="yPos">--</span>km</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Height</td>
-                                        <td>:<span id="height">--</span>km</td>
-                                        <td>Zpos</td>
-                                        <td>:<span id="zPos">--</span>km</td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Orbital Information</td>
-                        </tr>
-                        <tr>
-                            <td>TLE at Epoch Time (UTC):<span id="epochTime">--</span></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <table style="font-family: monospace;">
-                                    <tr>
-                                        <td><span id="l1">--</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span id="l2">--</span></td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                               <table style="font-family: monospace;">
-                            <tr>
-                                <td>Eccentricity</td>
-                                <td>:<span id="eccen">--</span></td>
-                            </tr>
-                            <tr>
-                                <td>Perigee Height</td>
-                                <td>:<span id="per">--</span>km</td>
-                            </tr>
-                            <tr>
-                                <td>Apogee Height</td>
-                                <td>:<span id="apg">--</span>km</td>
-                            </tr>
-                            <tr>
-                                <td>Right Ascension of Ascending Node</td>
-                                <td>:<span id="node">--</span>&deg</td>
-                            </tr>
-                            <tr>
-                                <td>Argument of Perigee</td>
-                                <td>:<span id="aop">--</span>&deg</td>
-                            </tr>
-                            <tr>
-                                <td>Revolutions/day</td>
-                                <td>:<span id="mnm">--</span>rev/day</td>
-                            </tr>
-                            <tr>
-                                <td>Mean anomaly at epoch</td>
-                                <td>:<span id="mna">--</span>&deg</td>
-                            </tr>
-                            <tr>
-                                <td>Orbit number at epoch</td>
-                                <td>:<span id="revNum">--</span></td>
-                            </tr>
-                        </table> 
-                            </td>
-                        </tr>
+    <body>
+        <div class="header">
+            <h1>Satellite Tracker</h1>
+            <div class="time-display">
+                UTC Time: <span id="UTC">00:00:00</span>
+            </div>
+        </div>
 
-                    </table>
-                </td>
-                <td id="right-pad" rowspan="10" style="width: 100px;"></td>
-            </tr>
-        </table>
-        <footer>
-            <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
-                <tr>
-                    <td>
-                        <hr>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
-                            <tr>
-                                <td style="width: 200px; font-family: monospace;">Version: 2.0</td>
-                                <td>Created by: <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu Tank</a></td>
-                                <td style="width: 200px;"><img src="src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">  Proud to be Indian...</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </footer>
-        <script type="text/javascript">
-            $(document).ready(function() {
-              var IDx = document.URL.indexOf('?ID=');
-              ID = document.URL.substring(IDx+4, IDx+9);
-              var namex = document.URL.indexOf('name=');
-              name = decodeURIComponent(document.URL.substring(namex+5));
-              console.log(name);
+        <div class="container">
+            <div id="p5canvas"></div>
             
-              $('#satName').text(name);
-              $('#satNameTitle').text('satTank | ' + name);
-            });
+            <div class="info-panel">
+                <div class="sat-data">
+                    <h2>Satellite Data</h2>
+                    <div class="data-row">
+                        <span class="data-label">TLE Line 1:</span>
+                    </div>
+                    <div>
+                        <code id="l1">-</code>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">TLE Line 2:</span>
+                    </div>
+                    <div>
+                        <code id="l2">-</code>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Epoch:</span>
+                        <span id="epochTime">-</span>
+                    </div>
+                    
+                    <h3>Position</h3>
+                    <div class="data-row">
+                        <span class="data-label">Latitude:</span>
+                        <span id="lat">-</span>°
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Longitude:</span>
+                        <span id="long">-</span>°
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Height:</span>
+                        <span id="height">-</span> km
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">X Position:</span>
+                        <span id="xPos">-</span> km
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Y Position:</span>
+                        <span id="yPos">-</span> km
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Z Position:</span>
+                        <span id="zPos">-</span> km
+                    </div>
+                    
+                    <h3>Orbital Elements</h3>
+                    <div class="data-row">
+                        <span class="data-label">Eccentricity:</span>
+                        <span id="eccen">-</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">RA of Node:</span>
+                        <span id="node">-</span>°
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Arg of Perigee:</span>
+                        <span id="aop">-</span>°
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Mean Motion:</span>
+                        <span id="mnm">-</span> rev/day
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Mean Anomaly:</span>
+                        <span id="mna">-</span>°
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Revolution Number:</span>
+                        <span id="revNum">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet.geodesic"></script>
+        
+        <!-- Satellite data and constants -->
+        <script>
+            const ID = 0; // Default satellite ID
+            const satName = ["ISS (ZARYA)"]; // Names of satellites
         </script>
+        
+        <!-- Main application script -->
+        <script src="satPage_old.js"></script>
     </body>
 </html>

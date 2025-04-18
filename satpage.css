@@ -1,4 +1,69 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+}
+
 #p5canvas {
     height: 500px; /* Increased height for better visibility */
     width: 100%; /* Ensure it takes available width */
-  }
+}
+
+/* Map container - critical for Leaflet */
+#mapid {
+    width: 100%;
+    height: 500px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    z-index: 1;
+}
+
+#canvas-container {
+    height: 300px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.info-panel {
+    padding: 15px;
+    background-color: #f8f8f8;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.info-table-container {
+    overflow-x: auto;
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.info-table th, .info-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.info-table th {
+    background-color: #f2f2f2;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 20px;
+    font-weight: bold;
+    color: #555;
+}
