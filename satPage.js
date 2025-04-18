@@ -2,7 +2,7 @@
 
 // Global variables
 let map;
-let satellite;
+let satellite; // Holds the specific satellite data object
 let satellitePath = [];
 let groundTrack = [];
 let footprintPolygon;
@@ -11,8 +11,7 @@ let orbitLine;
 let groundTrackLine;
 let updateIntervalId;
 let footprintCircle;
-let observerMarker;
-let observerLocation = null;
+// Removed observerMarker and observerLocation
 
 // Constants
 const EARTH_RADIUS_KM = 6371;
@@ -24,18 +23,19 @@ const ORBIT_PERIOD_MINUTES = 90; // Approximate period for most LEO satellites
 document.addEventListener('DOMContentLoaded', function() {
     // Check for satellite ID in URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const satId = urlParams.get('id');
+    const satId = urlParams.get('ID'); // Changed from 'id' to 'ID' to match example URL
+    // Removed category check
     
     if (!satId) {
-        showError("No satellite selected. Please select a satellite from the list.");
+        showError("Missing satellite ID (NORAD CAT ID) in URL. Please provide an ID parameter, e.g., ?ID=25544");
         return;
     }
     
     // Initialize the map
     initMap();
     
-    // Load the satellite data and start tracking
-    loadSatelliteData(satId);
+    // Load the satellite data from Celestrak API and start tracking
+    loadSatelliteDataFromApi(satId);
     
     // Set up event listeners
     document.getElementById('back-button').addEventListener('click', function() {
@@ -58,13 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleFootprintDisplay(this.checked);
     });
     
-    document.getElementById('locate-me').addEventListener('click', function() {
-        getUserLocation();
-    });
-    
-    document.getElementById('calculate-passes').addEventListener('click', function() {
-        calculatePasses();
-    });
+    // Removed event listeners for locate-me and calculate-passes
 });
 
 // Initialize Leaflet map
@@ -83,7 +77,8 @@ function initMap() {
         subdomains: ['a', 'b', 'c']
     }).addTo(map);
     
-    // Add graticule (coordinate grid)
+    // Removed graticule code causing errors
+    /*
     L.latlngGraticule({
         showLabel: true,
         zoomInterval: [
@@ -93,6 +88,7 @@ function initMap() {
             {start: 10, end: 20, interval: 1}
         ]
     }).addTo(map);
+    */
 }
 
 // Update the map type based on selection
@@ -132,22 +128,26 @@ function updateMapType(type) {
     }
 }
 
-// Load satellite data from API
-async function loadSatelliteData(satId) {
+// Load satellite data from Celestrak API using NORAD ID
+async function loadSatelliteDataFromApi(satId) {
+    showLoading(`Loading TLE data for NORAD ID ${satId}...`);
     try {
-        const response = await fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=${satId}&FORMAT=json`);
+        // Construct the Celestrak API URL for a specific satellite by NORAD CAT ID
+        const apiUrl = `https://celestrak.org/NORAD/elements/gp.php?CATNR=${satId}&FORMAT=json`;
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status} while fetching TLE for ${satId}`);
         }
         
         const data = await response.json();
         
+        // Celestrak returns an array, even for a single ID
         if (!data || data.length === 0) {
-            throw new Error('No data found for this satellite.');
+            throw new Error(`No TLE data found for NORAD ID ${satId} on Celestrak.`);
         }
         
-        satellite = data[0];
+        satellite = data[0]; // Assign the first (and likely only) satellite object
         
         // Update the page title with satellite name
         document.getElementById('satellite-title').innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
@@ -158,8 +158,7 @@ async function loadSatelliteData(satId) {
         // Start tracking the satellite
         startTracking();
         
-        // Hide loading message
-        document.getElementById('loading-message').style.display = 'none';
+        hideLoading();
         
     } catch (error) {
         showError(`Failed to load satellite data: ${error.message}`);
@@ -178,11 +177,18 @@ function startTracking() {
 // Update the satellite position and related visualizations
 function updateSatellitePosition() {
     try {
-        // Get current date and time
         const now = new Date();
-        
-        // Calculate satellite position
         const position = calculateSatellitePosition(satellite, now);
+
+        // Check if position calculation was successful
+        if (position === null || isNaN(position.lat) || isNaN(position.lng)) {
+            // Optionally show a temporary error or just skip the update
+            console.warn('Skipping map update due to invalid position data at', now);
+            // You might want to stop the interval if this happens repeatedly
+            // showError('Failed to calculate valid satellite position. TLE might be outdated.');
+            // clearInterval(updateIntervalId); 
+            return; // Stop execution for this interval
+        }
         
         // Update position display
         updatePositionInfo(position);
@@ -191,10 +197,10 @@ function updateSatellitePosition() {
         updateMapVisualization(position);
         
     } catch (error) {
+        // This catch block might now be less likely to be hit by NaN errors, 
+        // but good to keep for other unexpected issues.
         console.error('Error updating satellite position:', error);
         showError(`Failed to update satellite position: ${error.message}`);
-        
-        // Stop the tracking interval to prevent continuous errors
         clearInterval(updateIntervalId);
     }
 }
@@ -410,7 +416,7 @@ function displaySatelliteInfo() {
     orbitalInfo.innerHTML = `
     <table>
         <tr><th>NORAD ID</th><td>${satellite.NORAD_CAT_ID}</td></tr>
-        <tr><th>International Designator</th><td>${satellite.OBJECT_ID || 'N/A'}</td></tr>
+        <tr><th>Int'l Designator</th><td>${satellite.OBJECT_ID || 'N/A'}</td></tr>
         <tr><th>Epoch</th><td>${satellite.EPOCH || 'N/A'}</td></tr>
         <tr><th>Eccentricity</th><td>${satellite.ECCENTRICITY?.toFixed(6) || 'N/A'}</td></tr>
         <tr><th>Inclination</th><td>${satellite.INCLINATION?.toFixed(4) || 'N/A'}°</td></tr>
@@ -438,9 +444,14 @@ function updatePositionInfo(position) {
     const { lat, lng, alt, velocity, time } = position;
     const positionInfo = document.getElementById('position-info');
     
+    // Format time for display
+    const utcTimeString = time.toISOString();
+    const localTimeString = time.toLocaleString(); // Browser's local time format
+    
     positionInfo.innerHTML = `
     <table>
-        <tr><th>Time (UTC)</th><td>${time.toISOString()}</td></tr>
+        <tr><th>Time (UTC)</th><td>${utcTimeString}</td></tr>
+        <tr><th>Time (Local)</th><td>${localTimeString}</td></tr>
         <tr><th>Latitude</th><td>${lat.toFixed(4)}°</td></tr>
         <tr><th>Longitude</th><td>${lng.toFixed(4)}°</td></tr>
         <tr><th>Altitude</th><td>${alt.toFixed(2)} km</td></tr>
@@ -511,168 +522,7 @@ function latLngToCartesian(lat, lng) {
     };
 }
 
-// Get user's current location
-function getUserLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // Update the observer location
-                observerLocation = { lat, lng };
-                
-                // Update the map with observer marker
-                updateObserverMarker();
-                
-                // Optionally calculate passes
-                calculatePasses();
-            },
-            function(error) {
-                showError(`Could not get your location: ${error.message}`);
-            }
-        );
-    } else {
-        showError("Geolocation is not supported by this browser.");
-    }
-}
-
-// Update or create observer marker on map
-function updateObserverMarker() {
-    if (!observerLocation) return;
-    
-    // Remove existing marker if it exists
-    if (observerMarker) {
-        map.removeLayer(observerMarker);
-    }
-    
-    // Create a marker for the observer
-    const observerIcon = L.divIcon({
-        html: '<i class="fa-solid fa-user" style="color: #2ecc71;"></i>',
-        className: 'observer-marker',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-    });
-    
-    observerMarker = L.marker([observerLocation.lat, observerLocation.lng], {
-        icon: observerIcon,
-        title: 'Observer Location'
-    }).addTo(map);
-    
-    observerMarker.bindPopup(`Observer Location<br>Lat: ${observerLocation.lat.toFixed(4)}°<br>Lng: ${observerLocation.lng.toFixed(4)}°`);
-}
-
-// Calculate upcoming passes of the satellite
-function calculatePasses() {
-    // Check if we have observer location
-    if (!observerLocation) {
-        const locationInput = document.getElementById('observer-location').value;
-        
-        if (!locationInput) {
-            showError("Please enter a location or use the 'Use My Location' button.");
-            return;
-        }
-        
-        // TODO: Geocode the location input to get coordinates
-        // For now, we'll show an error
-        showError("Location geocoding is not implemented yet. Please use the 'Use My Location' button.");
-        return;
-    }
-    
-    // Make sure we have satellite data
-    if (!satellite) {
-        showError("Satellite data is not available.");
-        return;
-    }
-    
-    try {
-        // Calculate the next 5 passes
-        const passes = predictPasses(satellite, observerLocation, 5);
-        
-        // Display the passes
-        displayPasses(passes);
-    } catch (error) {
-        showError(`Failed to calculate passes: ${error.message}`);
-    }
-}
-
-// Predict satellite passes for an observer location
-function predictPasses(satellite, observer, count) {
-    // This is placeholder code - the actual implementation would require more complex calculations
-    // Normally, we would use calculations.js for this
-    const now = new Date();
-    const passes = [];
-    
-    // For demonstration, we'll generate some fake passes
-    for (let i = 0; i < count; i++) {
-        const passStart = new Date(now.getTime() + (i * 90 + Math.random() * 30) * 60000);
-        const duration = 5 + Math.random() * 10; // 5-15 minutes
-        const passEnd = new Date(passStart.getTime() + duration * 60000);
-        const maxElevation = Math.random() * 80 + 10; // 10-90 degrees
-        
-        passes.push({
-            start: passStart,
-            end: passEnd,
-            duration: duration,
-            maxElevation: maxElevation,
-            startAzimuth: Math.random() * 360,
-            endAzimuth: Math.random() * 360,
-            visible: Math.random() > 0.3 // 70% chance of being visible
-        });
-    }
-    
-    return passes;
-}
-
-// Display pass predictions in the UI
-function displayPasses(passes) {
-    const passesTable = document.getElementById('passes-table');
-    
-    if (passes.length === 0) {
-        passesTable.innerHTML = '<p>No passes predicted in the near future.</p>';
-        return;
-    }
-    
-    let html = `
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Start (UTC)</th>
-                <th>End (UTC)</th>
-                <th>Duration</th>
-                <th>Max Elevation</th>
-                <th>Visibility</th>
-            </tr>
-        </thead>
-        <tbody>`;
-    
-    passes.forEach(pass => {
-        const date = pass.start.toLocaleDateString();
-        const startTime = pass.start.toLocaleTimeString();
-        const endTime = pass.end.toLocaleTimeString();
-        const durationMin = pass.duration.toFixed(1);
-        const maxElevation = pass.maxElevation.toFixed(1);
-        const visibility = pass.visible ? 'Visible' : 'Not visible';
-        const visibilityClass = pass.visible ? 'status-active' : 'status-inactive';
-        
-        html += `
-        <tr>
-            <td>${date}</td>
-            <td>${startTime}</td>
-            <td>${endTime}</td>
-            <td>${durationMin} min</td>
-            <td>${maxElevation}°</td>
-            <td><span class="status-indicator ${visibilityClass}"></span>${visibility}</td>
-        </tr>`;
-    });
-    
-    html += `
-        </tbody>
-    </table>`;
-    
-    passesTable.innerHTML = html;
-}
+// Removed getUserLocation, updateObserverMarker, calculatePasses, predictPasses, displayPasses functions
 
 // Helper function to get object type description
 function getObjectType(typeCode) {
@@ -710,11 +560,23 @@ function calculateOrbitalPeriod(satellite) {
     return (24 * 60 / satellite.MEAN_MOTION).toFixed(1);
 }
 
+// Show loading message
+function showLoading(message) {
+    const loadingElement = document.getElementById('loading-message');
+    loadingElement.textContent = message || 'Loading...';
+    loadingElement.style.display = 'block';
+    document.getElementById('error-message').style.display = 'none';
+}
+
+// Hide loading message
+function hideLoading() {
+    document.getElementById('loading-message').style.display = 'none';
+}
+
 // Show error message
 function showError(message) {
     const errorElement = document.getElementById('error-message');
     errorElement.textContent = message;
     errorElement.style.display = 'block';
-    
-    document.getElementById('loading-message').style.display = 'none';
+    hideLoading(); // Hide loading message if error occurs
 }

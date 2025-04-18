@@ -8,16 +8,14 @@
     <!-- Load CSS -->
     <link rel="stylesheet" href="satpage.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.control.min.css" />
     
     <!-- Load Libraries -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.latlng-graticule@0.2.0/leaflet.latlng-graticule.js"></script>
+    <!-- Changed CDN for leaflet.latlng-graticule to jsDelivr -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.latlng-graticule@0.2.0/leaflet.latlng-graticule.js"></script> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/5.0.0/satellite.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/iso8601-js-period/0.2.1/iso8601.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.min.js"></script>
     
     <!-- Load Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
@@ -90,6 +88,8 @@
                     </div>
                 </div>
                 
+                <!-- Removed the passes-panel div -->
+                <!-- 
                 <div class="passes-panel">
                     <h3>Upcoming Passes</h3>
                     <div class="location-input">
@@ -98,9 +98,10 @@
                         <button id="calculate-passes" class="btn">Calculate Passes</button>
                     </div>
                     <div id="passes-table" class="detail-content">
-                        <!-- Pass prediction data will be displayed here -->
+                        
                     </div>
                 </div>
+                -->
             </div>
         </div>
     </div>
