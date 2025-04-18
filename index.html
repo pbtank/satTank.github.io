@@ -90,46 +90,6 @@
         <!-- Table will be generated here -->
     </div>
 
-    <div class="container">
-        <h1>Satellite Tracking</h1>
-
-        <div class="info-panel">
-            <h2>Current Satellite: <span id="satName">Loading...</span></h2>
-            <p>Current UTC Time: <span id="UTC">--:--:--</span></p>
-            <div id="loadingMessage">Loading satellite data...</div>
-        </div>
-
-        <!-- Map Container -->
-        <div id="mapid"></div>
-
-        <!-- Canvas Container for additional visualizations -->
-        <div id="canvas-container"></div>
-
-        <!-- Satellite Information Table -->
-        <h2>Satellite Information</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                    <th>Altitude</th>
-                    <th>Epoch</th>
-                    <th>Eccentricity</th>
-                    <th>Inclination</th>
-                    <th>Mean Motion</th>
-                    <th>Rev Number</th>
-                    <th>ECF X</th>
-                    <th>ECF Y</th>
-                    <th>ECF Z</th>
-                </tr>
-            </thead>
-            <tbody id="satellite-info-body">
-                <!-- Satellite data will be inserted here dynamically -->
-            </tbody>
-        </table>
-    </div>
-
     <footer id="pageFooter">
         <table id="footerTable" border="0"
             style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
@@ -186,8 +146,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
 
     <!-- Custom Scripts -->
-    <script src="TLE.js"></script>
-    <script src="leaflet.geodesic.js"></script>
     <script src="satPage.js"></script>
 </body>
 

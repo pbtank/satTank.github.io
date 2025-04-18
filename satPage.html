@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satellite Tracker - Individual View</title>
+    
+    <!-- Load CSS -->
+    <link rel="stylesheet" href="satpage.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.control.min.css" />
+    
+    <!-- Load Libraries -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.latlng-graticule@0.2.0/leaflet.latlng-graticule.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/5.0.0/satellite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/iso8601-js-period/0.2.1/iso8601.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.min.js"></script>
+    
+    <!-- Load Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    
+    <!-- Load Custom JS -->
+    <script src="calculations.js"></script>
+    <script src="satPage.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Satellite Tracker</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="satelliteList.html">Satellite List</a></li>
+                <li><a href="satPage.html" class="active">Satellite View</a></li>
+                <li><a href="about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <div id="loading-message" class="loading-message">Loading satellite data...</div>
+        <div id="error-message" class="error-message" style="display: none;"></div>
+        
+        <div class="content">
+            <div class="satellite-header">
+                <h2 id="satellite-title">Satellite Tracker</h2>
+                <div class="satellite-controls">
+                    <select id="map-type" class="map-select">
+                        <option value="standard">Standard Map</option>
+                        <option value="satellite">Satellite Imagery</option>
+                        <option value="dark">Dark Mode</option>
+                        <option value="terrain">Terrain</option>
+                    </select>
+                    <div class="track-options">
+                        <label><input type="checkbox" id="show-orbit" checked> Show Orbit</label>
+                        <label><input type="checkbox" id="show-groundtrack" checked> Show Ground Track</label>
+                        <label><input type="checkbox" id="show-footprint" checked> Show Footprint</label>
+                    </div>
+                    <button id="back-button" class="btn">Back to List</button>
+                </div>
+            </div>
+            
+            <div class="map-container">
+                <div id="mapid"></div>
+            </div>
+            
+            <div class="satellite-details">
+                <div class="detail-panels">
+                    <div class="detail-panel">
+                        <h3>Orbital Information</h3>
+                        <div id="orbital-info" class="detail-content">
+                            <!-- Orbital parameters will be displayed here -->
+                        </div>
+                    </div>
+                    
+                    <div class="detail-panel">
+                        <h3>Position Data</h3>
+                        <div id="position-info" class="detail-content">
+                            <!-- Position data will be displayed here -->
+                        </div>
+                    </div>
+                    
+                    <div class="detail-panel">
+                        <h3>Satellite Details</h3>
+                        <div id="satellite-info" class="detail-content">
+                            <!-- Satellite metadata will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="passes-panel">
+                    <h3>Upcoming Passes</h3>
+                    <div class="location-input">
+                        <input type="text" id="observer-location" placeholder="Enter your location">
+                        <button id="locate-me" class="btn">Use My Location</button>
+                        <button id="calculate-passes" class="btn">Calculate Passes</button>
+                    </div>
+                    <div id="passes-table" class="detail-content">
+                        <!-- Pass prediction data will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2023 Satellite Tracker. Data provided by Celestrak and Space-Track.</p>
+    </footer>
+</body>
+</html>

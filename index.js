@@ -521,4 +521,26 @@ document.addEventListener('DOMContentLoaded', function() {
     if (darkModeButton) {
         darkModeButton.addEventListener('click', toggleDarkMode);
     }
+    
+    // Remove map initialization code
 });
+
+// Modify the document ready function to select weather satellites by default
+$(document).ready(function() {
+    // Initialize the category dropdown
+    initializeCategoryDropdown();
+    
+    // Set default category to Weather
+    $('#categoryDropdown').val('Weather').trigger('change');
+});
+
+function initializeCategoryDropdown() {
+    // After populating the dropdown, make sure to select Weather by default
+    if (!$('#categoryDropdown').val()) {
+        $('#categoryDropdown').val('Weather');
+    }
+}
+
+function populateSatelliteTable(category = 'Weather') {
+    // Default category parameter to 'Weather' if not specified
+}
