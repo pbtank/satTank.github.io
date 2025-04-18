@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satellite Tracker</title>
+    <title>Satellite Tracking</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="index.css">
@@ -12,6 +12,8 @@
     <script src="library/p5.dom.js"></script>
     <script src="library/jquery-3.6.0.min.js"></script>
     <script src="library/satellite.min.js"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
 
 <body id="pageBody" style="background-color: #D5F7F3">
@@ -88,6 +90,46 @@
         <!-- Table will be generated here -->
     </div>
 
+    <div class="container">
+        <h1>Satellite Tracking</h1>
+
+        <div class="info-panel">
+            <h2>Current Satellite: <span id="satName">Loading...</span></h2>
+            <p>Current UTC Time: <span id="UTC">--:--:--</span></p>
+            <div id="loadingMessage">Loading satellite data...</div>
+        </div>
+
+        <!-- Map Container -->
+        <div id="mapid"></div>
+
+        <!-- Canvas Container for additional visualizations -->
+        <div id="canvas-container"></div>
+
+        <!-- Satellite Information Table -->
+        <h2>Satellite Information</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Altitude</th>
+                    <th>Epoch</th>
+                    <th>Eccentricity</th>
+                    <th>Inclination</th>
+                    <th>Mean Motion</th>
+                    <th>Rev Number</th>
+                    <th>ECF X</th>
+                    <th>ECF Y</th>
+                    <th>ECF Z</th>
+                </tr>
+            </thead>
+            <tbody id="satellite-info-body">
+                <!-- Satellite data will be inserted here dynamically -->
+            </tbody>
+        </table>
+    </div>
+
     <footer id="pageFooter">
         <table id="footerTable" border="0"
             style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
@@ -133,6 +175,20 @@
     </script>
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="index.js"></script>
+    <!-- Scripts -->
+    <!-- Satellite.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- P5.js (for canvas visualizations) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+    <!-- Custom Scripts -->
+    <script src="TLE.js"></script>
+    <script src="leaflet.geodesic.js"></script>
+    <script src="satPage.js"></script>
 </body>
 
 </html>

@@ -1,18 +1,23 @@
-const canWidth = 800;
-const canHeight = 400;
+// Only declare these variables if they don't already exist in the global scope
+if (typeof window.canWidth === 'undefined') {
+    window.canWidth = 800;
+    window.canHeight = 400;
+}
 
-// List of local JSON files for satellite categories
-const localJsonFiles = [
-    'data/active.json',
-    'data/stations.json',
-    'data/weather.json',
-    'data/noaa.json',
-    'data/goes.json',
-    'data/resource.json',
-    'data/amateur.json',
-    'data/starlink.json',
-    'data/custom_satellites.json'
-];
+// Only declare these variables if they don't already exist
+if (typeof window.localJsonFiles === 'undefined') {
+    window.localJsonFiles = [
+        'data/active.json',
+        'data/stations.json',
+        'data/weather.json',
+        'data/noaa.json',
+        'data/goes.json',
+        'data/resource.json',
+        'data/amateur.json',
+        'data/starlink.json',
+        'data/custom_satellites.json'
+    ];
+}
 
 // Helper to load all local JSON files and merge them
 async function loadAllLocalSatellites() {
@@ -42,22 +47,22 @@ async function loadAllLocalSatellites() {
 }
 
 // Global variables for satellite tracking
-var satlist = []; // Array to store satellite objects
-var ID; // Current satellite ID from URL
-var d = new Date(); // Current date for calculations
-var satName = {}; // Store satellite names
-var initialSatData = null; // Promise that will resolve to satellite data
+if (typeof window.satlist === 'undefined') window.satlist = []; // Array to store satellite objects
+if (typeof window.ID === 'undefined') window.ID = null; // Current satellite ID from URL
+if (typeof window.d === 'undefined') window.d = new Date(); // Current date for calculations
+if (typeof window.satName === 'undefined') window.satName = {}; // Store satellite names
+if (typeof window.initialSatData === 'undefined') window.initialSatData = null; // Promise that will resolve to satellite data
 
 // Global declaration for map and layer group
-let satelliteLayerGroup = null;
-let myMap = null;
+if (typeof window.satelliteLayerGroup === 'undefined') window.satelliteLayerGroup = null;
+if (typeof window.myMap === 'undefined') window.myMap = null;
 
 // Global cache for satellite position calculations
-const positionCache = new Map();
-const groundTraceCache = new Map();
+if (typeof window.positionCache === 'undefined') window.positionCache = new Map();
+if (typeof window.groundTraceCache === 'undefined') window.groundTraceCache = new Map();
 
 // Cache expiration time in milliseconds (5 seconds)
-const CACHE_EXPIRY = 5000;
+if (typeof window.CACHE_EXPIRY === 'undefined') window.CACHE_EXPIRY = 5000;
 
 // Memoization wrapper for expensive functions
 function memoize(fn, keyFn) {
@@ -251,69 +256,151 @@ function preload() {
         });
 }
 
+// Function to ensure required DOM elements exist
+function ensureRequiredElements() {
+    // Check for and create map container if missing
+    if (!document.getElementById('mapid')) {
+        console.log("[ensureRequiredElements] Creating missing mapid container");
+        const container = document.querySelector('.container') || document.body;
+        const mapDiv = document.createElement('div');
+        mapDiv.id = 'mapid';
+        mapDiv.style.height = '500px';
+        mapDiv.style.width = '100%';
+        container.appendChild(mapDiv);
+    }
+
+    // Check for and create canvas container if missing
+    if (!document.getElementById('canvas-container')) {
+        console.log("[ensureRequiredElements] Creating missing canvas-container");
+        const container = document.querySelector('.container') || document.body;
+        const canvasDiv = document.createElement('div');
+        canvasDiv.id = 'canvas-container';
+        container.appendChild(canvasDiv);
+    }
+
+    // Check for satellite info table
+    if (!document.getElementById('satellite-info-body')) {
+        console.log("[ensureRequiredElements] Creating missing satellite info table");
+        const container = document.querySelector('.container') || document.body;
+        
+        // Create table heading
+        const heading = document.createElement('h2');
+        heading.textContent = 'Satellite Information';
+        container.appendChild(heading);
+        
+        // Create table
+        const table = document.createElement('table');
+        table.className = 'table table-striped';
+        
+        // Create header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        const headers = ['Name', 'Latitude', 'Longitude', 'Altitude', 'Epoch', 
+                         'Eccentricity', 'Inclination', 'Mean Motion', 'Rev Number', 'ECF X', 'ECF Y', 'ECF Z'];
+        
+        headers.forEach(text => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        
+        // Create tbody
+        const tbody = document.createElement('tbody');
+        tbody.id = 'satellite-info-body';
+        table.appendChild(tbody);
+        
+        container.appendChild(table);
+    }
+}
+
 function setup() {
     console.log("[setup] Setup function starting...");
     
     try {
-        // Initialize p5.js canvas
-        let canvas = createCanvas(windowWidth * 0.8, windowHeight * 0.3);
-        canvas.parent('canvas-container');
+        // Ensure all required DOM elements exist before proceeding
+        ensureRequiredElements();
         
-        // Wait a moment to ensure DOM is fully loaded before initializing map
-        setTimeout(() => {
-            console.log("[setup] Initializing map and satellite layer group.");
+        // Check if canvas is supported and create it
+        let canvas;
+        try {
+            canvas = createCanvas(windowWidth * 0.8, windowHeight * 0.3);
+        } catch (e) {
+            console.warn("[setup] Error creating canvas:", e);
+        }
+        
+        const canvasContainer = document.getElementById('canvas-container');
+        if (canvasContainer && canvas) {
+            canvas.parent('canvas-container');
+        } else {
+            console.warn("[setup] canvas-container element not found, placing canvas in default location");
+        }
+        
+        // Initialize map only after checking container exists
+        const mapElement = document.getElementById('mapid');
+        if (!mapElement) {
+            console.error("[setup] Error: Map container #mapid not found in DOM");
             
-            // Check if mapid element exists
-            const mapElement = document.getElementById('mapid');
-            if (!mapElement) {
-                console.error("[setup] Error: Map container #mapid not found in DOM");
-                document.getElementById('loadingMessage').innerHTML = '<p>Error: Map container not found.</p>';
-                return;
-            }
+            // Create map container if it doesn't exist
+            const mainContainer = document.querySelector('main') || document.body;
+            const mapDiv = document.createElement('div');
+            mapDiv.id = 'mapid';
+            mapDiv.style.height = '500px';
+            mapDiv.style.width = '100%';
+            mapDiv.style.margin = '20px 0';
+            mainContainer.appendChild(mapDiv);
             
-            // Initialize the map with proper container reference
-            myMap = L.map('mapid', {
-                center: [0, 0],
-                zoom: 2,
-                worldCopyJump: true
+            console.log("[setup] Created missing map container #mapid");
+        }
+        
+        console.log("[setup] Initializing map and satellite layer group.");
+        
+        // Initialize the map with proper container reference
+        myMap = L.map('mapid', {
+            center: [0, 0],
+            zoom: 2,
+            worldCopyJump: true
+        });
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(myMap);
+        
+        // Initialize the satellite layer group and add it to the map
+        satelliteLayerGroup = L.layerGroup().addTo(myMap);
+        console.log("[setup] Map and satelliteLayerGroup initialized successfully.");
+        
+        // Process satellite data after map is initialized
+        if (initialSatData) {
+            console.log("[setup] Waiting for satellite data to process...");
+            initialSatData.then(satData => {
+                if (satData) {
+                    console.log("[setup] Satellite data ready, processing now.");
+                    processSatelliteData(satData);
+                    
+                    // Start the update interval after processing
+                    startUpdateInterval();
+                } else {
+                    console.error("[setup] No satellite data available after promise resolved.");
+                    document.getElementById('loadingMessage').innerHTML = '<p>Error: Could not load satellite data.</p>';
+                }
+            }).catch(error => {
+                console.error("[setup] Error processing satellite data:", error);
+                document.getElementById('loadingMessage').innerHTML = '<p>Error processing satellite data.</p>';
             });
-            
-            // Add tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(myMap);
-            
-            // Initialize the satellite layer group and add it to the map
-            satelliteLayerGroup = L.layerGroup().addTo(myMap);
-            console.log("[setup] Map and satelliteLayerGroup initialized successfully.");
-            
-            // Process satellite data after map is initialized
-            if (initialSatData) {
-                console.log("[setup] Waiting for satellite data to process...");
-                initialSatData.then(satData => {
-                    if (satData) {
-                        console.log("[setup] Satellite data ready, processing now.");
-                        processSatelliteData(satData);
-                        
-                        // Start the update interval after processing
-                        startUpdateInterval();
-                    } else {
-                        console.error("[setup] No satellite data available after promise resolved.");
-                        document.getElementById('loadingMessage').innerHTML = '<p>Error: Could not load satellite data.</p>';
-                    }
-                }).catch(error => {
-                    console.error("[setup] Error processing satellite data:", error);
-                    document.getElementById('loadingMessage').innerHTML = '<p>Error processing satellite data.</p>';
-                });
-            } else {
-                console.error("[setup] initialSatData is not available.");
-                document.getElementById('loadingMessage').innerHTML = '<p>Error: Satellite data not initialized.</p>';
-            }
-        }, 500); // Half second delay to ensure DOM is ready
-        
+        } else {
+            console.error("[setup] initialSatData is not available.");
+            document.getElementById('loadingMessage').innerHTML = '<p>Error: Satellite data not initialized.</p>';
+        }
     } catch (error) {
         console.error("[setup] Error during setup:", error);
-        document.getElementById('loadingMessage').innerHTML = '<p>Error initializing application. Please try again.</p>';
+        if (document.getElementById('loadingMessage')) {
+            document.getElementById('loadingMessage').innerHTML = '<p>Error initializing application. Please try again.</p>';
+        }
     }
 }
 
@@ -333,7 +420,15 @@ function startUpdateInterval() {
             
             // Update satellite position if available
             if (satlist[ID] && myMap) {
-                satlist[ID].groundTrace(d);
+                // Check if updateMapDisplay method exists
+                if (typeof satlist[ID].updateMapDisplay === 'function') {
+                    // Call updateMapDisplay to update both position and ground trace on map
+                    satlist[ID].updateMapDisplay(d);
+                } else {
+                    // Fallback to groundTrace if updateMapDisplay is not available
+                    console.warn(`[startUpdateInterval] Satellite object for ID ${ID} does not have updateMapDisplay method, using groundTrace instead.`);
+                    satlist[ID].groundTrace(d);
+                }
             }
         }, 1000); // Update every second
     }, 500); // Initial delay
@@ -523,114 +618,7 @@ function convertCelestrakJsonToTLE(satData) {
     }
 }
 
-// Fix latitude, longitude and altitude calculation in the main code
-function updateSatelliteData(sat, tle) {
-    // Get current time
-    const now = new Date();
-    
-    // Calculate satellite position
-    const satrec = satellite.twoline2satrec(tle[1], tle[2]);
-    
-    // Debug TLE data
-    console.log('[COORD] Using TLE:', tle);
-    
-    // Get position and velocity
-    const positionAndVelocity = satellite.propagate(satrec, now);
-    
-    if (!positionAndVelocity.position) {
-        console.error('[POSITION ERROR] Failed to calculate position for', tle[0]);
-        return null;
-    }
-    
-    const positionEci = positionAndVelocity.position;
-    const velocityEci = positionAndVelocity.velocity;
-    
-    // Get GMST for coordinate conversion
-    const gmst = satellite.gstime(now);
-    
-    // Convert coordinates from ECI to geodetic (longitude, latitude, altitude)
-    const positionGd = satellite.eciToGeodetic(positionEci, gmst);
-    
-    // Convert the radians to degrees for display
-    const longitude = satellite.degreesLong(positionGd.longitude);
-    const latitude = satellite.degreesLat(positionGd.latitude);
-    const altitude = positionGd.height; // Height in km
-    
-    // Debug the coordinates
-    console.log(`[COORD] Satellite ${tle[0]} coordinates: Lat=${latitude.toFixed(4)}, Lon=${longitude.toFixed(4)}, Alt=${altitude.toFixed(4)}km`);
-    
-    // Get epoch data from TLE
-    const epochYear = satrec.epochyr;
-    const epochDay = satrec.epochdays;
-    
-    // ECEF coordinates for display
-    const positionEcf = satellite.eciToEcf(positionEci, gmst);
-    
-    // Return the satellite data for UI updates
-    return {
-        name: tle[0],
-        latitude: latitude,
-        longitude: longitude,
-        altitude: altitude,
-        epoch: `${epochYear}/${epochDay.toFixed(8)}`,
-        eccentricity: satrec.ecco,
-        inclination: satrec.inclo * 180 / Math.PI, // Convert to degrees
-        meanMotion: satrec.no * 24 * 60 / (2 * Math.PI), // Convert to revs per day
-        ecefX: positionEcf.x,
-        ecefY: positionEcf.y,
-        ecefZ: positionEcf.z
-    };
-}
-
-// Update the function that updates the UI with satellite data
-function updateSatelliteInfo(satData) {
-    if (!satData) return;
-    
-    // Get the table body
-    const tableBody = document.getElementById('satellite-info-body');
-    if (!tableBody) {
-        console.error('[UI ERROR] Could not find satellite info table body');
-        return;
-    }
-    
-    // Clear existing rows
-    tableBody.innerHTML = '';
-    
-    // Create a new row with the satellite data
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>${satData.name}</td>
-        <td>${satData.latitude.toFixed(4)}</td>
-        <td>${satData.longitude.toFixed(4)}</td>
-        <td>${satData.altitude.toFixed(4)}</td>
-        <td>${satData.epoch}</td>
-        <td>${satData.eccentricity.toFixed(7)}</td>
-        <td>${satData.inclination.toFixed(4)}</td>
-        <td>${satData.meanMotion.toFixed(4)}</td>
-        <td>${satData.ecefX.toFixed(2)}</td>
-        <td>${satData.ecefY.toFixed(2)}</td>
-        <td>${satData.ecefZ.toFixed(2)}</td>
-    `;
-    tableBody.appendChild(row);
-    
-    // Also update the map marker if it exists
-    if (window.satMarker) {
-        window.satMarker.setLatLng([satData.latitude, satData.longitude]);
-        window.satMarker.bindPopup(`
-            <b>${satData.name}</b><br>
-            Latitude: ${satData.latitude.toFixed(4)}<br>
-            Longitude: ${satData.longitude.toFixed(4)}<br>
-            Altitude: ${satData.altitude.toFixed(4)} km
-        `).openPopup();
-        
-        // Update map view to follow satellite
-        if (window.followSatellite && window.map) {
-            window.map.setView([satData.latitude, satData.longitude], window.map.getZoom());
-        }
-    }
-}
-
-// Function to update the satellite info table
+// Keep the correct updateSatelliteInfo function (starts around line 617 in context)
 function updateSatelliteInfo(satData) {
     // *** Add check for satData ***
     if (!satData || satData.satID === undefined) {
@@ -657,7 +645,7 @@ function updateSatelliteInfo(satData) {
         const eccenEl = document.getElementById(`eccen-${satData.satID}`);
         const inclEl = document.getElementById(`incl-${satData.satID}`);
         const meanMotionEl = document.getElementById(`mean-motion-${satData.satID}`);
-        // ... update other static elements if needed ...
+        const revNumEl = document.getElementById(`revNum-${satData.satID}`); // Added Rev Number
 
         if (nameEl) nameEl.innerText = satData.name || 'N/A';
         // Format epoch Date object or timestamp
@@ -665,6 +653,7 @@ function updateSatelliteInfo(satData) {
         if (eccenEl) eccenEl.innerText = satData.eccen !== undefined ? satData.eccen.toFixed(7) : '--';
         if (inclEl) inclEl.innerText = satData.incl !== undefined ? satData.incl.toFixed(4) : '--';
         if (meanMotionEl) meanMotionEl.innerText = satData.meanMotion !== undefined ? satData.meanMotion.toFixed(6) : '--';
+        if (revNumEl) revNumEl.innerText = satData.revNum !== undefined ? satData.revNum : '--'; // Update Rev Number
 
         // Update Lat/Lon/Alt/ECF placeholders - these will be filled by updatePositionDisplay later
         const latEl = document.getElementById(`lat-${satData.satID}`);
@@ -709,6 +698,7 @@ function updateSatelliteInfo(satData) {
     const eccenCell = createCellWithSpan(`eccen-${satData.satID}`, satData.eccen !== undefined ? satData.eccen.toFixed(7) : '--');
     const inclCell = createCellWithSpan(`incl-${satData.satID}`, satData.incl !== undefined ? satData.incl.toFixed(4) : '--');
     const meanMotionCell = createCellWithSpan(`mean-motion-${satData.satID}`, satData.meanMotion !== undefined ? satData.meanMotion.toFixed(6) : '--');
+    const revNumCell = createCellWithSpan(`revNum-${satData.satID}`, satData.revNum !== undefined ? satData.revNum : '--'); // Static, Added Rev Number
     const ecfXCell = createCellWithSpan(`ecfX-${satData.satID}`, '--');
     const ecfYCell = createCellWithSpan(`ecfY-${satData.satID}`, '--');
     const ecfZCell = createCellWithSpan(`ecfZ-${satData.satID}`, '--');
@@ -723,6 +713,7 @@ function updateSatelliteInfo(satData) {
     row.appendChild(eccenCell);
     row.appendChild(inclCell);
     row.appendChild(meanMotionCell);
+    row.appendChild(revNumCell); // Append Rev Number cell
     row.appendChild(ecfXCell);
     row.appendChild(ecfYCell);
     row.appendChild(ecfZCell);
@@ -743,5 +734,20 @@ function updateSatelliteInfo(satData) {
         // Add logic here if you want something to happen when a row is clicked
     });
 }
+
+// Wait for DOM to be fully loaded before initialization
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("[DOMContentLoaded] DOM fully loaded, initializing application");
+    
+    // Ensure all required elements exist
+    ensureRequiredElements();
+    
+    // Initialize p5.js after DOM is ready (optional if you're already using the p5 instance mode)
+    try {
+        new p5();
+    } catch (e) {
+        console.warn("[init] Error initializing p5.js:", e);
+    }
+});
 
 

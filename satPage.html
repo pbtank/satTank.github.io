@@ -79,8 +79,34 @@
             <div id="p5canvas"></div>
             
             <div class="info-panel">
+                <!-- Updated structure for satellite data display -->
+                <h2>Satellite Data</h2>
+                <table id="satellite-info-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Lat (°N)</th>
+                            <th>Lon (°E)</th>
+                            <th>Alt (km)</th>
+                            <th>Epoch</th>
+                            <th>Eccen</th>
+                            <th>Incl (°)</th>
+                            <th>Mean Motion (rev/day)</th>
+                            <th>Rev Num</th> <!-- Added Rev Num Header -->
+                            <th>ECF X (km)</th>
+                            <th>ECF Y (km)</th>
+                            <th>ECF Z (km)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="satellite-info-body">
+                        <!-- Satellite rows will be added here by satPage.js -->
+                    </tbody>
+                </table>
+                <div id="loadingMessage"><p>Loading satellite data...</p></div>
+                <!-- TLE Display (Optional, can be added if needed) -->
+                <!--
                 <div class="sat-data">
-                    <h2>Satellite Data</h2>
+                    <h3>TLE Data</h3>
                     <div class="data-row">
                         <span class="data-label">TLE Line 1:</span>
                     </div>
@@ -93,63 +119,8 @@
                     <div>
                         <code id="l2">-</code>
                     </div>
-                    <div class="data-row">
-                        <span class="data-label">Epoch:</span>
-                        <span id="epochTime">-</span>
-                    </div>
-                    
-                    <h3>Position</h3>
-                    <div class="data-row">
-                        <span class="data-label">Latitude:</span>
-                        <span id="lat">-</span>°
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Longitude:</span>
-                        <span id="long">-</span>°
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Height:</span>
-                        <span id="height">-</span> km
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">X Position:</span>
-                        <span id="xPos">-</span> km
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Y Position:</span>
-                        <span id="yPos">-</span> km
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Z Position:</span>
-                        <span id="zPos">-</span> km
-                    </div>
-                    
-                    <h3>Orbital Elements</h3>
-                    <div class="data-row">
-                        <span class="data-label">Eccentricity:</span>
-                        <span id="eccen">-</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">RA of Node:</span>
-                        <span id="node">-</span>°
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Arg of Perigee:</span>
-                        <span id="aop">-</span>°
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Mean Motion:</span>
-                        <span id="mnm">-</span> rev/day
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Mean Anomaly:</span>
-                        <span id="mna">-</span>°
-                    </div>
-                    <div class="data-row">
-                        <span class="data-label">Revolution Number:</span>
-                        <span id="revNum">-</span>
-                    </div>
                 </div>
+                -->
             </div>
         </div>
 
@@ -157,14 +128,9 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet.geodesic"></script>
-        
-        <!-- Satellite data and constants -->
-        <script>
-            const ID = 0; // Default satellite ID
-            const satName = ["ISS (ZARYA)"]; // Names of satellites
-        </script>
-        
-        <!-- Main application script -->
-        <script src="satPage_old.js"></script>
+        <script src="library/satellite.min.js"></script> <!-- Ensure satellite.min.js is loaded -->
+        <script src="TLE.js"></script> <!-- Load TLE class first -->
+        <script src="satPage.js"></script> <!-- Load main page script -->
+        <!-- Removed satPage_old.js include -->
     </body>
 </html>

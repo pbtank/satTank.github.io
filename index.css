@@ -18,13 +18,53 @@ table.time {
 }
 
 body {
-	font-family: monospace;
+	font-family: Arial, sans-serif;
 	font-size: 16px;
-	padding: 2px;
-	margin: 8px;
+	padding: 0;
+	margin: 0;
 	background-color: white !important; /* Ensure default background is white */
 	color: #333; /* Default text color */
 	transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+}
+
+.container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+#mapid {
+	height: 500px;
+	width: 100%;
+	margin: 20px 0;
+}
+
+#canvas-container {
+	width: 100%;
+	margin: 20px 0;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
+}
+
+#loadingMessage {
+	color: red;
+	font-weight: bold;
+}
+
+.info-panel {
+	background: #f7f7f7;
+	border-radius: 5px;
+	padding: 15px;
+	margin-bottom: 20px;
 }
 
 #pageHeader,
