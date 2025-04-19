@@ -3,15 +3,12 @@
 // Global variables
 let map;
 let satellite; // Holds the specific satellite data object
-let satellitePath = [];
-let groundTrack = [];
-let footprintPolygon;
+// Removed unused satellitePath, groundTrack, footprintPolygon
 let satelliteMarker;
 let orbitLine;
 let groundTrackLine;
 let updateIntervalId;
 let footprintCircle;
-// Removed observerMarker and observerLocation
 
 // Constants
 const EARTH_RADIUS_KM = 6371;
@@ -19,12 +16,14 @@ const UPDATE_INTERVAL_MS = 1000;
 const ORBIT_POINTS = 90; // Number of points to calculate for orbit
 const ORBIT_PERIOD_MINUTES = 90; // Approximate period for most LEO satellites
 
+// Only load data from active.json
+const activeJsonFile = 'data/active.json';
+
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Check for satellite ID in URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const satId = urlParams.get('ID'); // Changed from 'id' to 'ID' to match example URL
-    // Removed category check
+    const satId = urlParams.get('ID');
     
     if (!satId) {
         showError("Missing satellite ID (NORAD CAT ID) in URL. Please provide an ID parameter, e.g., ?ID=25544");
@@ -34,8 +33,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the map
     initMap();
     
-    // Load the satellite data from Celestrak API and start tracking
-    loadSatelliteDataFromApi(satId);
+    // Set default checkbox states
+    const showOrbitCheckbox = document.getElementById('show-orbit');
+    const showGroundTrackCheckbox = document.getElementById('show-groundtrack');
+    const showFootprintCheckbox = document.getElementById('show-footprint');
+
+    if (showOrbitCheckbox) showOrbitCheckbox.checked = true;
+    if (showGroundTrackCheckbox) showGroundTrackCheckbox.checked = true;
+    if (showFootprintCheckbox) showFootprintCheckbox.checked = true;
+
+    // Load the satellite data from LOCAL FILES and start tracking
+    loadSatelliteDataFromLocal(satId);
     
     // Set up event listeners
     document.getElementById('back-button').addEventListener('click', function() {
@@ -46,24 +54,53 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMapType(this.value);
     });
     
-    document.getElementById('show-orbit').addEventListener('change', function() {
-        toggleOrbitDisplay(this.checked);
-    });
+    if (showOrbitCheckbox) {
+        showOrbitCheckbox.addEventListener('change', function() {
+            toggleOrbitDisplay(this.checked);
+        });
+    }
     
-    document.getElementById('show-groundtrack').addEventListener('change', function() {
-        toggleGroundTrackDisplay(this.checked);
-    });
+    if (showGroundTrackCheckbox) {
+        showGroundTrackCheckbox.addEventListener('change', function() {
+            toggleGroundTrackDisplay(this.checked);
+        });
+    }
     
-    document.getElementById('show-footprint').addEventListener('change', function() {
-        toggleFootprintDisplay(this.checked);
-    });
-    
-    // Removed event listeners for locate-me and calculate-passes
+    if (showFootprintCheckbox) {
+        showFootprintCheckbox.addEventListener('change', function() {
+            toggleFootprintDisplay(this.checked);
+        });
+    }
+
+    // Removed redundant dark mode listener and UI update call
+});
+
+// --- Theme Toggle Functionality ---
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('theme-toggle');
+    const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
+
+    function setTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        if (themeToggle) {
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙'; 
+        }
+    }
+
+    setTheme(currentTheme); // Apply theme and emoji on load
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            let newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+    }
+    // Removed initialization calls from here
 });
 
 // Initialize Leaflet map
 function initMap() {
-    // Create the map
     map = L.map('mapid', {
         center: [0, 0],
         zoom: 2,
@@ -71,36 +108,22 @@ function initMap() {
         worldCopyJump: true
     });
     
-    // Add the default tile layer (standard map)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         subdomains: ['a', 'b', 'c']
     }).addTo(map);
     
-    // Removed graticule code causing errors
-    /*
-    L.latlngGraticule({
-        showLabel: true,
-        zoomInterval: [
-            {start: 2, end: 3, interval: 30},
-            {start: 4, end: 5, interval: 10},
-            {start: 6, end: 9, interval: 5},
-            {start: 10, end: 20, interval: 1}
-        ]
-    }).addTo(map);
-    */
+    // Removed commented-out graticule code
 }
 
 // Update the map type based on selection
 function updateMapType(type) {
-    // Remove current tile layer
     map.eachLayer(function(layer) {
         if (layer instanceof L.TileLayer) {
             map.removeLayer(layer);
         }
     });
     
-    // Add the selected tile layer
     switch (type) {
         case 'satellite':
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -128,49 +151,50 @@ function updateMapType(type) {
     }
 }
 
-// Load satellite data from Celestrak API using NORAD ID
-async function loadSatelliteDataFromApi(satId) {
-    showLoading(`Loading TLE data for NORAD ID ${satId}...`);
+// Load satellite data from local active.json file using NORAD ID
+async function loadSatelliteDataFromLocal(satId) {
+    showLoading(`Loading TLE data for NORAD ID ${satId} from ${activeJsonFile}...`);
+    let foundSatellite = null;
+
     try {
-        // Construct the Celestrak API URL for a specific satellite by NORAD CAT ID
-        const apiUrl = `https://celestrak.org/NORAD/elements/gp.php?CATNR=${satId}&FORMAT=json`;
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} while fetching TLE for ${satId}`);
+        const res = await fetch(activeJsonFile);
+        if (!res.ok) {
+            throw new Error(`Could not fetch ${activeJsonFile}: ${res.statusText}`);
         }
-        
-        const data = await response.json();
-        
-        // Celestrak returns an array, even for a single ID
-        if (!data || data.length === 0) {
-            throw new Error(`No TLE data found for NORAD ID ${satId} on Celestrak.`);
+        const data = await res.json();
+        let satellitesInData = [];
+
+        if (Array.isArray(data)) {
+            satellitesInData = data;
+        } else {
+             if (!Array.isArray(data)) {
+                 throw new Error(`Data in ${activeJsonFile} is not in the expected array format.`);
+             }
         }
-        
-        satellite = data[0]; // Assign the first (and likely only) satellite object
-        
-        // Update the page title with satellite name
+
+        const satIdNum = parseInt(satId, 10);
+        foundSatellite = satellitesInData.find(sat => parseInt(sat.NORAD_CAT_ID, 10) === satIdNum);
+
+        if (!foundSatellite) {
+            throw new Error(`No TLE data found for NORAD ID ${satId} in ${activeJsonFile}.`);
+        }
+
+        satellite = foundSatellite;
+
         document.getElementById('satellite-title').innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
-        
-        // Display satellite information
         displaySatelliteInfo();
-        
-        // Start tracking the satellite
         startTracking();
-        
         hideLoading();
-        
+
     } catch (error) {
         showError(`Failed to load satellite data: ${error.message}`);
+        hideLoading();
     }
 }
 
 // Start tracking the satellite with periodic updates
 function startTracking() {
-    // Initial update
     updateSatellitePosition();
-    
-    // Set up periodic updates
     updateIntervalId = setInterval(updateSatellitePosition, UPDATE_INTERVAL_MS);
 }
 
@@ -180,79 +204,66 @@ function updateSatellitePosition() {
         const now = new Date();
         const position = calculateSatellitePosition(satellite, now);
 
-        // Check if position calculation was successful
         if (position === null || isNaN(position.lat) || isNaN(position.lng)) {
-            // Optionally show a temporary error or just skip the update
-            console.warn('Skipping map update due to invalid position data at', now);
-            // You might want to stop the interval if this happens repeatedly
-            // showError('Failed to calculate valid satellite position. TLE might be outdated.');
-            // clearInterval(updateIntervalId); 
-            return; // Stop execution for this interval
+            // Removed console warning
+            return;
         }
-        
-        // Update position display
+
         updatePositionInfo(position);
-        
-        // Update map visualization
         updateMapVisualization(position);
-        
+
     } catch (error) {
-        // This catch block might now be less likely to be hit by NaN errors, 
-        // but good to keep for other unexpected issues.
-        console.error('Error updating satellite position:', error);
+        // Removed console error
         showError(`Failed to update satellite position: ${error.message}`);
-        clearInterval(updateIntervalId);
+        if (updateIntervalId) clearInterval(updateIntervalId);
     }
 }
 
 // Update the map visualization with the satellite's current position
 function updateMapVisualization(position) {
-    const { lat, lng, alt, velocity } = position;
-    
-    // Update or create satellite marker
+    const { lat, lng, alt } = position; // Removed unused velocity variable
+
     if (!satelliteMarker) {
-        // Create a custom satellite icon using Font Awesome
-        const satIcon = L.divIcon({
-            html: '<i class="fa-solid fa-satellite" style="color: #e74c3c;"></i>',
-            className: 'satellite-marker',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+        const satIcon = L.icon({
+            iconUrl: 'src/images/satImage.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16]
         });
-        
+
         satelliteMarker = L.marker([lat, lng], {
             icon: satIcon,
             title: satellite.OBJECT_NAME || `Satellite ${satellite.NORAD_CAT_ID}`
         }).addTo(map);
-        
-        // Add a popup with basic information
+
         satelliteMarker.bindPopup(createSatellitePopup(position));
+
     } else {
-        // Update marker position
         satelliteMarker.setLatLng([lat, lng]);
-        
-        // Update popup content
         satelliteMarker.getPopup().setContent(createSatellitePopup(position));
     }
-    
-    // Update satellite path for orbit visualization
+
     if (document.getElementById('show-orbit').checked) {
         updateOrbitVisualization();
+    } else if (orbitLine) {
+        map.removeLayer(orbitLine);
+        orbitLine = null;
     }
-    
-    // Update ground track
+
     if (document.getElementById('show-groundtrack').checked) {
         updateGroundTrackVisualization();
+    } else if (groundTrackLine) {
+        map.removeLayer(groundTrackLine);
+        groundTrackLine = null;
     }
-    
-    // Update footprint
+
     if (document.getElementById('show-footprint').checked) {
         updateFootprintVisualization(lat, lng, alt);
+    } else if (footprintCircle) {
+        map.removeLayer(footprintCircle);
+        footprintCircle = null;
     }
-    
-    // Center map on satellite if it's out of view
-    if (!map.getBounds().contains([lat, lng])) {
-        map.setView([lat, lng]);
-    }
+    // Removed commented-out map centering code
 }
 
 // Create popup content for satellite marker
@@ -271,10 +282,8 @@ function createSatellitePopup(position) {
 
 // Update the orbit visualization
 function updateOrbitVisualization() {
-    // Generate orbit points for one full period
     const orbitPoints = calculateOrbitPoints();
     
-    // Update or create the orbit line
     if (orbitLine) {
         map.removeLayer(orbitLine);
     }
@@ -293,17 +302,16 @@ function calculateOrbitPoints() {
     const points = [];
     const now = new Date();
     
-    // Calculate points for one full orbit
     for (let i = 0; i < ORBIT_POINTS; i++) {
-        // Calculate time offset for this point (distributing points evenly through the orbit)
         const minutesOffset = (i / ORBIT_POINTS) * ORBIT_PERIOD_MINUTES;
-        const timeOffset = minutesOffset * 60 * 1000; // Convert to milliseconds
-        
-        // Calculate the position at this time
+        const timeOffset = minutesOffset * 60 * 1000;
         const time = new Date(now.getTime() + timeOffset);
         const position = calculateSatellitePosition(satellite, time);
         
-        points.push([position.lat, position.lng]);
+        // Add check for valid position before pushing
+        if (position && !isNaN(position.lat) && !isNaN(position.lng)) {
+            points.push([position.lat, position.lng]);
+        }
     }
     
     return points;
@@ -311,10 +319,8 @@ function calculateOrbitPoints() {
 
 // Update the ground track visualization
 function updateGroundTrackVisualization() {
-    // Calculate ground track points (future positions projected to the ground)
     const trackPoints = calculateGroundTrackPoints();
     
-    // Update or create the ground track line
     if (groundTrackLine) {
         map.removeLayer(groundTrackLine);
     }
@@ -332,17 +338,16 @@ function calculateGroundTrackPoints() {
     const points = [];
     const now = new Date();
     
-    // Calculate future positions (half orbit)
     for (let i = 0; i < ORBIT_POINTS / 2; i++) {
-        // Calculate time offset for this point
         const minutesOffset = (i / (ORBIT_POINTS / 2)) * (ORBIT_PERIOD_MINUTES / 2);
-        const timeOffset = minutesOffset * 60 * 1000; // Convert to milliseconds
-        
-        // Calculate the position at this time
+        const timeOffset = minutesOffset * 60 * 1000;
         const time = new Date(now.getTime() + timeOffset);
         const position = calculateSatellitePosition(satellite, time);
         
-        points.push([position.lat, position.lng]);
+        // Add check for valid position before pushing
+        if (position && !isNaN(position.lat) && !isNaN(position.lng)) {
+            points.push([position.lat, position.lng]);
+        }
     }
     
     return points;
@@ -350,16 +355,14 @@ function calculateGroundTrackPoints() {
 
 // Update the footprint visualization (coverage area)
 function updateFootprintVisualization(lat, lng, alt) {
-    // Calculate footprint radius
     const radius = calculateFootprintRadius(alt);
     
-    // Update or create the footprint circle
     if (footprintCircle) {
         map.removeLayer(footprintCircle);
     }
     
     footprintCircle = L.circle([lat, lng], {
-        radius: radius * 1000, // Convert km to meters
+        radius: radius * 1000,
         color: '#f39c12',
         weight: 1,
         fillColor: '#f39c12',
@@ -370,9 +373,10 @@ function updateFootprintVisualization(lat, lng, alt) {
 
 // Calculate satellite footprint radius based on altitude
 function calculateFootprintRadius(altitude) {
-    // Formula for calculating footprint radius
-    // R = EARTH_RADIUS * arccos(EARTH_RADIUS / (EARTH_RADIUS + altitude))
+    if (altitude <= 0) return 0; // Avoid calculation errors for negative/zero altitude
     const ratio = EARTH_RADIUS_KM / (EARTH_RADIUS_KM + altitude);
+    // Ensure ratio is within valid range for acos to prevent NaN
+    if (ratio > 1 || ratio < -1) return 0; 
     const angle = Math.acos(ratio);
     return EARTH_RADIUS_KM * angle;
 }
@@ -402,18 +406,30 @@ function toggleFootprintDisplay(show) {
     if (show && satelliteMarker) {
         const position = satelliteMarker.getLatLng();
         const currentPosition = calculateSatellitePosition(satellite, new Date());
-        updateFootprintVisualization(position.lat, position.lng, currentPosition.alt);
+        if (currentPosition && !isNaN(currentPosition.alt)) {
+             updateFootprintVisualization(position.lat, position.lng, currentPosition.alt);
+        } else {
+            // Removed console warning
+            // Attempt to draw with last known altitude if available
+            const lastAlt = parseFloat(document.querySelector('#position-info table tr:nth-child(5) td')?.textContent);
+            if (!isNaN(lastAlt)) {
+                updateFootprintVisualization(position.lat, position.lng, lastAlt);
+            }
+        }
     } else if (footprintCircle) {
         map.removeLayer(footprintCircle);
         footprintCircle = null;
     }
 }
 
+// Removed toggleDarkMode function and related initialization blocks
+
 // Display satellite information in the details panels
 function displaySatelliteInfo() {
-    // Orbital information
     const orbitalInfo = document.getElementById('orbital-info');
+    // Populate TLE Data table
     orbitalInfo.innerHTML = `
+    <h4>TLE Data</h4>
     <table>
         <tr><th>NORAD ID</th><td>${satellite.NORAD_CAT_ID}</td></tr>
         <tr><th>Int'l Designator</th><td>${satellite.OBJECT_ID || 'N/A'}</td></tr>
@@ -425,10 +441,11 @@ function displaySatelliteInfo() {
         <tr><th>Mean Anomaly</th><td>${satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A'}°</td></tr>
         <tr><th>Mean Motion</th><td>${satellite.MEAN_MOTION?.toFixed(6) || 'N/A'} rev/day</td></tr>
     </table>`;
-    
-    // Satellite metadata
+
     const satelliteInfo = document.getElementById('satellite-info');
+    // Populate Satellite Info table
     satelliteInfo.innerHTML = `
+    <h4>Satellite Info</h4>
     <table>
         <tr><th>Name</th><td>${satellite.OBJECT_NAME || 'N/A'}</td></tr>
         <tr><th>Object Type</th><td>${getObjectType(satellite.OBJECT_TYPE) || 'N/A'}</td></tr>
@@ -443,12 +460,13 @@ function displaySatelliteInfo() {
 function updatePositionInfo(position) {
     const { lat, lng, alt, velocity, time } = position;
     const positionInfo = document.getElementById('position-info');
-    
-    // Format time for display
+
     const utcTimeString = time.toISOString();
-    const localTimeString = time.toLocaleString(); // Browser's local time format
-    
+    const localTimeString = time.toLocaleString();
+
+    // Populate Current Position table
     positionInfo.innerHTML = `
+    <h4>Current Position</h4>
     <table>
         <tr><th>Time (UTC)</th><td>${utcTimeString}</td></tr>
         <tr><th>Time (Local)</th><td>${localTimeString}</td></tr>
@@ -456,58 +474,46 @@ function updatePositionInfo(position) {
         <tr><th>Longitude</th><td>${lng.toFixed(4)}°</td></tr>
         <tr><th>Altitude</th><td>${alt.toFixed(2)} km</td></tr>
         <tr><th>Velocity</th><td>${velocity.toFixed(2)} km/s</td></tr>
-        <tr><th>Ground Track Speed</th><td>${calculateGroundSpeed(velocity, alt).toFixed(2)} km/s</td></tr>
+        <tr><th>Ground Speed</th><td>${calculateGroundSpeed(velocity, alt).toFixed(2)} km/s</td></tr>
         <tr><th>Phase</th><td>${isInDaylight(lat, lng, time) ? 'Daylight' : 'Eclipse'}</td></tr>
     </table>`;
 }
 
 // Calculate ground speed from orbital velocity
 function calculateGroundSpeed(velocity, altitude) {
-    // Simple approximation of ground speed
+    if (altitude <= -EARTH_RADIUS_KM) return 0; // Avoid division by zero or negative radius
     return velocity * (EARTH_RADIUS_KM / (EARTH_RADIUS_KM + altitude));
 }
 
 // Determine if the satellite is in daylight or eclipse
 function isInDaylight(lat, lng, time) {
-    // This is a simplification - we'd need a more complex algorithm for accurate determination
-    // For now, we'll use the Sun's position to approximate
     const sunPos = calculateSunPosition(time);
-    
-    // Calculate the angle between satellite and sun position
     const satelliteVector = latLngToCartesian(lat, lng);
     const sunVector = latLngToCartesian(sunPos.lat, sunPos.lng);
-    
     const dotProduct = satelliteVector.x * sunVector.x + 
                       satelliteVector.y * sunVector.y + 
                       satelliteVector.z * sunVector.z;
-    
-    // If the angle is less than 90 degrees, the satellite is in daylight
     return dotProduct > 0;
 }
 
 // Calculate a simplified sun position
 function calculateSunPosition(date) {
-    // This is a very simplified model for demo purposes
     const dayOfYear = getDayOfYear(date);
     const declination = 23.45 * Math.sin(2 * Math.PI * (284 + dayOfYear) / 365);
-    
-    // Calculate longitude based on time of day (UTC)
     const hours = date.getUTCHours();
     const minutes = date.getUTCMinutes();
     const seconds = date.getUTCSeconds();
-    
     const timeDecimal = hours + minutes/60 + seconds/3600;
-    const longitude = (timeDecimal - 12) * 15; // 15 degrees per hour
-    
+    const longitude = (timeDecimal - 12) * 15;
     return { lat: declination, lng: longitude };
 }
 
 // Get day of year (1-366)
 function getDayOfYear(date) {
     const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
+    const diff = date.getTime() - start.getTime(); // Use getTime() for accurate difference
     const oneDay = 1000 * 60 * 60 * 24;
-    return Math.floor(diff / oneDay);
+    return Math.floor(diff / oneDay) + 1; // Day of year is 1-based
 }
 
 // Convert latitude and longitude to Cartesian coordinates (unit sphere)
@@ -522,8 +528,6 @@ function latLngToCartesian(lat, lng) {
     };
 }
 
-// Removed getUserLocation, updateObserverMarker, calculatePasses, predictPasses, displayPasses functions
-
 // Helper function to get object type description
 function getObjectType(typeCode) {
     const types = {
@@ -532,51 +536,54 @@ function getObjectType(typeCode) {
         'DEB': 'Debris',
         'UNK': 'Unknown'
     };
-    
     return types[typeCode] || typeCode || 'Unknown';
 }
 
 // Helper function to format launch date from international designator
 function formatLaunchDate(objectId) {
     if (!objectId) return null;
-    
-    // Format: YYYY-NNNL where YYYY is launch year, NNN is launch number, L is piece letter
     const match = objectId.match(/^(\d{4})-(\d{3})/);
-    
     if (match) {
         const year = match[1];
         const launchNum = match[2];
         return `${year} (Launch #${parseInt(launchNum, 10)})`;
     }
-    
     return objectId;
 }
 
 // Calculate orbital period in minutes
 function calculateOrbitalPeriod(satellite) {
-    if (!satellite || !satellite.MEAN_MOTION) return null;
-    
-    // Period in minutes = (24 * 60) / mean_motion
+    if (!satellite || !satellite.MEAN_MOTION || satellite.MEAN_MOTION <= 0) return null;
     return (24 * 60 / satellite.MEAN_MOTION).toFixed(1);
 }
 
 // Show loading message
 function showLoading(message) {
     const loadingElement = document.getElementById('loading-message');
-    loadingElement.textContent = message || 'Loading...';
-    loadingElement.style.display = 'block';
-    document.getElementById('error-message').style.display = 'none';
+    if (loadingElement) {
+        loadingElement.textContent = message || 'Loading...';
+        loadingElement.style.display = 'block';
+    }
+    const errorElement = document.getElementById('error-message');
+    if (errorElement) {
+        errorElement.style.display = 'none';
+    }
 }
 
 // Hide loading message
 function hideLoading() {
-    document.getElementById('loading-message').style.display = 'none';
+    const loadingElement = document.getElementById('loading-message');
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
 }
 
 // Show error message
 function showError(message) {
     const errorElement = document.getElementById('error-message');
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-    hideLoading(); // Hide loading message if error occurs
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    }
+    hideLoading();
 }
