@@ -20,75 +20,104 @@ const ORBIT_PERIOD_MINUTES = 90; // Approximate period for most LEO satellites
 const activeJsonFile = 'data/active.json';
 
 // Initialize the page when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Check for satellite ID in URL parameters
+document.addEventListener('DOMContentLoaded', async function() { // Make async
+    // --- Non-Map Related Setup ---
+    // Setup back button listener
+    const backButton = document.getElementById('back-button');
+    if (backButton) {
+        backButton.addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+    }
+    // Theme toggle listener is handled in its own block below
+
+    // --- Satellite Loading and Map Initialization ---
     const urlParams = new URLSearchParams(window.location.search);
     const satId = urlParams.get('ID');
-    
+
     if (!satId) {
         showError("Missing satellite ID (NORAD CAT ID) in URL. Please provide an ID parameter, e.g., ?ID=25544");
-        return;
-    }
-    
-    // Initialize the map
-    initMap();
-    
-    // Set default checkbox states
-    const showOrbitCheckbox = document.getElementById('show-orbit');
-    const showGroundTrackCheckbox = document.getElementById('show-groundtrack');
-    const showFootprintCheckbox = document.getElementById('show-footprint');
-
-    if (showOrbitCheckbox) showOrbitCheckbox.checked = true;
-    if (showGroundTrackCheckbox) showGroundTrackCheckbox.checked = true;
-    if (showFootprintCheckbox) showFootprintCheckbox.checked = true;
-
-    // Load the satellite data from LOCAL FILES and start tracking
-    loadSatelliteDataFromLocal(satId);
-    
-    // Set up event listeners
-    document.getElementById('back-button').addEventListener('click', function() {
-        window.location.href = 'satelliteList.html';
-    });
-    
-    document.getElementById('map-type').addEventListener('change', function() {
-        updateMapType(this.value);
-    });
-    
-    if (showOrbitCheckbox) {
-        showOrbitCheckbox.addEventListener('change', function() {
-            toggleOrbitDisplay(this.checked);
-        });
-    }
-    
-    if (showGroundTrackCheckbox) {
-        showGroundTrackCheckbox.addEventListener('change', function() {
-            toggleGroundTrackDisplay(this.checked);
-        });
-    }
-    
-    if (showFootprintCheckbox) {
-        showFootprintCheckbox.addEventListener('change', function() {
-            toggleFootprintDisplay(this.checked);
-        });
+        return; // Stop execution
     }
 
-    // Removed redundant dark mode listener and UI update call
+    // Attempt to load satellite data FIRST
+    const loadSuccessful = await loadSatelliteDataFromLocal(satId);
+
+    if (loadSuccessful) {
+        // --- Map and Tracking Setup (Only if load was successful) ---
+        initMap(); // Initialize the map
+
+        // Set default checkbox states and add listeners
+        const showOrbitCheckbox = document.getElementById('show-orbit');
+        const showGroundTrackCheckbox = document.getElementById('show-groundtrack');
+        const showFootprintCheckbox = document.getElementById('show-footprint');
+
+        if (showOrbitCheckbox) {
+            showOrbitCheckbox.checked = true;
+            showOrbitCheckbox.addEventListener('change', function() { toggleOrbitDisplay(this.checked); });
+        }
+        if (showGroundTrackCheckbox) {
+            showGroundTrackCheckbox.checked = true;
+            showGroundTrackCheckbox.addEventListener('change', function() { toggleGroundTrackDisplay(this.checked); });
+        }
+        if (showFootprintCheckbox) {
+            showFootprintCheckbox.checked = true;
+            showFootprintCheckbox.addEventListener('change', function() { toggleFootprintDisplay(this.checked); });
+        }
+
+        // Map type listener
+        const mapTypeSelect = document.getElementById('map-type');
+        if (mapTypeSelect) {
+             mapTypeSelect.addEventListener('change', function() { updateMapType(this.value); });
+             // Apply initial theme map type after map is initialized
+             const currentTheme = localStorage.getItem('theme') || 'dark';
+             if (currentTheme === 'dark') {
+                 updateMapType('dark');
+                 mapTypeSelect.value = 'dark';
+             } else {
+                 updateMapType('standard');
+                 mapTypeSelect.value = 'standard';
+             }
+        }
+
+        // Display initial info and start tracking
+        displaySatelliteInfo(); // Display static info
+        startTracking(); // Start dynamic updates
+
+    } else {
+        // If loading failed, ensure map and details remain hidden (handled by showError/hideLoading)
+        console.log("Satellite data load failed, map and tracking will not initialize.");
+    }
 });
 
 // --- Theme Toggle Functionality ---
 document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
+    const mapTypeSelect = document.getElementById('map-type'); // Get map type dropdown
     const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
 
     function setTheme(theme) {
         document.body.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
         if (themeToggle) {
-            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙'; 
+            // Update icon based on the new theme
+            themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+
+        // Update map type based on theme - ONLY IF MAP EXISTS
+        if (map && mapTypeSelect) { // Add map check here
+            if (theme === 'dark') {
+                updateMapType('dark');
+                mapTypeSelect.value = 'dark';
+            } else {
+                updateMapType('standard');
+                mapTypeSelect.value = 'standard';
+            }
         }
     }
 
-    setTheme(currentTheme); // Apply theme and emoji on load
+    // Apply theme and icon on load
+    setTheme(currentTheme);
 
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
@@ -96,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTheme(newTheme);
         });
     }
-    // Removed initialization calls from here
 });
 
 // Initialize Leaflet map
@@ -152,7 +180,7 @@ function updateMapType(type) {
 }
 
 // Load satellite data from local active.json file using NORAD ID
-async function loadSatelliteDataFromLocal(satId) {
+async function loadSatelliteDataFromLocal(satId) { // Already async
     showLoading(`Loading TLE data for NORAD ID ${satId} from ${activeJsonFile}...`);
     let foundSatellite = null;
 
@@ -176,19 +204,28 @@ async function loadSatelliteDataFromLocal(satId) {
         foundSatellite = satellitesInData.find(sat => parseInt(sat.NORAD_CAT_ID, 10) === satIdNum);
 
         if (!foundSatellite) {
-            throw new Error(`No TLE data found for NORAD ID ${satId} in ${activeJsonFile}.`);
+            throw new Error(`NOT_FOUND: No TLE data found for NORAD ID ${satId} in ${activeJsonFile}.`);
         }
 
-        satellite = foundSatellite;
+        satellite = foundSatellite; // Assign to global variable
 
-        document.getElementById('satellite-title').innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
-        displaySatelliteInfo();
-        startTracking();
-        hideLoading();
+        // Set title text but don't display it yet (hideLoading will handle it)
+        const titleElement = document.getElementById('satellite-title');
+        if (titleElement) {
+             titleElement.innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
+        }
+
+        hideLoading(true); // Indicate success
+        return true; // Return success
 
     } catch (error) {
-        showError(`Failed to load satellite data: ${error.message}`);
-        hideLoading();
+        if (error.message.startsWith('NOT_FOUND:')) {
+            showError(`This satellite (NORAD ID: ${satId}) is not currently listed as active.`);
+        } else {
+            showError(`Failed to load satellite data: ${error.message}`);
+        }
+        // hideLoading(false) is called within showError
+        return false; // Return failure
     }
 }
 
@@ -426,48 +463,53 @@ function toggleFootprintDisplay(show) {
 
 // Display satellite information in the details panels
 function displaySatelliteInfo() {
-    const orbitalInfo = document.getElementById('orbital-info');
-    // Populate TLE Data table
-    orbitalInfo.innerHTML = `
-    <h4>TLE Data</h4>
-    <table>
-        <tr><th>NORAD ID</th><td>${satellite.NORAD_CAT_ID}</td></tr>
-        <tr><th>Int'l Designator</th><td>${satellite.OBJECT_ID || 'N/A'}</td></tr>
-        <tr><th>Epoch</th><td>${satellite.EPOCH || 'N/A'}</td></tr>
-        <tr><th>Eccentricity</th><td>${satellite.ECCENTRICITY?.toFixed(6) || 'N/A'}</td></tr>
-        <tr><th>Inclination</th><td>${satellite.INCLINATION?.toFixed(4) || 'N/A'}°</td></tr>
-        <tr><th>RAAN</th><td>${satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A'}°</td></tr>
-        <tr><th>Arg. of Perigee</th><td>${satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A'}°</td></tr>
-        <tr><th>Mean Anomaly</th><td>${satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A'}°</td></tr>
-        <tr><th>Mean Motion</th><td>${satellite.MEAN_MOTION?.toFixed(6) || 'N/A'} rev/day</td></tr>
-    </table>`;
+    // Ensure satellite object exists before trying to access properties
+    if (!satellite) return;
 
-    const satelliteInfo = document.getElementById('satellite-info');
-    // Populate Satellite Info table
-    satelliteInfo.innerHTML = `
-    <h4>Satellite Info</h4>
-    <table>
+    const orbitalTableBody = document.querySelector('#orbital-table tbody');
+    const satelliteTableBody = document.querySelector('#satellite-table tbody');
+    const positionTableBody = document.querySelector('#position-table tbody'); // Clear initial position too
+
+    // Reformat orbital data into fewer rows with more columns
+    orbitalTableBody.innerHTML = `
+        <tr>
+            <th>NORAD ID</th><td>${satellite.NORAD_CAT_ID}</td>
+            <th>Int'l Designator</th><td>${satellite.OBJECT_ID || 'N/A'}</td>
+            <th>Epoch</th><td>${satellite.EPOCH || 'N/A'}</td>
+        </tr>
+        <tr>
+            <th>Eccentricity</th><td>${satellite.ECCENTRICITY?.toFixed(6) || 'N/A'}</td>
+            <th>Inclination</th><td>${satellite.INCLINATION?.toFixed(4) || 'N/A'}°</td>
+            <th>RAAN</th><td>${satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A'}°</td>
+        </tr>
+        <tr>
+            <th>Arg. of Perigee</th><td>${satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A'}°</td>
+            <th>Mean Anomaly</th><td>${satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A'}°</td>
+            <th>Mean Motion</th><td>${satellite.MEAN_MOTION?.toFixed(6) || 'N/A'} rev/day</td>
+        </tr>
+    `;
+
+    satelliteTableBody.innerHTML = `
         <tr><th>Name</th><td>${satellite.OBJECT_NAME || 'N/A'}</td></tr>
-        <tr><th>Object Type</th><td>${getObjectType(satellite.OBJECT_TYPE) || 'N/A'}</td></tr>
-        <tr><th>Country</th><td>${satellite.COUNTRY_CODE || 'N/A'}</td></tr>
-        <tr><th>Launch Date</th><td>${formatLaunchDate(satellite.OBJECT_ID) || 'N/A'}</td></tr>
-        <tr><th>Size</th><td>${satellite.RCS_SIZE || 'N/A'}</td></tr>
-        <tr><th>Orbital Period</th><td>${calculateOrbitalPeriod(satellite) || 'N/A'} minutes</td></tr>
-    </table>`;
+        <tr><th>Launch Date</th><td>${formatLaunchDate(satellite.OBJECT_ID) || 'N/A'}</td></tr>        <tr><th>Orbital Period</th><td>${calculateOrbitalPeriod(satellite) || 'N/A'} minutes</td></tr>
+    `;
+
+    // Clear position table initially
+    if(positionTableBody) positionTableBody.innerHTML = '';
 }
 
 // Update position information panel with current data
 function updatePositionInfo(position) {
+     // Ensure satellite object exists
+    if (!satellite) return;
     const { lat, lng, alt, velocity, time } = position;
-    const positionInfo = document.getElementById('position-info');
+    const positionTableBody = document.querySelector('#position-table tbody');
 
     const utcTimeString = time.toISOString();
     const localTimeString = time.toLocaleString();
 
-    // Populate Current Position table
-    positionInfo.innerHTML = `
-    <h4>Current Position</h4>
-    <table>
+    // Populate Current Position table body
+    positionTableBody.innerHTML = `
         <tr><th>Time (UTC)</th><td>${utcTimeString}</td></tr>
         <tr><th>Time (Local)</th><td>${localTimeString}</td></tr>
         <tr><th>Latitude</th><td>${lat.toFixed(4)}°</td></tr>
@@ -475,8 +517,7 @@ function updatePositionInfo(position) {
         <tr><th>Altitude</th><td>${alt.toFixed(2)} km</td></tr>
         <tr><th>Velocity</th><td>${velocity.toFixed(2)} km/s</td></tr>
         <tr><th>Ground Speed</th><td>${calculateGroundSpeed(velocity, alt).toFixed(2)} km/s</td></tr>
-        <tr><th>Phase</th><td>${isInDaylight(lat, lng, time) ? 'Daylight' : 'Eclipse'}</td></tr>
-    </table>`;
+    `;
 }
 
 // Calculate ground speed from orbital velocity
@@ -485,48 +526,13 @@ function calculateGroundSpeed(velocity, altitude) {
     return velocity * (EARTH_RADIUS_KM / (EARTH_RADIUS_KM + altitude));
 }
 
-// Determine if the satellite is in daylight or eclipse
-function isInDaylight(lat, lng, time) {
-    const sunPos = calculateSunPosition(time);
-    const satelliteVector = latLngToCartesian(lat, lng);
-    const sunVector = latLngToCartesian(sunPos.lat, sunPos.lng);
-    const dotProduct = satelliteVector.x * sunVector.x + 
-                      satelliteVector.y * sunVector.y + 
-                      satelliteVector.z * sunVector.z;
-    return dotProduct > 0;
-}
+// Removed isInDaylight function
 
-// Calculate a simplified sun position
-function calculateSunPosition(date) {
-    const dayOfYear = getDayOfYear(date);
-    const declination = 23.45 * Math.sin(2 * Math.PI * (284 + dayOfYear) / 365);
-    const hours = date.getUTCHours();
-    const minutes = date.getUTCMinutes();
-    const seconds = date.getUTCSeconds();
-    const timeDecimal = hours + minutes/60 + seconds/3600;
-    const longitude = (timeDecimal - 12) * 15;
-    return { lat: declination, lng: longitude };
-}
+// Removed calculateSunPosition function
 
-// Get day of year (1-366)
-function getDayOfYear(date) {
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date.getTime() - start.getTime(); // Use getTime() for accurate difference
-    const oneDay = 1000 * 60 * 60 * 24;
-    return Math.floor(diff / oneDay) + 1; // Day of year is 1-based
-}
+// Removed getDayOfYear function
 
-// Convert latitude and longitude to Cartesian coordinates (unit sphere)
-function latLngToCartesian(lat, lng) {
-    const latRad = lat * Math.PI / 180;
-    const lngRad = lng * Math.PI / 180;
-    
-    return {
-        x: Math.cos(latRad) * Math.cos(lngRad),
-        y: Math.cos(latRad) * Math.sin(lngRad),
-        z: Math.sin(latRad)
-    };
-}
+// Removed latLngToCartesian function
 
 // Helper function to get object type description
 function getObjectType(typeCode) {
@@ -560,30 +566,55 @@ function calculateOrbitalPeriod(satellite) {
 // Show loading message
 function showLoading(message) {
     const loadingElement = document.getElementById('loading-message');
+    const errorElement = document.getElementById('error-message');
+    const titleElement = document.getElementById('satellite-title');
+    const mapElement = document.getElementById('mapid');
+    const detailsElements = document.querySelectorAll('.satellite-details-section'); // Target details sections
+
     if (loadingElement) {
         loadingElement.textContent = message || 'Loading...';
         loadingElement.style.display = 'block';
     }
-    const errorElement = document.getElementById('error-message');
-    if (errorElement) {
-        errorElement.style.display = 'none';
-    }
+    if (errorElement) errorElement.style.display = 'none';
+    if (titleElement) titleElement.style.display = 'none';
+    if (mapElement) mapElement.style.display = 'none'; // Hide map
+    detailsElements.forEach(el => el.style.display = 'none'); // Hide details
 }
 
-// Hide loading message
-function hideLoading() {
+// Hide loading message (and show content if successful)
+function hideLoading(isSuccess = true) {
     const loadingElement = document.getElementById('loading-message');
-    if (loadingElement) {
-        loadingElement.style.display = 'none';
+    const titleElement = document.getElementById('satellite-title');
+    const mapElement = document.getElementById('mapid');
+    const detailsElements = document.querySelectorAll('.satellite-details-section');
+
+    if (loadingElement) loadingElement.style.display = 'none';
+
+    // Only show content if loading was successful
+    if (isSuccess) {
+        if (titleElement) titleElement.style.display = 'block';
+        if (mapElement) mapElement.style.display = 'block'; // Show map
+        detailsElements.forEach(el => el.style.display = 'block'); // Show details
+    } else {
+        // Ensure content remains hidden on failure
+        if (titleElement) titleElement.style.display = 'none';
+        if (mapElement) mapElement.style.display = 'none';
+        detailsElements.forEach(el => el.style.display = 'none');
     }
 }
 
 // Show error message
 function showError(message) {
     const errorElement = document.getElementById('error-message');
+    const loadingElement = document.getElementById('loading-message');
+    // No need to hide map/details here, hideLoading(false) handles it
+
     if (errorElement) {
         errorElement.textContent = message;
         errorElement.style.display = 'block';
     }
-    hideLoading();
+    if (loadingElement) loadingElement.style.display = 'none';
+
+    // Call hideLoading with false to ensure title/map/details remain hidden
+    hideLoading(false);
 }

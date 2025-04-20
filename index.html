@@ -17,7 +17,26 @@
 </head>
 
 <body id="pageBody" style="background-color: #D5F7F3">
+    <!-- Absolutely Positioned Elements -->
+    <!-- UTC Clock Container Removed -->
+    <div id="dark-mode-toggle-container" style="position: absolute; top: 10px; right: 10px;">
+        <!-- Removed old darkModeToggle button -->
+    </div>
+
+    <!-- Dark Mode Toggle Switch - Moved here for fixed positioning -->
+    <div class="theme-switch-wrapper">
+        <span class="icon sun">☀️</span> <!-- Sun icon before the label -->
+        <label class="theme-switch" for="darkModeSwitch">
+            <input type="checkbox" id="darkModeSwitch" />
+            <span class="slider round">
+                <!-- Icons removed from here -->
+            </span>
+        </label>
+        <span class="icon moon">🌙</span> <!-- Moon icon after the label -->
+    </div>
+
     <header id="pageHeader">
+        <!-- Centered Title and Subheading -->
         <table id="headerTable" border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
             <tr>
                 <td>
@@ -33,19 +52,30 @@
                 </td>
             </tr>
         </table>
-        <!-- Dark Mode Toggle Button -->
-        <button id="darkModeToggle" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer;">☀️</button>
+
+        <!-- Centered Controls Container -->
+        <div id="header-controls-container">
+            <div id="categoryDropdownContainer">
+                <!-- Dropdown will be generated here -->
+            </div>
+            <div id="sortingControls">
+                <label for="sortColumn">Sort by:</label>
+                <select id="sortColumn" class="form-control-sm">
+                    <option value="0">Name</option>
+                    <option value="3">Launch Year</option> <!-- Assuming Launch Year will be 4th column (index 3) -->
+                </select>
+                <label for="sortOrder">Order:</label>
+                <select id="sortOrder" class="form-control-sm">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+            <div id="right-controls">
+                <button id="add-tle-btn" class="btn btn-primary">Add TLE</button>
+                <!-- Dark Mode Toggle Switch Removed from here -->
+            </div>
+        </div>
     </header>
-
-    <!-- UTC Clock Display -->
-    <div id="utc-clock-container">
-        Current UTC Time: <span id="utc-clock"></span>
-    </div>
-
-    <!-- Add Custom TLE Button -->
-    <div id="addTleButtonContainer">
-        <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
-    </div>
 
     <!-- Hidden TLE Form -->
     <div id="tle-form" class="tle-form-container" style="display: none; max-width: 600px; margin: 10px auto; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9;">
@@ -64,26 +94,6 @@
         </div>
         <button id="save-tle-btn" class="btn btn-success">Save Satellite</button>
         <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button> <!-- Added Cancel button -->
-    </div>
-
-    <!-- Category Dropdown -->
-    <div id="categoryDropdownContainer">
-        <!-- Dropdown will be generated here -->
-    </div>
-
-    <!-- Sorting Controls -->
-    <div id="sortingControlsContainer">
-        <label for="sortColumn">Sort by:</label>
-        <select id="sortColumn" class="form-control-sm">
-            <option value="0">Name</option>
-            <option value="3">Launch Year</option> <!-- Assuming Launch Year will be 4th column (index 3) -->
-        </select>
-        <label for="sortOrder">Order:</label>
-        <select id="sortOrder" class="form-control-sm">
-            <option value="asc">Ascending</option>
-            <option value="desc">Descending</option>
-        </select>
-        <!-- Removed Sort Button -->
     </div>
 
     <div id="satelliteTableContainer">

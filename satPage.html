@@ -13,45 +13,82 @@
 <body>
     <header>
         <button id="back-button" class="icon-button" title="Back to List"><i class="fas fa-arrow-left"></i></button>
-        <h1 id="satellite-title">Loading Satellite...</h1>
-        <button id="theme-toggle" class="icon-button" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+        <h1 id="satellite-title"></h1>
+        <!-- Dark Mode Toggle Switch -->
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="darkModeCheckboxSatPage">
+                <input type="checkbox" id="darkModeCheckboxSatPage" />
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <!-- Removed old button: <button id="theme-toggle" ...> -->
     </header>
 
     <main>
-        <div id="map-container">
-            <div id="mapid"></div>
-            <div id="map-controls">
-                <label for="map-type">Map Type:</label>
-                <select id="map-type">
-                    <option value="standard">Standard</option>
-                    <option value="satellite">Satellite</option>
-                    <option value="dark">Dark</option>
-                    <option value="terrain">Terrain</option>
-                </select>
-                <label><input type="checkbox" id="show-orbit"> Show Orbit</label>
-                <label><input type="checkbox" id="show-groundtrack"> Show Ground Track</label>
-                <label><input type="checkbox" id="show-footprint"> Show Footprint</label>
+        <!-- Map controls moved here -->
+        <div id="map-controls">
+            <label for="map-type">Map Type:</label>
+            <select id="map-type">
+                <option value="standard">Standard</option>
+                <option value="satellite">Satellite</option>
+                <option value="dark">Dark</option>
+                <option value="terrain">Terrain</option>
+            </select>
+            <label><input type="checkbox" id="show-orbit"> Show Orbit</label>
+            <label><input type="checkbox" id="show-groundtrack"> Show Ground Track</label>
+            <label><input type="checkbox" id="show-footprint"> Show Footprint</label>
+        </div>
+
+        <!-- Container for Map and Right Column Info -->
+        <div id="map-info-container">
+            <div id="map-container">
+                <div id="mapid"></div>
+            </div>
+            <!-- Right Column for Satellite and Position Info -->
+            <div id="right-column-info">
+                <div class="panel" id="satellite-panel">
+                    <h2>Satellite Info</h2>
+                    <div id="satellite-info" class="info-table-container">
+                        <table class="info-table" id="satellite-table">
+                            <tbody><!-- Satellite info will be populated here by JS --></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="panel" id="position-panel">
+                    <h2>Current Position</h2>
+                    <div id="position-info" class="info-table-container">
+                        <table class="info-table" id="position-table">
+                            <tbody><!-- Position data will be populated here by JS --></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="info-panels">
-            <div class="panel" id="position-panel">
-                <h2>Current Position</h2>
-                <div id="position-info">Loading...</div>
-            </div>
+        <!-- Container for Orbital Info (now separate) -->
+        <div id="orbital-info-panel-container">
             <div class="panel" id="orbital-panel">
                 <h2>Orbital Elements (TLE)</h2>
-                <div id="orbital-info">Loading...</div>
+                <div id="orbital-info" class="info-table-container">
+                    <table class="info-table" id="orbital-table">
+                        <tbody><!-- Orbital data will be populated here by JS --></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="panel" id="satellite-panel">
-                <h2>Satellite Info</h2>
-                <div id="satellite-info">Loading...</div>
-            </div>
+            <!-- Position panel moved out -->
         </div>
     </main>
 
-    <div id="loading-message" class="status-message">Loading...</div>
-    <div id="error-message" class="status-message error"></div>
+    <div class="container">
+        <!-- Status Messages Area -->
+        <div id="loading-message" class="status-message loading" style="display: none;">Loading...</div>
+        <div id="error-message" class="status-message error" style="display: none;">Error message here</div>
+
+        <!-- Satellite Title -->
+        <h1 id="satellite-title"></h1> <!-- Remove default text -->
+
+        <!-- ... rest of the container ... -->
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="

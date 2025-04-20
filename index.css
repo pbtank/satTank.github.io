@@ -25,6 +25,7 @@ body {
 	background-color: white !important; /* Ensure default background is white */
 	color: #333; /* Default text color */
 	transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+    position: relative; /* Needed for absolute positioning of children relative to body */
 }
 
 .container {
@@ -51,8 +52,20 @@ table {
 
 th, td {
 	padding: 8px;
-	text-align: left;
+	text-align: left; /* Existing style, will be overridden below */
 	border-bottom: 1px solid #ddd;
+}
+
+/* Center text in the main satellite table cells */
+#satelliteTableContainer table th,
+#satelliteTableContainer table td {
+    text-align: center;
+    vertical-align: middle; /* Optional: vertically center content */
+}
+
+/* Keep header/footer table text centered if they have specific rules */
+#headerTable td, #footerTable td {
+    text-align: center; /* Ensure these remain centered */
 }
 
 #loadingMessage {
@@ -112,6 +125,12 @@ th, td {
 	margin: 15px 0;
 	font-size: 18px;
 	font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    padding: 5px; /* Add padding for spacing */
+    background-color: rgba(var(--background-rgb, 255, 255, 255), 0.7); /* Semi-transparent background */
+    border-radius: 3px;
+    z-index: 10; /* Ensure it's above other content if needed */
 }
 
 #utc-clock {
@@ -129,6 +148,14 @@ th, td {
 	max-width: 400px; /* Reduced max-width for dropdown container */
 }
 
+#categoryDropdownContainer,
+#sortingControls {
+    padding: 0.5rem; /* Add padding inside the border */
+    border: 1px solid #ccc; /* Add a light grey border */
+    border-radius: 4px; /* Optional: round the corners */
+    margin-bottom: 0.5rem; /* Add some space below if needed */
+}
+
 #categoryDropdown {
 	/* width: 300px; */ /* Example: Set a fixed width if needed */
 	/* display: inline-block; */ /* Adjust display if necessary */
@@ -142,6 +169,14 @@ th, td {
 	border: 1px solid #ccc;
 	background-color: #f9f9f9;
 	border-radius: 5px;
+}
+
+/* Ensure text inputs within the form take full width */
+#tle-form .form-group input[type="text"] {
+    width: 100%; /* Make input fields take the full width of their container */
+    box-sizing: border-box; /* Include padding and border in the element's total width */
+    /* Optionally adjust font size if placeholder is still cut off */
+    /* font-size: 0.9rem; */
 }
 
 #satelliteTableContainer {
@@ -171,6 +206,24 @@ table.dataTable tbody tr.even td:first-child {
 	color: #333 !important; /* Ensure default text color */
 }
 
+/* Style for inactive satellite text in the table */
+.inactive-satellite {
+    color: grey; /* Make the text grey */
+    font-style: italic; /* Optional: italicize */
+}
+
+/* Optional: Ensure active links are blue if not default */
+#satelliteTableContainer table tbody td a {
+    color: blue; /* Or your preferred link color */
+    text-decoration: bold;
+}
+
+/* Optional: Ensure active links are blue if not default */
+#satelliteTableContainer table tbody td a {
+    color: rgb(38, 0, 255); /* Or your preferred link color */
+    text-decoration: bold
+}
+
 /* --- Dark Mode Styles --- */
 body.dark-mode {
 	background-color: black !important; /* Ensure dark background is black */
@@ -198,9 +251,7 @@ body.dark-mode #utc-clock {
 
 body.dark-mode #addTleButtonContainer button,
 body.dark-mode #sortingControlsContainer button,
-body.dark-mode #tle-form button {
-	/* Adjust button styles if needed */
-}
+
 
 body.dark-mode #tle-form {
 	background-color: #2a2a2a;
@@ -228,6 +279,7 @@ body.dark-mode table.dataTable thead th {
 	color: #e0e0e0 !important; /* Ensure header text is visible */
 	background-color: #2a2a2a; /* Darker header background */
 	border-bottom: 1px solid #555;
+	text-align: center; /* Ensure centered in dark mode */
 }
 
 body.dark-mode table.dataTable tbody tr,
@@ -253,6 +305,8 @@ body.dark-mode table.dataTable tbody tr:hover td:first-child { /* Target first c
 
 body.dark-mode table.dataTable tbody td {
 	border-top: 1px solid #444;
+	text-align: center; /* Ensure centered in dark mode */
+    vertical-align: middle; /* Optional: vertically center content */
 }
 
 body.dark-mode table.dataTable tbody td a {
@@ -293,6 +347,195 @@ body.dark-mode .dataTables_paginate .paginate_button.current {
 	background: #555;
 	border-color: #777;
 	color: #fff !important;
+}
+
+/* Dark mode adjustment for active links */
+body.dark-mode #satelliteTableContainer table tbody td a {
+    color: red; /* Change link color to red in dark mode */
+}
+
+/* Flexbox styles for header controls */
+header {
+    /* Remove direct flex properties if they conflict */
+}
+
+#header-controls-container {
+    display: flex;
+    justify-content: center; /* Center items horizontally */
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping */
+    gap: 1.5rem; /* Space between control groups */
+    padding: 0.8rem 1rem; /* Add padding */
+    margin-top: 0.5rem; /* Space below the title/hr */
+}
+
+#center-controls {
+    display: flex;
+    justify-content: center; /* Center the items within this container */
+    align-items: center;
+    gap: 1.5rem; /* Space between category and sorting */
+    flex-wrap: wrap; /* Allow inner wrapping */
+    flex-grow: 1; /* Allow this section to grow to push left/right apart */
+    min-width: 200px; /* Prevent excessive shrinking */
+}
+
+#categoryDropdownContainer label,
+#sortingControls label {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+#categoryDropdownContainer select,
+#sortingControls select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border-radius: 3px;
+}
+
+#right-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Space between buttons */
+}
+
+#dark-mode-toggle-container {
+    padding: 5px;
+    z-index: 10;
+}
+
+/* Adjust button styles if needed */
+#add-tle-btn { /* Removed #darkModeToggle from this rule */
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #header-controls-container {
+        justify-content: center; /* Center everything when stacked */
+    }
+    #center-controls {
+        order: 1; /* Move center controls below clock/add button if wrapped */
+        width: 100%; /* Take full width when wrapped */
+        justify-content: space-around; /* Space out controls when wrapped */
+        margin-top: 0.5rem;
+    }
+    #dark-mode-toggle-container {
+        top: 5px;
+        right: 5px;
+    }
+    #header-controls-container {
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+}
+
+/* --- Dark Mode Toggle Switch Styles --- */
+.theme-switch-wrapper {
+    position: fixed; /* Position fixed to viewport */
+    top: 15px;       /* Distance from top */
+    right: 20px;      /* Distance from right */
+    z-index: 1001;   /* Ensure it's above other elements */
+    display: flex; /* Use flexbox to align items */
+    align-items: center; /* Vertically center items */
+    gap: 8px; /* Add space between flex items (icons and label) */
+}
+
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px; /* Width of the switch */
+    height: 24px; /* Height of the switch */
+}
+
+/* Hide default HTML checkbox */
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* Default background */
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; /* Height of the knob */
+    width: 18px; /* Width of the knob */
+    left: 3px; /* Position from left */
+    bottom: 3px; /* Position from bottom */
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    z-index: 1; /* Ensure knob is above icons */
+}
+
+/* Icon Styles */
+.theme-switch-wrapper .icon {
+    font-size: 1.2rem; /* Adjust icon size */
+    /* margin: 0 5px; */ /* Remove margin, use gap in wrapper */
+    line-height: 1; /* Adjust line height if needed */
+    color: #333; /* Default icon color for light mode */
+    transition: color 0.3s;
+    display: inline-block; /* Ensure icons are treated as blocks for display control */
+}
+
+/* Default State (Light Mode): Show Sun, Hide Moon */
+.theme-switch-wrapper .sun {
+    display: inline-block;
+}
+.theme-switch-wrapper .moon {
+    display: none;
+}
+
+/* Dark Mode State: Hide Sun, Show Moon */
+body.dark-mode .theme-switch-wrapper .sun {
+    display: none;
+}
+body.dark-mode .theme-switch-wrapper .moon {
+    display: inline-block;
+}
+
+input:checked + .slider {
+    background-color: #4a4a4a; /* Darker background for dark mode */
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px); /* Move knob to the right */
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 24px; /* Make the track round */
+}
+
+.slider.round:before {
+    border-radius: 50%; /* Make the knob round */
+}
+
+body.dark-mode #categoryDropdownContainer,
+body.dark-mode #sortingControls {
+    border-color: #555; /* Darker border for dark mode */
 }
 
 

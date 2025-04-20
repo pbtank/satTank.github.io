@@ -11,6 +11,9 @@ const localJsonFiles = [
     'data/custom_satellites.json'
 ];
 
+// Global variable to store active satellite IDs
+let activeSatelliteIds = new Set();
+
 // Helper to load all local JSON files and merge them
 async function loadAllLocalSatellites() {
     let allSats = [];
@@ -75,6 +78,30 @@ function makeTable() {
 document.addEventListener('DOMContentLoaded', () => {
 });
 
+// Function to fetch and store active satellite IDs
+async function loadActiveSatelliteIds() {
+    try {
+        const response = await fetch('data/active.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const activeSatellites = await response.json();
+        if (Array.isArray(activeSatellites)) {
+            activeSatellites.forEach(sat => {
+                if (sat.NORAD_CAT_ID) {
+                    activeSatelliteIds.add(parseInt(sat.NORAD_CAT_ID, 10)); // Store IDs as numbers
+                }
+            });
+            console.log(`Loaded ${activeSatelliteIds.size} active satellite IDs.`);
+        } else {
+            console.error("active.json did not contain a valid array.");
+        }
+    } catch (error) {
+        console.error('Error loading active satellite IDs:', error);
+        // Optionally display an error to the user
+    }
+}
+
 function displaySatelliteTable(satellites) {
   const tableContainer = document.getElementById('satelliteTableContainer');
   tableContainer.innerHTML = '';
@@ -83,34 +110,104 @@ function displaySatelliteTable(satellites) {
   table.id = 'satTable';
   let thead = table.createTHead();
   let headerRow = thead.insertRow();
-  let headers = ['Name', 'NORAD ID', 'Details'];
-  headers.forEach(headerText => {
+  // Add Launch Year header back
+  let headers = ['Name', 'NORAD ID', 'Status', 'Launch Year'];
+  headers.forEach((headerText, index) => { // Add index
     let header = document.createElement('th');
     header.textContent = headerText;
+    // Add data attribute for sorting if needed, or rely on DataTables index
+    header.setAttribute('data-column-index', index);
     headerRow.appendChild(header);
   });
   let tbody = table.createTBody();
   satellites.forEach(sat => {
     let row = tbody.insertRow();
-    let nameCell = row.insertCell();
-    nameCell.textContent = sat.OBJECT_NAME || sat.name || '';
-    let idCell = row.insertCell();
-    idCell.textContent = sat.NORAD_CAT_ID || sat.id || '';
-    let detailsCell = row.insertCell();
-    let satLink = document.createElement('a');
-    satLink.href = `satPage.html?ID=${encodeURIComponent(sat.NORAD_CAT_ID || sat.id)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
-    satLink.textContent = 'Track it!';
-    detailsCell.appendChild(satLink);
+    // Name
+    row.insertCell().textContent = sat.OBJECT_NAME || sat.name || '';
+    // NORAD ID
+    const noradId = parseInt(sat.NORAD_CAT_ID || sat.id, 10);
+    row.insertCell().textContent = noradId || '';
+
+    // Tracking Link/Status Cell
+    let trackingCell = row.insertCell();
+    if (activeSatelliteIds.has(noradId)) {
+        // Active: Create the link
+        let satLink = document.createElement('a');
+        satLink.href = `satPage.html?ID=${encodeURIComponent(noradId)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
+        // Use innerHTML to add a line break
+        satLink.innerHTML = 'Active<br>(Track it!)';
+        // satLink.style.color = 'blue'; // Can be styled via CSS
+        trackingCell.appendChild(satLink);
+    } else {
+        // Inactive: Display text
+        trackingCell.textContent = 'Inactive';
+        trackingCell.classList.add('inactive-satellite'); // Add class for styling
+    }
+
+    // Launch Year
+    row.insertCell().textContent = sat.LAUNCH_YEAR || 'N/A';
   });
+
   tableContainer.appendChild(table);
-  // Initialize DataTables if available
-  if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
-    $(table).DataTable({
-      pageLength: 25,
-      lengthMenu: [10, 25, 50, 100],
-      searching: true,
-      ordering: true
-    });
+
+  // Initialize DataTables
+  try {
+    if (window.jQuery && window.jQuery.fn.dataTable) {
+         // Check if DataTable is already initialized
+        if ($.fn.dataTable.isDataTable('#satTable')) {
+            $('#satTable').DataTable().destroy(); // Destroy existing instance first
+        }
+        const dataTable = $('#satTable').DataTable({
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            searching: true,
+            ordering: true, // Ensure ordering is enabled
+            responsive: true,
+            // Define column types if necessary for correct sorting (optional but good practice)
+            columnDefs: [
+                { type: 'string', targets: 0 }, // Name
+                { type: 'num', targets: 1 },    // NORAD ID
+                { orderable: false, targets: 2 }, // Tracking link/status - disable sorting
+                { type: 'num', targets: 3 }     // Launch Year
+            ],
+            // Set default sort order if desired (e.g., by Name ascending)
+            order: [[0, 'asc']]
+        });
+        console.log("DataTables initialized.");
+
+        // Function to apply sorting based on dropdowns
+        const applySorting = () => {
+            const columnIndex = parseInt($('#sortColumn').val()); // Ensure value is correct index (0, 1, 3)
+            const sortOrder = $('#sortOrder').val(); // 'asc' or 'desc'
+            console.log(`Applying sorting by column index: ${columnIndex}, order: ${sortOrder}`);
+            if (dataTable && columnIndex !== null && sortOrder) {
+                // Check if the column index is valid and sortable
+                if (columnIndex === 2) { // Don't sort by Tracking column
+                     console.warn("Sorting by 'Tracking' column is disabled.");
+                     return;
+                }
+                dataTable.order([columnIndex, sortOrder]).draw();
+                console.log("Table sorted and redrawn.");
+            } else {
+                console.error("DataTable instance not found or invalid sort parameters.");
+            }
+        };
+
+        // Add change listeners to dropdowns for auto-sorting
+        $('#sortColumn, #sortOrder').off('change').on('change', applySorting);
+
+        // Initial sort based on dropdown defaults after table is drawn
+        // Ensure dropdowns have correct initial values corresponding to Launch Year
+        // Example: Set dropdowns to sort by Launch Year descending initially
+        // $('#sortColumn').val('3'); // Assuming Launch Year is index 3
+        // $('#sortOrder').val('desc');
+        // applySorting(); // Apply initial sort
+
+    } else {
+        console.error("jQuery or DataTables not loaded.");
+    }
+  } catch (e) {
+    console.error("Error initializing DataTables:", e);
   }
 }
 
@@ -157,7 +254,7 @@ function getCustomSatellitesFromStorage() {
 }
 
 // Function to save custom satellite
-function saveCustomSatellite() {
+async function saveCustomSatellite() { // Make async to await loadAndDisplaySatellites
     const name = document.getElementById('customSatName').value.trim();
     const tle1 = document.getElementById('customTleLine1').value.trim();
     const tle2 = document.getElementById('customTleLine2').value.trim();
@@ -167,50 +264,74 @@ function saveCustomSatellite() {
         return;
     }
 
-    // Basic TLE validation (can be improved)
+    // Basic TLE validation
     if (!tle1.startsWith('1 ') || !tle2.startsWith('2 ') || tle1.length < 69 || tle2.length < 69) {
-        alert("Invalid TLE format.");
+        alert("Invalid TLE format. Ensure lines start with '1 ' and '2 ' and have correct length.");
         return;
     }
 
-    const customSatellites = getCustomSatellitesFromStorage();
-    const newSatId = `CUSTOM-${Date.now()}`; // Simple unique ID
-
-    // Attempt to parse TLE to get NORAD ID if possible, otherwise use custom ID
-    let noradId = newSatId;
+    // Attempt to parse TLE to validate and get NORAD ID/Epoch
+    let noradId = null;
+    let epochYear = null;
     try {
         const satrec = satellite.twoline2satrec(tle1, tle2);
-        noradId = satrec.satnum || newSatId;
+        noradId = satrec.satnum || `CUSTOM-${Date.now()}`; // Use parsed or generate custom ID
+        epochYear = getEpochYearFromTLE(tle1); // Extract epoch year
     } catch (e) {
-        console.warn("Could not parse NORAD ID from TLE, using generated ID.");
+        alert(`Error parsing TLE: ${e.message}. Please check the TLE data.`);
+        console.error("TLE Parsing Error:", e);
+        return; // Stop saving if TLE is invalid
     }
+
+    const customSatellites = getCustomSatellitesFromStorage();
+    const newSatId = `CUSTOM-${Date.now()}`; // Fallback internal ID if NORAD ID parsing failed (though satrec usually provides one)
 
     const newSat = {
         id: newSatId, // Internal custom ID
-        NORAD_CAT_ID: noradId, // Use parsed or generated
+        NORAD_CAT_ID: noradId,
         OBJECT_NAME: name,
-        TLE_LINE1: tle1, // Store TLE lines directly
+        TLE_LINE1: tle1,
         TLE_LINE2: tle2,
-        // Add epoch derived from TLE for sorting
-        EPOCH: getEpochFromTLE(tle1)
+        LAUNCH_YEAR: epochYear, // Use epoch year as launch year for custom sats
+        FILE: 'custom' // Mark as custom
     };
 
-    customSatellites.push(newSat);
+    // Check for duplicates (optional, based on NORAD ID)
+    const existingIndex = customSatellites.findIndex(sat => sat.NORAD_CAT_ID === newSat.NORAD_CAT_ID);
+    if (existingIndex > -1) {
+        // Optionally: Ask user if they want to overwrite or just update
+        console.log(`Updating existing custom satellite with NORAD ID: ${newSat.NORAD_CAT_ID}`);
+        customSatellites[existingIndex] = newSat;
+    } else {
+        customSatellites.push(newSat);
+    }
+
     localStorage.setItem('customSatellites', JSON.stringify(customSatellites));
 
-    // Update in-memory data and refresh table if 'Custom' is selected
-    categoryData['Custom'] = (categoryData['Custom'] || []).concat([newSat]); // Add to existing custom data
-    const currentCategory = document.getElementById('categoryDropdown')?.value;
-    if (currentCategory === 'Custom') {
-        displaySatelliteTableForCategory('Custom');
-    }
+    // Update in-memory data for the 'Custom' category
+    categoryData['Custom'] = customSatellites;
+    // Ensure LAUNCH_YEAR is set for all custom sats in memory (might be redundant but safe)
+     categoryData['Custom'].forEach(sat => {
+         if (!sat.LAUNCH_YEAR) sat.LAUNCH_YEAR = getEpochYearFromTLE(sat.TLE_LINE1);
+     });
+
 
     // Clear form and hide
     document.getElementById('customSatName').value = '';
     document.getElementById('customTleLine1').value = '';
     document.getElementById('customTleLine2').value = '';
-    toggleTleForm();
+    toggleTleForm(); // Hide the form
+
     alert("Custom satellite saved!");
+
+    // --- Switch to Custom category and reload table ---
+    const categorySelect = document.getElementById('categorySelect');
+    if (categorySelect) {
+        categorySelect.value = 'Custom'; // Set dropdown to 'Custom'
+    }
+    // Reload the table to show the 'Custom' category including the new satellite
+    await loadAndDisplaySatellites('Custom');
+    console.log("Switched to and reloaded 'Custom' satellite category.");
 }
 
 // Helper to get Epoch Year from TLE Line 1
@@ -255,17 +376,23 @@ async function preloadAllCategories() {
         // If category is 'Custom', merge with localStorage
         if (cat === 'Custom') {
             const storedCustomSats = getCustomSatellitesFromStorage();
-            // Combine and remove duplicates based on id or NORAD_CAT_ID
+            // Combine file data (if any) and stored data, ensuring no duplicates
             const combined = [...loadedData, ...storedCustomSats];
-            const uniqueSats = Array.from(new Map(combined.map(sat => [sat.id || sat.NORAD_CAT_ID, sat])).values());
+            const uniqueSats = Array.from(new Map(combined.map(sat => [sat.NORAD_CAT_ID || sat.id, sat])).values());
             categoryData[cat] = uniqueSats;
+             // Add FILE property and ensure LAUNCH_YEAR is set
+            categoryData[cat].forEach(sat => {
+                sat.FILE = 'custom'; // Mark as custom
+                if (!sat.LAUNCH_YEAR) sat.LAUNCH_YEAR = getEpochYearFromTLE(sat.TLE_LINE1);
+            });
         } else {
             categoryData[cat] = loadedData;
+             // Add launch year and FILE property to each satellite object for sorting/filtering
+            categoryData[cat].forEach(sat => {
+                sat.LAUNCH_YEAR = getLaunchYear(sat);
+                sat.FILE = file; // Store the source file path
+            });
         }
-         // Add launch year to each satellite object for sorting
-        categoryData[cat].forEach(sat => {
-            sat.LAUNCH_YEAR = getLaunchYear(sat);
-        });
     }
 }
 
@@ -440,24 +567,148 @@ function displaySatelliteTableForCategory(category) {
     }
 }
 
-// Main initialization
-async function mainInit() {
-    console.log("Initializing..."); // Add log
-    await preloadAllCategories();
-    console.log("Categories preloaded."); // Add log
-    const select = createCategoryDropdown();
-    if (select) { // Check if dropdown was created
-        console.log("Dropdown created."); // Add log
-        // Display default category (Active)
-        displaySatelliteTableForCategory(select.value);
-        select.addEventListener('change', function() {
-            console.log("Category changed to:", this.value); // Add log
-            displaySatelliteTableForCategory(this.value);
+// Function to populate the category dropdown
+function populateCategoryDropdown(categories) {
+    const dropdownContainer = document.getElementById('categoryDropdownContainer');
+    if (!dropdownContainer) return; // Guard clause
+
+    let dropdownHTML = '<label for="categorySelect">Select Satellite Category:</label> ';
+    dropdownHTML += '<select id="categorySelect" class="form-control-sm">';
+    // Add 'All' option first, not selected by default
+    dropdownHTML += '<option value="all">All Satellites</option>';
+
+    categories.forEach(category => {
+        // Set NOAA as the default selected option
+        const selected = category === 'NOAA' ? ' selected' : '';
+        dropdownHTML += `<option value="${category}"${selected}>${category}</option>`;
+    });
+
+    dropdownHTML += '</select>';
+    dropdownContainer.innerHTML = dropdownHTML;
+
+    // Add event listener to the dropdown
+    const categorySelect = document.getElementById('categorySelect');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const selectedCategory = this.value;
+            loadAndDisplaySatellites(selectedCategory);
         });
-    } else {
-        console.error("Failed to create dropdown.");
     }
 }
+
+// Function to load satellite data for all categories (used for filtering 'All')
+async function loadAllSatelliteData() {
+    // This function should fetch and combine data from all relevant sources
+    // Assuming it combines data from categoryData or fetches directly
+    let allSats = [];
+    for (const category in categoryData) {
+        allSats = allSats.concat(categoryData[category]);
+    }
+    // Remove duplicates if necessary
+    allSats = Array.from(new Map(allSats.map(sat => [sat.NORAD_CAT_ID || sat.id, sat])).values());
+    return allSats;
+}
+
+// Function to get category name from filename (simple example)
+function getCategoryFromFile(filePath) {
+    if (!filePath) return 'Unknown';
+    const parts = filePath.split('/');
+    const filename = parts[parts.length - 1];
+    const categoryName = filename.replace('.json', '');
+    // Capitalize first letter
+    return categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+}
+
+// Function to load and display satellites based on category
+async function loadAndDisplaySatellites(category) {
+    // Ensure category is provided, default to 'NOAA' if needed (though should be set by caller)
+    const currentCategory = category || document.getElementById('categorySelect')?.value || 'NOAA';
+    showLoading(`Loading ${currentCategory} satellite data...`);
+    try {
+        let satellitesToDisplay = [];
+        if (currentCategory === 'all') {
+            // If 'all' is selected, load data from all categories
+            satellitesToDisplay = await loadAllSatelliteData();
+        } else {
+            // Otherwise, use the preloaded data for the specific category
+            // Ensure custom data is up-to-date from localStorage if category is 'Custom'
+            if (currentCategory === 'Custom') {
+                 categoryData['Custom'] = getCustomSatellitesFromStorage();
+                 // Ensure LAUNCH_YEAR is set for custom sats
+                 categoryData['Custom'].forEach(sat => {
+                    if (!sat.LAUNCH_YEAR) sat.LAUNCH_YEAR = getEpochYearFromTLE(sat.TLE_LINE1);
+                    sat.FILE = 'custom'; // Ensure FILE property is set
+                 });
+            }
+            satellitesToDisplay = categoryData[currentCategory] || [];
+        }
+
+        // Store the currently displayed satellites globally
+        window.currentSatellites = satellitesToDisplay;
+
+        displaySatelliteTable(satellitesToDisplay); // This function initializes/updates DataTable
+        hideLoading();
+    } catch (error) {
+        console.error(`Error loading or displaying ${currentCategory} satellites:`, error);
+        showError(`Failed to load ${currentCategory} satellite data.`);
+        hideLoading();
+    }
+}
+
+// --- Consolidated Initialization --- //
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM loaded, starting initialization...");
+
+    // Initialize UTC Clock
+    updateUtcClock();
+    setInterval(updateUtcClock, 1000);
+
+    // Apply Dark Mode Preference
+    applyDarkModePreference();
+    // Attach listener to the new checkbox
+    const darkModeCheckbox = document.getElementById('darkModeCheckboxIndex');
+    if (darkModeCheckbox) {
+        darkModeCheckbox.addEventListener('change', toggleDarkMode);
+    }
+
+    // Setup Add TLE button listeners
+    const addTleBtn = document.getElementById('add-tle-btn');
+    if (addTleBtn) {
+        addTleBtn.addEventListener('click', toggleTleForm);
+    }
+    const saveTleBtn = document.getElementById('save-tle-btn');
+    if (saveTleBtn) {
+        saveTleBtn.addEventListener('click', saveCustomSatellite);
+    }
+
+    // --- Load Categories and Initial Data ---
+    try {
+        showLoading('Initializing categories...');
+        await loadActiveSatelliteIds(); // Load active IDs first
+        await preloadAllCategories(); // Load data for all categories into categoryData
+        console.log("All category data preloaded.");
+
+        const categories = Object.keys(categoryMap); // Get categories from the map
+        populateCategoryDropdown(categories);
+        console.log("Category dropdown populated, default should be NOAA.");
+
+        // Explicitly load and display the default category (NOAA) initially
+        await loadAndDisplaySatellites('NOAA');
+        console.log("Initial satellite data loaded for NOAA.");
+
+        // Setup sorting controls listener (assuming this function exists)
+        if (typeof setupSortingControls === 'function') {
+            setupSortingControls();
+        }
+
+        hideLoading();
+
+    } catch (error) {
+        console.error("Initialization error:", error);
+        showError("Failed to initialize the page.");
+        hideLoading();
+    }
+});
 
 // Function to update UTC Clock
 function updateUtcClock() {
@@ -471,76 +722,56 @@ function updateUtcClock() {
 // --- Dark Mode Logic ---
 function applyDarkModePreference() {
     const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
-    const toggleButton = document.getElementById('darkModeToggle');
+    const toggleCheckbox = document.getElementById('darkModeCheckboxIndex'); // Get checkbox
     if (isDarkMode) {
         document.body.classList.add('dark-mode');
-        if (toggleButton) toggleButton.textContent = '🌙'; // Moon icon
+        if (toggleCheckbox) toggleCheckbox.checked = true; // Set checkbox state
     } else {
         document.body.classList.remove('dark-mode');
-        if (toggleButton) toggleButton.textContent = '☀️'; // Sun icon
+        if (toggleCheckbox) toggleCheckbox.checked = false; // Set checkbox state
     }
 }
 
-function toggleDarkMode() {
-    const isDarkMode = document.body.classList.toggle('dark-mode');
-    const toggleButton = document.getElementById('darkModeToggle');
-    if (isDarkMode) {
+function toggleDarkMode(event) { // Accept event argument
+    const toggleCheckbox = event.target; // Get checkbox from event
+    if (toggleCheckbox.checked) {
+        document.body.classList.add('dark-mode');
         localStorage.setItem('darkMode', 'enabled');
-        if (toggleButton) toggleButton.textContent = '🌙';
     } else {
+        document.body.classList.remove('dark-mode');
         localStorage.setItem('darkMode', 'disabled');
-        if (toggleButton) toggleButton.textContent = '☀️';
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM loaded, running mainInit."); // Add log
-    mainInit();
+    // ... other initialization code ...
 
-    // Initialize and update UTC Clock
-    updateUtcClock();
-    setInterval(updateUtcClock, 1000); // Update every second
+    const darkModeSwitch = document.getElementById('darkModeSwitch');
+    const currentTheme = localStorage.getItem('theme');
 
-    // Add listener for TLE button
-    const addTleBtn = document.getElementById('add-tle-btn');
-    if (addTleBtn) {
-        addTleBtn.addEventListener('click', toggleTleForm);
+    // Apply saved theme or default to light
+    if (currentTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        darkModeSwitch.checked = true; // Set switch state
+    } else {
+        document.body.classList.remove('dark-mode');
+        darkModeSwitch.checked = false; // Set switch state
     }
 
-    // Add listener for Save TLE button
-    const saveTleBtn = document.getElementById('save-tle-btn');
-    if (saveTleBtn) {
-        saveTleBtn.addEventListener('click', saveCustomSatellite);
-    }
+    // Toggle dark mode on switch change
+    darkModeSwitch.addEventListener('change', function() {
+        if (darkModeSwitch.checked) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+        }
+        // Optional: Redraw charts or update components that need theme awareness
+        if (window.myMap && typeof window.updateMapTiles === 'function') {
+            window.updateMapTiles(); // Example function call
+        }
+    });
 
-    // Apply saved dark mode preference on load
-    applyDarkModePreference();
-
-    // Add listener for Dark Mode Toggle
-    const darkModeButton = document.getElementById('darkModeToggle');
-    if (darkModeButton) {
-        darkModeButton.addEventListener('click', toggleDarkMode);
-    }
-    
-    // Remove map initialization code
+    // ... rest of the DOMContentLoaded event listener ...
 });
-
-// Modify the document ready function to select weather satellites by default
-$(document).ready(function() {
-    // Initialize the category dropdown
-    initializeCategoryDropdown();
-    
-    // Set default category to Weather
-    $('#categoryDropdown').val('Weather').trigger('change');
-});
-
-function initializeCategoryDropdown() {
-    // After populating the dropdown, make sure to select Weather by default
-    if (!$('#categoryDropdown').val()) {
-        $('#categoryDropdown').val('Weather');
-    }
-}
-
-function populateSatelliteTable(category = 'Weather') {
-    // Default category parameter to 'Weather' if not specified
-}
