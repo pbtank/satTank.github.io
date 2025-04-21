@@ -9,6 +9,7 @@ let orbitLine;
 let groundTrackLine;
 let updateIntervalId;
 let footprintCircle;
+let currentTileLayer; // Added for theme-based tile layer switching
 
 // Constants
 const EARTH_RADIUS_KM = 6371;
@@ -127,6 +128,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Function to update map tiles based on theme
+function updateMapTiles() {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const newTilesUrl = isDarkMode ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const newAttribution = isDarkMode ? '&copy; <a href="https://carto.com/attributions">CARTO</a>' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+    if (map && currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+        currentTileLayer = L.tileLayer(newTilesUrl, {
+            attribution: newAttribution,
+            maxZoom: 19
+        }).addTo(map);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing DOMContentLoaded code ...
+
+    // --- Dark Mode Toggle Logic ---
+    const darkModeSwitch = document.getElementById('darkModeSwitch');
+    const currentTheme = localStorage.getItem('theme');
+
+    // Apply saved theme or default to light
+    if (currentTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (darkModeSwitch) darkModeSwitch.checked = true; // Set switch state
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (darkModeSwitch) darkModeSwitch.checked = false; // Set switch state
+    }
+
+    // Update map tiles initially based on theme
+    updateMapTiles();
+
+    // Toggle dark mode on switch change
+    if (darkModeSwitch) {
+        darkModeSwitch.addEventListener('change', function() {
+            if (darkModeSwitch.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+            // Update map tiles when theme changes
+            updateMapTiles();
+        });
+    }
+
+    // ... rest of DOMContentLoaded code ...
+});
+
 // Initialize Leaflet map
 function initMap() {
     map = L.map('mapid', {
@@ -136,7 +189,7 @@ function initMap() {
         worldCopyJump: true
     });
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         subdomains: ['a', 'b', 'c']
     }).addTo(map);

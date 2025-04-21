@@ -208,7 +208,7 @@ table.dataTable tbody tr.even td:first-child {
 
 /* Style for inactive satellite text in the table */
 .inactive-satellite {
-    color: grey; /* Make the text grey */
+    color: rgb(253, 7, 7); /* Make the text grey */
     font-style: italic; /* Optional: italicize */
 }
 
@@ -351,7 +351,7 @@ body.dark-mode .dataTables_paginate .paginate_button.current {
 
 /* Dark mode adjustment for active links */
 body.dark-mode #satelliteTableContainer table tbody td a {
-    color: red; /* Change link color to red in dark mode */
+    color: rgb(0, 255, 85); /* Change link color to red in dark mode */
 }
 
 /* Flexbox styles for header controls */
