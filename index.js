@@ -52,32 +52,6 @@ async function loadClassifiedSatellites() {
   }
 }
 
-// Remove p5.js setup and draw functions
-/*
-function setup() {
-  createCanvas(canWidth, canHeight);
-  // ... rest of setup ...
-}
-
-function draw() {
-
-}
-*/
-
-// Remove the entire makeTable function as it uses fancyTable which conflicts with DataTables
-/*
-function makeTable() {
-	var resPerPage = $('#resPerPage').val();
-    // ... rest of the fancyTable initialization code ...
-}
-*/
-
-// Remove custom satellite management functions
-
-// Event handlers for import/export buttons
-document.addEventListener('DOMContentLoaded', () => {
-});
-
 // Function to fetch and store active satellite IDs
 async function loadActiveSatelliteIds() {
     try {
@@ -663,13 +637,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUtcClock();
     setInterval(updateUtcClock, 1000);
 
-    // Apply Dark Mode Preference
-    applyDarkModePreference();
-    // Attach listener to the new checkbox
-    const darkModeCheckbox = document.getElementById('darkModeCheckboxIndex');
-    if (darkModeCheckbox) {
-        darkModeCheckbox.addEventListener('change', toggleDarkMode);
+    // --- Theme Setup (Consolidated) ---
+    const themeToggle = document.getElementById('theme-toggle');
+    const pageBody = document.getElementById('pageBody');
+    const currentTheme = localStorage.getItem('theme') || 'light'; // Default to light for index
+    setTheme(currentTheme); // Apply theme on load
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            let newTheme = (pageBody && pageBody.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
     }
+    // Removed old dark mode setup using darkModeCheckboxIndex
 
     // Setup Add TLE button listeners
     const addTleBtn = document.getElementById('add-tle-btn');
@@ -719,59 +699,39 @@ function updateUtcClock() {
     }
 }
 
-// --- Dark Mode Logic ---
-function applyDarkModePreference() {
-    const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
-    const toggleCheckbox = document.getElementById('darkModeCheckboxIndex'); // Get checkbox
-    if (isDarkMode) {
-        document.body.classList.add('dark-mode');
-        if (toggleCheckbox) toggleCheckbox.checked = true; // Set checkbox state
-    } else {
-        document.body.classList.remove('dark-mode');
-        if (toggleCheckbox) toggleCheckbox.checked = false; // Set checkbox state
+function setTheme(theme) {
+    var pageBody = document.getElementById('pageBody');
+    if (pageBody) pageBody.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
     }
 }
 
-function toggleDarkMode(event) { // Accept event argument
-    const toggleCheckbox = event.target; // Get checkbox from event
-    if (toggleCheckbox.checked) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('darkMode', 'enabled');
-    } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('darkMode', 'disabled');
-    }
-}
+// --- Theme Toggle Logic (Minimal, Robust) ---
+document.addEventListener('DOMContentLoaded', () => {
+    const pageBody = document.getElementById('pageBody');
+    const themeToggle = document.getElementById('theme-toggle');
+    // Set initial theme from localStorage or default to light
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    setTheme(currentTheme);
 
-document.addEventListener('DOMContentLoaded', function() {
-    // ... other initialization code ...
-
-    const darkModeSwitch = document.getElementById('darkModeSwitch');
-    const currentTheme = localStorage.getItem('theme');
-
-    // Apply saved theme or default to light
-    if (currentTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        darkModeSwitch.checked = true; // Set switch state
-    } else {
-        document.body.classList.remove('dark-mode');
-        darkModeSwitch.checked = false; // Set switch state
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const newTheme = (pageBody.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
     }
 
-    // Toggle dark mode on switch change
-    darkModeSwitch.addEventListener('change', function() {
-        if (darkModeSwitch.checked) {
-            document.body.classList.add('dark-mode');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.body.classList.remove('dark-mode');
-            localStorage.setItem('theme', 'light');
+    function setTheme(theme) {
+        pageBody.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        if (themeToggle) {
+            themeToggle.innerHTML = theme === 'dark'
+                ? '<i class="fas fa-sun"></i>'
+                : '<i class="fas fa-moon"></i>';
         }
-        // Optional: Redraw charts or update components that need theme awareness
-        if (window.myMap && typeof window.updateMapTiles === 'function') {
-            window.updateMapTiles(); // Example function call
-        }
-    });
-
-    // ... rest of the DOMContentLoaded event listener ...
+    }
 });

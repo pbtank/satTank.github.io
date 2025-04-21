@@ -832,11 +832,7 @@ body[data-theme='dark'] .status-message.error {
 
 /* satpage.css */
 /* Add styles for the details sections if they don't have a common class */
-#satellite-details, #position-details {
-    /* Add common class or style individually */
-    /* Example: */
-    /* display: block; */ /* Managed by JS now */
-}
+/* Removed empty ruleset for #satellite-details, #position-details */
 
 /* Ensure map has a defined height even when hidden initially */
 #mapid {
@@ -870,4 +866,47 @@ body[data-theme='dark'] .satellite-details-section table td {
 
 body[data-theme='dark'] .satellite-details-section table th {
     background-color: var(--dark-table-header-bg);
+}
+
+/* --- Dark Mode Toggle Switch Styles (Copied from index.css) --- */
+.theme-switch-wrapper {
+    /* position: fixed; */ /* Keep it relative to header for now */
+    /* top: 15px; */
+    /* right: 20px; */
+    z-index: 1001;   /* Ensure it's above other elements if needed */
+    display: flex; /* Use flexbox to align items */
+    align-items: center; /* Vertically center items */
+    gap: 8px; /* Add space between flex items (icons and label) */
+    /* Add margin if needed when not fixed */
+    margin-right: 1rem; /* Example margin */
+}
+
+/* Style the button used for the toggle */
+#theme-toggle.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-color); /* Use theme text color */
+    font-size: 1.3rem; /* Adjust icon size */
+    cursor: pointer;
+    padding: 0.3rem;
+    line-height: 1;
+}
+
+#theme-toggle.icon-button:hover {
+    opacity: 0.8;
+}
+
+/* Ensure icon color changes with theme */
+[data-theme="light"] #theme-toggle.icon-button {
+    color: #333; /* Or specific light mode icon color */
+}
+
+[data-theme="dark"] #theme-toggle.icon-button {
+    color: #e0e0e0; /* Or specific dark mode icon color */
+}
+
+/* Hide FontAwesome default display styles if they interfere */
+#theme-toggle i {
+    display: inline-block; /* Ensure icon displays correctly */
+    vertical-align: middle;
 }

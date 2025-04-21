@@ -14,25 +14,22 @@
     <script src="library/satellite.min.js"></script>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
-<body id="pageBody" style="background-color: #D5F7F3">
+<body id="pageBody">
     <!-- Absolutely Positioned Elements -->
     <!-- UTC Clock Container Removed -->
     <div id="dark-mode-toggle-container" style="position: absolute; top: 10px; right: 10px;">
         <!-- Removed old darkModeToggle button -->
     </div>
 
-    <!-- Dark Mode Toggle Switch - Moved here for fixed positioning -->
+    <!-- Dark Mode Toggle Switch - Updated to button style -->
     <div class="theme-switch-wrapper">
-        <span class="icon sun">☀️</span> <!-- Sun icon before the label -->
-        <label class="theme-switch" for="darkModeSwitch">
-            <input type="checkbox" id="darkModeSwitch" />
-            <span class="slider round">
-                <!-- Icons removed from here -->
-            </span>
-        </label>
-        <span class="icon moon">🌙</span> <!-- Moon icon after the label -->
+        <!-- Icons will be managed by JS, structure matches satPage.html -->
+        <button id="theme-toggle" class="icon-button" title="Toggle Theme">
+            <!-- Icon content (sun/moon) is set by JS -->
+        </button>
     </div>
 
     <header id="pageHeader">
@@ -100,7 +97,6 @@
             style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
             <tr>
                 <td>
-                    <hr>
                 </td>
             </tr>
             <tr>

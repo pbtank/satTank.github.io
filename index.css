@@ -225,132 +225,136 @@ table.dataTable tbody tr.even td:first-child {
 }
 
 /* --- Dark Mode Styles --- */
-body.dark-mode {
+#pageBody[data-theme="dark"] {
 	background-color: black !important; /* Ensure dark background is black */
 	color: #e0e0e0; /* Light text */
 }
 
-body.dark-mode #pageHeader,
-body.dark-mode #pageFooter {
+#pageBody[data-theme="dark"] #pageHeader,
+#pageBody[data-theme="dark"] #pageFooter {
 	/* Adjust header/footer if needed */
 }
 
-body.dark-mode #headerTable h1,
-body.dark-mode #headerTable td[style*="color: gray"] {
+#pageBody[data-theme="dark"] #headerTable h1,
+#pageBody[data-theme="dark"] #headerTable td[style*="color: gray"] {
 	color: #c0c0c0 !important; /* Lighter gray for dark mode */
 }
 
-body.dark-mode #utc-clock-container {
+#pageBody[data-theme="dark"] #utc-clock-container {
 	color: #e0e0e0;
 }
 
-body.dark-mode #utc-clock {
+#pageBody[data-theme="dark"] #utc-clock {
 	background-color: #333;
 	color: #a6d8ff;
 }
 
-body.dark-mode #addTleButtonContainer button,
-body.dark-mode #sortingControlsContainer button,
+#pageBody[data-theme="dark"] #addTleButtonContainer button,
+#pageBody[data-theme="dark"] #sortingControlsContainer button {
+    /* Style buttons if needed */
+}
 
-
-body.dark-mode #tle-form {
+#pageBody[data-theme="dark"] #tle-form {
 	background-color: #2a2a2a;
 	border-color: #555;
 }
 
-body.dark-mode #categoryDropdownContainer label,
-body.dark-mode #sortingControlsContainer label {
+#pageBody[data-theme="dark"] #categoryDropdownContainer label,
+#pageBody[data-theme="dark"] #sortingControlsContainer label,
+#pageBody[data-theme="dark"] #sortingControls label { /* Added sortingControls label */
 	color: #e0e0e0;
 }
 
-body.dark-mode select.form-control-sm,
-body.dark-mode input.form-control {
+#pageBody[data-theme="dark"] select.form-control-sm,
+#pageBody[data-theme="dark"] input.form-control,
+#pageBody[data-theme="dark"] #categoryDropdownContainer select,
+#pageBody[data-theme="dark"] #sortingControls select { /* Added dropdown/select */
 	background-color: #333;
 	color: #e0e0e0;
 	border-color: #555;
 }
 
 /* Dark Mode for DataTables */
-body.dark-mode .dataTables_wrapper {
+#pageBody[data-theme="dark"] .dataTables_wrapper {
 	color: #e0e0e0;
 }
 
-body.dark-mode table.dataTable thead th {
+#pageBody[data-theme="dark"] table.dataTable thead th {
 	color: #e0e0e0 !important; /* Ensure header text is visible */
 	background-color: #2a2a2a; /* Darker header background */
 	border-bottom: 1px solid #555;
 	text-align: center; /* Ensure centered in dark mode */
 }
 
-body.dark-mode table.dataTable tbody tr,
-body.dark-mode table.dataTable tbody tr.odd,
-body.dark-mode table.dataTable tbody tr.even {
+#pageBody[data-theme="dark"] table.dataTable tbody tr,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.odd,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.even {
 	background-color: transparent !important; /* Let TD rule handle background */
 	color: white !important; /* Ensure text is white */
 }
 
 /* Dark Mode for DataTables Cells */
-body.dark-mode table.dataTable tbody tr.odd td,
-body.dark-mode table.dataTable tbody tr.even td,
-body.dark-mode table.dataTable tbody tr.odd td:first-child, /* Target first cell specifically */
-body.dark-mode table.dataTable tbody tr.even td:first-child {
+#pageBody[data-theme="dark"] table.dataTable tbody tr.odd td,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.even td,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.odd td:first-child, /* Target first cell specifically */
+#pageBody[data-theme="dark"] table.dataTable tbody tr.even td:first-child {
 	background-color: black !important; /* Force black background for all cells */
 	color: white !important; /* Ensure text is white */
 }
 
-body.dark-mode table.dataTable tbody tr:hover td,
-body.dark-mode table.dataTable tbody tr:hover td:first-child { /* Target first cell on hover */
+#pageBody[data-theme="dark"] table.dataTable tbody tr:hover td,
+#pageBody[data-theme="dark"] table.dataTable tbody tr:hover td:first-child { /* Target first cell on hover */
 	background-color: #222 !important; /* Slightly lighter black for hover on cells */
 }
 
-body.dark-mode table.dataTable tbody td {
+#pageBody[data-theme="dark"] table.dataTable tbody td {
 	border-top: 1px solid #444;
 	text-align: center; /* Ensure centered in dark mode */
     vertical-align: middle; /* Optional: vertically center content */
 }
 
-body.dark-mode table.dataTable tbody td a {
+#pageBody[data-theme="dark"] table.dataTable tbody td a {
 	color: #77b3ff; /* Lighter link color */
 }
 
-body.dark-mode .dataTables_length label,
-body.dark-mode .dataTables_filter label,
-body.dark-mode .dataTables_info {
+#pageBody[data-theme="dark"] .dataTables_length label,
+#pageBody[data-theme="dark"] .dataTables_filter label,
+#pageBody[data-theme="dark"] .dataTables_info {
 	color: #e0e0e0 !important;
 }
 
-body.dark-mode .dataTables_length select,
-body.dark-mode .dataTables_filter input {
+#pageBody[data-theme="dark"] .dataTables_length select,
+#pageBody[data-theme="dark"] .dataTables_filter input {
 	background-color: #333;
 	color: #e0e0e0;
 	border: 1px solid #555;
 }
 
-body.dark-mode .dataTables_paginate .paginate_button {
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button {
 	color: #e0e0e0 !important; /* Ensure text is light */
 	background: #333;
 	border: 1px solid #555;
 }
 
-body.dark-mode .dataTables_paginate .paginate_button.disabled {
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button.disabled {
 	color: #777 !important;
 	background: #2a2a2a;
 	border-color: #444;
 }
 
-body.dark-mode .dataTables_paginate .paginate_button:hover {
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button:hover {
 	background: #444;
 	border-color: #666;
 }
 
-body.dark-mode .dataTables_paginate .paginate_button.current {
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button.current {
 	background: #555;
 	border-color: #777;
 	color: #fff !important;
 }
 
 /* Dark mode adjustment for active links */
-body.dark-mode #satelliteTableContainer table tbody td a {
+#pageBody[data-theme="dark"] #satelliteTableContainer table tbody td a {
     color: rgb(0, 255, 85); /* Change link color to red in dark mode */
 }
 
@@ -434,6 +438,24 @@ header {
 }
 
 /* --- Dark Mode Toggle Switch Styles --- */
+/* Remove old checkbox-based styles */
+/* .theme-switch-wrapper { ... } */
+/* .theme-switch { ... } */
+/* .theme-switch input { ... } */
+/* .slider { ... } */
+/* .slider:before { ... } */
+/* .theme-switch-wrapper .icon { ... } */
+/* .theme-switch-wrapper .sun { ... } */
+/* .theme-switch-wrapper .moon { ... } */
+/* body.dark-mode .theme-switch-wrapper .sun { ... } */
+/* body.dark-mode .theme-switch-wrapper .moon { ... } */
+/* input:checked + .slider { ... } */
+/* input:focus + .slider { ... } */
+/* input:checked + .slider:before { ... } */
+/* .slider.round { ... } */
+/* .slider.round:before { ... } */
+
+/* Add new button-based styles (similar to satpage.css) */
 .theme-switch-wrapper {
     position: fixed; /* Position fixed to viewport */
     top: 15px;       /* Distance from top */
@@ -441,100 +463,42 @@ header {
     z-index: 1001;   /* Ensure it's above other elements */
     display: flex; /* Use flexbox to align items */
     align-items: center; /* Vertically center items */
-    gap: 8px; /* Add space between flex items (icons and label) */
+    /* gap: 8px; */ /* No gap needed if only button is visible */
 }
 
-.theme-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px; /* Width of the switch */
-    height: 24px; /* Height of the switch */
-}
-
-/* Hide default HTML checkbox */
-.theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-/* The slider */
-.slider {
-    position: absolute;
+/* Style the button used for the toggle */
+#theme-toggle.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-color, #333); /* Use theme variable or default */
+    font-size: 1.3rem; /* Adjust icon size */
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc; /* Default background */
-    -webkit-transition: .4s;
-    transition: .4s;
+    padding: 0.3rem;
+    line-height: 1;
+    /* Add Font Awesome dependency if not already present */
 }
 
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 18px; /* Height of the knob */
-    width: 18px; /* Width of the knob */
-    left: 3px; /* Position from left */
-    bottom: 3px; /* Position from bottom */
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s;
-    z-index: 1; /* Ensure knob is above icons */
+#theme-toggle.icon-button:hover {
+    opacity: 0.8;
 }
 
-/* Icon Styles */
-.theme-switch-wrapper .icon {
-    font-size: 1.2rem; /* Adjust icon size */
-    /* margin: 0 5px; */ /* Remove margin, use gap in wrapper */
-    line-height: 1; /* Adjust line height if needed */
-    color: #333; /* Default icon color for light mode */
-    transition: color 0.3s;
-    display: inline-block; /* Ensure icons are treated as blocks for display control */
+/* Ensure icon color changes with theme (using data-theme) */
+body[data-theme="light"] #theme-toggle.icon-button {
+    color: #333; /* Or specific light mode icon color */
 }
 
-/* Default State (Light Mode): Show Sun, Hide Moon */
-.theme-switch-wrapper .sun {
-    display: inline-block;
-}
-.theme-switch-wrapper .moon {
-    display: none;
+#pageBody[data-theme="dark"] #theme-toggle.icon-button {
+    color: #e0e0e0; /* Or specific dark mode icon color */
 }
 
-/* Dark Mode State: Hide Sun, Show Moon */
-body.dark-mode .theme-switch-wrapper .sun {
-    display: none;
-}
-body.dark-mode .theme-switch-wrapper .moon {
-    display: inline-block;
+/* Hide FontAwesome default display styles if they interfere */
+#theme-toggle i {
+    display: inline-block; /* Ensure icon displays correctly */
+    vertical-align: middle;
 }
 
-input:checked + .slider {
-    background-color: #4a4a4a; /* Darker background for dark mode */
-}
-
-input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
-}
-
-input:checked + .slider:before {
-    -webkit-transform: translateX(26px); /* Move knob to the right */
-    -ms-transform: translateX(26px);
-    transform: translateX(26px);
-}
-
-/* Rounded sliders */
-.slider.round {
-    border-radius: 24px; /* Make the track round */
-}
-
-.slider.round:before {
-    border-radius: 50%; /* Make the knob round */
-}
-
-body.dark-mode #categoryDropdownContainer,
-body.dark-mode #sortingControls {
+#pageBody[data-theme="dark"] #categoryDropdownContainer,
+#pageBody[data-theme="dark"] #sortingControls {
     border-color: #555; /* Darker border for dark mode */
 }
 

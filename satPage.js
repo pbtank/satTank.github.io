@@ -9,7 +9,8 @@ let orbitLine;
 let groundTrackLine;
 let updateIntervalId;
 let footprintCircle;
-let currentTileLayer; // Added for theme-based tile layer switching
+// let currentTileLayer; // Removed, replaced by currentMapLayer
+let currentMapLayer; // Renamed for clarity and consistency
 
 // Constants
 const EARTH_RADIUS_KM = 6371;
@@ -23,12 +24,9 @@ const activeJsonFile = 'data/active.json';
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', async function() { // Make async
     // --- Non-Map Related Setup ---
-    // Setup back button listener
     const backButton = document.getElementById('back-button');
     if (backButton) {
-        backButton.addEventListener('click', function() {
-            window.location.href = 'index.html';
-        });
+        backButton.addEventListener('click', function() { window.location.href = 'index.html'; });
     }
     // Theme toggle listener is handled in its own block below
 
@@ -41,12 +39,11 @@ document.addEventListener('DOMContentLoaded', async function() { // Make async
         return; // Stop execution
     }
 
-    // Attempt to load satellite data FIRST
     const loadSuccessful = await loadSatelliteDataFromLocal(satId);
 
     if (loadSuccessful) {
         // --- Map and Tracking Setup (Only if load was successful) ---
-        initMap(); // Initialize the map
+        initMap(); // Initialize the map (Map tiles are set based on theme within initMap now)
 
         // Set default checkbox states and add listeners
         const showOrbitCheckbox = document.getElementById('show-orbit');
@@ -66,19 +63,16 @@ document.addEventListener('DOMContentLoaded', async function() { // Make async
             showFootprintCheckbox.addEventListener('change', function() { toggleFootprintDisplay(this.checked); });
         }
 
-        // Map type listener
+        // Map type listener - Now only updates map if in light mode
         const mapTypeSelect = document.getElementById('map-type');
         if (mapTypeSelect) {
-             mapTypeSelect.addEventListener('change', function() { updateMapType(this.value); });
-             // Apply initial theme map type after map is initialized
-             const currentTheme = localStorage.getItem('theme') || 'dark';
-             if (currentTheme === 'dark') {
-                 updateMapType('dark');
-                 mapTypeSelect.value = 'dark';
-             } else {
-                 updateMapType('standard');
-                 mapTypeSelect.value = 'standard';
-             }
+             mapTypeSelect.addEventListener('change', function() {
+                 const currentTheme = document.body.getAttribute('data-theme');
+                 if (currentTheme === 'light') {
+                     updateMapTileLayer(currentTheme); // Update based on selection in light mode
+                 }
+             });
+             // Initial map type selection based on theme is handled by setTheme call below
         }
 
         // Display initial info and start tracking
@@ -86,39 +80,17 @@ document.addEventListener('DOMContentLoaded', async function() { // Make async
         startTracking(); // Start dynamic updates
 
     } else {
-        // If loading failed, ensure map and details remain hidden (handled by showError/hideLoading)
         console.log("Satellite data load failed, map and tracking will not initialize.");
     }
 });
 
-// --- Theme Toggle Functionality ---
+// --- Consolidated Theme Toggle Functionality ---
 document.addEventListener('DOMContentLoaded', () => {
-    const themeToggle = document.getElementById('theme-toggle');
-    const mapTypeSelect = document.getElementById('map-type'); // Get map type dropdown
+    const themeToggle = document.getElementById('theme-toggle'); // Use theme-toggle ID
     const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
 
-    function setTheme(theme) {
-        document.body.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        if (themeToggle) {
-            // Update icon based on the new theme
-            themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        }
-
-        // Update map type based on theme - ONLY IF MAP EXISTS
-        if (map && mapTypeSelect) { // Add map check here
-            if (theme === 'dark') {
-                updateMapType('dark');
-                mapTypeSelect.value = 'dark';
-            } else {
-                updateMapType('standard');
-                mapTypeSelect.value = 'standard';
-            }
-        }
-    }
-
     // Apply theme and icon on load
-    setTheme(currentTheme);
+    setTheme(currentTheme); // Call the consolidated function
 
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
@@ -128,57 +100,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Function to update map tiles based on theme
-function updateMapTiles() {
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    const newTilesUrl = isDarkMode ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const newAttribution = isDarkMode ? '&copy; <a href="https://carto.com/attributions">CARTO</a>' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+// Function to set the theme for the page and map
+function setTheme(theme) {
+    document.body.setAttribute('data-theme', theme); // Use data-theme attribute
+    localStorage.setItem('theme', theme);
 
-    if (map && currentTileLayer) {
-        map.removeLayer(currentTileLayer);
-        currentTileLayer = L.tileLayer(newTilesUrl, {
-            attribution: newAttribution,
-            maxZoom: 19
-        }).addTo(map);
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        // Update icon based on the new theme (assuming Font Awesome icons)
+        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+
+    // Update map tiles based on the theme
+    updateMapTileLayer(theme);
+
+    // Adjust map type dropdown based on theme
+    const mapTypeSelect = document.getElementById('map-type');
+    if (mapTypeSelect) {
+        // Optionally disable dropdown in dark mode if desired
+        // mapTypeSelect.disabled = (theme === 'dark');
+
+        // Set dropdown value to reflect current map state
+        if (theme === 'dark') {
+            // If you want the dropdown to show 'dark' when dark mode is active:
+            // mapTypeSelect.value = 'dark'; // Or leave it as is
+        } else {
+            // In light mode, ensure the dropdown reflects the actual tile layer being shown.
+            // This might require reading the current layer's URL or storing the last light mode selection.
+            // For simplicity, we'll just ensure it's not stuck on 'dark'.
+            if (mapTypeSelect.value === 'dark') {
+                 mapTypeSelect.value = 'standard'; // Default back to standard if it was dark
+            }
+        }
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // ... existing DOMContentLoaded code ...
+// Function to update map tile layer based on theme and selection
+function updateMapTileLayer(theme) {
+    const mapTypeSelect = document.getElementById('map-type');
+    const selectedMapType = mapTypeSelect ? mapTypeSelect.value : 'standard'; // Default if dropdown doesn't exist
 
-    // --- Dark Mode Toggle Logic ---
-    const darkModeSwitch = document.getElementById('darkModeSwitch');
-    const currentTheme = localStorage.getItem('theme');
+    if (map) { // Check if map is initialized
+        if (currentMapLayer) {
+            map.removeLayer(currentMapLayer); // Remove previous layer
+        }
 
-    // Apply saved theme or default to light
-    if (currentTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        if (darkModeSwitch) darkModeSwitch.checked = true; // Set switch state
-    } else {
-        document.body.classList.remove('dark-mode');
-        if (darkModeSwitch) darkModeSwitch.checked = false; // Set switch state
-    }
+        let tileUrl;
+        let tileOptions = {
+            // attribution: set below based on type
+            maxZoom: 19, // Consistent maxZoom
+            subdomains: ['a', 'b', 'c'] // Default subdomains
+        };
 
-    // Update map tiles initially based on theme
-    updateMapTiles();
-
-    // Toggle dark mode on switch change
-    if (darkModeSwitch) {
-        darkModeSwitch.addEventListener('change', function() {
-            if (darkModeSwitch.checked) {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('theme', 'light');
+        if (theme === 'dark') {
+            // Always use dark map in dark mode
+             tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+             tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+             tileOptions.subdomains = 'abcd'; // Carto uses abcd
+        } else {
+            // Use selected map type in light mode
+            switch (selectedMapType) {
+                case 'satellite':
+                    tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+                    tileOptions.attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+                    tileOptions.subdomains = undefined; // Esri doesn't use subdomains typically
+                    break;
+                case 'terrain':
+                     // Using OpenTopoMap as an example terrain layer
+                     tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+                     tileOptions.attribution = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)';
+                     tileOptions.subdomains = ['a', 'b', 'c']; // OpenTopoMap uses subdomains
+                     break;
+                // case 'dark': // This case is now handled by the theme='dark' block above
+                case 'standard':
+                default:
+                    tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+                    tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+                    break; // Subdomains already set to default ['a', 'b', 'c']
             }
-            // Update map tiles when theme changes
-            updateMapTiles();
-        });
-    }
+        }
 
-    // ... rest of DOMContentLoaded code ...
-});
+        currentMapLayer = L.tileLayer(tileUrl, tileOptions);
+        currentMapLayer.addTo(map);
+    }
+}
+
+// Removed redundant updateMapTiles function
+
+// Removed second DOMContentLoaded listener for dark mode
 
 // Initialize Leaflet map
 function initMap() {
@@ -188,49 +197,16 @@ function initMap() {
         minZoom: 2,
         worldCopyJump: true
     });
-    
-    currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        subdomains: ['a', 'b', 'c']
-    }).addTo(map);
-    
+
+    // Set initial tile layer based on the current theme AFTER map is created
+    const initialTheme = localStorage.getItem('theme') || 'dark';
+    updateMapTileLayer(initialTheme); // This adds the initial layer
+
+    // Removed default tile layer addition here as it's handled by updateMapTileLayer
     // Removed commented-out graticule code
 }
 
-// Update the map type based on selection
-function updateMapType(type) {
-    map.eachLayer(function(layer) {
-        if (layer instanceof L.TileLayer) {
-            map.removeLayer(layer);
-        }
-    });
-    
-    switch (type) {
-        case 'satellite':
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            }).addTo(map);
-            break;
-        case 'dark':
-            L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
-                subdomains: 'abcd'
-            }).addTo(map);
-            break;
-        case 'terrain':
-            L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.{ext}', {
-                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                subdomains: 'abcd',
-                ext: 'png'
-            }).addTo(map);
-            break;
-        default: // standard
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                subdomains: ['a', 'b', 'c']
-            }).addTo(map);
-    }
-}
+// Removed updateMapType function as its logic is merged into updateMapTileLayer
 
 // Load satellite data from local active.json file using NORAD ID
 async function loadSatelliteDataFromLocal(satId) { // Already async
@@ -243,18 +219,13 @@ async function loadSatelliteDataFromLocal(satId) { // Already async
             throw new Error(`Could not fetch ${activeJsonFile}: ${res.statusText}`);
         }
         const data = await res.json();
-        let satellitesInData = [];
-
-        if (Array.isArray(data)) {
-            satellitesInData = data;
-        } else {
-             if (!Array.isArray(data)) {
-                 throw new Error(`Data in ${activeJsonFile} is not in the expected array format.`);
-             }
+        // Simplified data validation
+        if (!Array.isArray(data)) {
+             throw new Error(`Data in ${activeJsonFile} is not in the expected array format.`);
         }
 
         const satIdNum = parseInt(satId, 10);
-        foundSatellite = satellitesInData.find(sat => parseInt(sat.NORAD_CAT_ID, 10) === satIdNum);
+        foundSatellite = data.find(sat => parseInt(sat.NORAD_CAT_ID, 10) === satIdNum);
 
         if (!foundSatellite) {
             throw new Error(`NOT_FOUND: No TLE data found for NORAD ID ${satId} in ${activeJsonFile}.`);
@@ -262,7 +233,6 @@ async function loadSatelliteDataFromLocal(satId) { // Already async
 
         satellite = foundSatellite; // Assign to global variable
 
-        // Set title text but don't display it yet (hideLoading will handle it)
         const titleElement = document.getElementById('satellite-title');
         if (titleElement) {
              titleElement.innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
@@ -277,7 +247,6 @@ async function loadSatelliteDataFromLocal(satId) { // Already async
         } else {
             showError(`Failed to load satellite data: ${error.message}`);
         }
-        // hideLoading(false) is called within showError
         return false; // Return failure
     }
 }
