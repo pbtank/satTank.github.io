@@ -1140,4 +1140,36 @@ table.dataTable tbody tr td.inactive-satellite {
     color: var(--text-primary);
 }
 
+/* Logo Styles */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) 0;
+}
+
+.header-logo {
+    height: 120px;
+    width: 120px;
+    object-fit: contain;
+}
+
+/* Light mode logo */
+.light-logo {
+    display: block;
+}
+
+.dark-logo {
+    display: none;
+}
+
+/* Dark mode logo */
+#pageBody[data-theme="dark"] .light-logo {
+    display: none;
+}
+
+#pageBody[data-theme="dark"] .dark-logo {
+    display: block;
+}
+
 
