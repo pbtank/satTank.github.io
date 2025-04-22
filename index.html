@@ -7,43 +7,37 @@
     <title>Satellite Tracking</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="index.css">
-    <script src="library/p5.js"></script>
-    <script src="library/p5.dom.js"></script>
-    <script src="library/jquery-3.6.0.min.js"></script>
-    <script src="library/satellite.min.js"></script>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 
-<body id="pageBody">
+<body id="pageBody" data-theme="light">
     <!-- Absolutely Positioned Elements -->
     <!-- UTC Clock Container Removed -->
     <div id="dark-mode-toggle-container" style="position: absolute; top: 10px; right: 10px;">
         <!-- Removed old darkModeToggle button -->
     </div>
 
-    <!-- Dark Mode Toggle Switch - Updated to button style -->
+    <!-- Dark Mode Toggle Switch -->
     <div class="theme-switch-wrapper">
-        <!-- Icons will be managed by JS, structure matches satPage.html -->
         <button id="theme-toggle" class="icon-button" title="Toggle Theme">
-            <!-- Icon content (sun/moon) is set by JS -->
+            <i class="fas fa-moon"></i>
         </button>
     </div>
 
     <header id="pageHeader">
-        <!-- Centered Title and Subheading -->
-        <table id="headerTable" border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
-            <tr>
-                <td>
-                    <h1 style="font-weight: normal; margin-bottom: 0px">satTank</h1>
-                </td>
-            </tr>
-            <tr>
-                <td style="vertical-align: middle; color: gray">CATALOGUES | TRACKING</td>
-            </tr>
-        </table>
+        <div class="header-content">
+            <div class="utc-clock">
+                UTC: <span id="utc-time"></span>
+            </div>
+            <h1>satTank</h1>
+            <div class="header-divider"></div>
+            <div class="subheading">CATALOGUES | TRACKING</div>
+            <div class="header-divider"></div>
+        </div>
 
         <!-- Centered Controls Container -->
         <div id="header-controls-container">
@@ -54,7 +48,7 @@
                 <label for="sortColumn">Sort by:</label>
                 <select id="sortColumn" class="form-control-sm">
                     <option value="0">Name</option>
-                    <option value="3">Launch Year</option> <!-- Assuming Launch Year will be 4th column (index 3) -->
+                    <option value="3">Launch Year</option>
                 </select>
                 <label for="sortOrder">Order:</label>
                 <select id="sortOrder" class="form-control-sm">
@@ -64,7 +58,6 @@
             </div>
             <div id="right-controls">
                 <button id="add-tle-btn" class="btn btn-primary">Add TLE</button>
-                <!-- Dark Mode Toggle Switch Removed from here -->
             </div>
         </div>
     </header>
@@ -73,19 +66,21 @@
     <div id="tle-form" class="tle-form-container" style="display: none; max-width: 600px; margin: 10px auto; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9;">
         <h5>Add Custom Satellite TLE</h5>
         <div class="form-group">
-            <label for="customSatName">Satellite Name:</label>
-            <input type="text" id="customSatName" class="form-control" placeholder="My Custom Satellite">
+            <label for="customSatName">Satellite Name (24 characters max):</label>
+            <input type="text" id="customSatName" class="form-control" placeholder="NOAA 14" maxlength="24">
         </div>
         <div class="form-group">
-            <label for="customTleLine1">TLE Line 1:</label>
-            <input type="text" id="customTleLine1" class="form-control" placeholder="1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N NNNNN">
+            <label for="customTleLine1">TLE Line 1 (69 characters):</label>
+            <input type="text" id="customTleLine1" class="form-control" placeholder="1 23455U 94089A   97320.90946019  .00000140  00000-0  10191-3 0  2621" maxlength="69">
+            <small class="form-text text-muted">Format: 1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N NNNNN</small>
         </div>
         <div class="form-group">
-            <label for="customTleLine2">TLE Line 2:</label>
-            <input type="text" id="customTleLine2" class="form-control" placeholder="2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN NN.NNNNNNNNNNNNNN">
+            <label for="customTleLine2">TLE Line 2 (69 characters):</label>
+            <input type="text" id="customTleLine2" class="form-control" placeholder="2 23455  99.0090 272.6745 0008546 223.1686 136.8816 14.11711747148495" maxlength="69">
+            <small class="form-text text-muted">Format: 2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN NN.NNNNNNNNNNNNNN</small>
         </div>
         <button id="save-tle-btn" class="btn btn-success">Save Satellite</button>
-        <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button> <!-- Added Cancel button -->
+        <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
     </div>
 
     <div id="satelliteTableContainer">
@@ -93,37 +88,98 @@
     </div>
 
     <footer id="pageFooter">
-        <table id="footerTable" border="0"
-            style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
-            <tr>
-                <td>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <table border="0"
-                        style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
-                        <tr>
-                            <td style="width: 200px; font-family: monospace;">Version: 2.1</td> <!-- Updated Version -->
-                            <td>Created by: <a href="https://pbtank.github.io/Tank_Priyansu/"
-                                    style="text-decoration-line: underline;">Priyansu Tank</a> & <a href="https://github.com/carbform">Carbform</a> </td> <!-- Corrected Carbform link -->
-                            <td style="width: 300px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                                <img src="src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
-                                Proud to be Indian.
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+        <div class="footer-content">
+            <div class="version">Version: 2.1</div>
+            <div class="credits">
+                Created by: <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu Tank</a> & <a href="https://github.com/carbform">Carbform</a>
+                <div class="attribution">
+                    Satellite data provided by <a href="https://celestrak.org/" target="_blank">CELESTRAK</a>
+                </div>
+            </div>
+            <div class="india-flag">
+                <img src="src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
+                Proud to be Indian.
+            </div>
+        </div>
     </footer>
-    <script type="text/javascript">
+
+    <!-- Scripts -->
+    <!-- jQuery first, then other dependencies -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <!-- Satellite.js -->
+    <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
+    
+    <!-- Custom Scripts -->
+    <script src="customSat.js"></script>
+    <script src="index.js"></script>
+
+    <script>
+        // Theme Toggle Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const pageBody = document.getElementById('pageBody');
+            
+            // Set initial theme from localStorage or default to light
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            pageBody.setAttribute('data-theme', currentTheme);
+            
+            // Update toggle icon based on current theme
+            updateThemeIcon(currentTheme);
+            
+            // Add click event listener
+            themeToggle.addEventListener('click', function() {
+                const newTheme = pageBody.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                pageBody.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+            });
+            
+            function updateThemeIcon(theme) {
+                const icon = themeToggle.querySelector('i');
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        });
+
+        // UTC Clock Update Function
+        function updateUTCClock() {
+            const now = new Date();
+            const utcTimeString = now.toUTCString().split(' ')[4]; // Gets HH:MM:SS
+            document.getElementById('utc-time').textContent = utcTimeString;
+        }
+
+        // Update clock immediately and then every second
+        updateUTCClock();
+        setInterval(updateUTCClock, 1000);
+
+        // Document ready function for table initialization
         $(document).ready(function () {
             $('#table tbody').delegate("tr", "click", function () {
                 var ID = $(this).children('td:first').text();
                 var name = $(this).children('td:nth-child(2)').text();
                 window.location.href = "satPage.html?ID=" + ID + "&" + "name=" + name;
             });
+
+            // Setup TLE form button listeners
+            const addTleBtn = document.getElementById('add-tle-btn');
+            const saveTleBtn = document.getElementById('save-tle-btn');
+
+            if (addTleBtn) {
+                addTleBtn.addEventListener('click', toggleTleForm);
+            }
+
+            if (saveTleBtn) {
+                saveTleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    handleFormSubmission();
+                });
+            }
         });
 
         function toggleTleForm() {
@@ -132,23 +188,7 @@
             var btn = document.getElementById("add-tle-btn");
             btn.innerText = form.style.display === "none" ? "Add Custom TLE" : "Hide Form";
         }
-
-        // Removed setInterval block that caused the error
     </script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="index.js"></script>
-    <!-- Scripts -->
-    <!-- Satellite.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
-
-    <!-- Leaflet -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-
-    <!-- P5.js (for canvas visualizations) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
-
-    <!-- Custom Scripts -->
-    <script src="satPage.js"></script>
 </body>
 
 </html>

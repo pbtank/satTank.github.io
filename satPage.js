@@ -15,7 +15,7 @@ let currentMapLayer; // Renamed for clarity and consistency
 // Constants
 const EARTH_RADIUS_KM = 6371;
 const UPDATE_INTERVAL_MS = 1000;
-const ORBIT_POINTS = 90; // Number of points to calculate for orbit
+const ORBIT_POINTS = 180; // Number of points to calculate for orbit visualization
 const ORBIT_PERIOD_MINUTES = 90; // Approximate period for most LEO satellites
 
 // Only load data from active.json
@@ -138,45 +138,41 @@ function setTheme(theme) {
 // Function to update map tile layer based on theme and selection
 function updateMapTileLayer(theme) {
     const mapTypeSelect = document.getElementById('map-type');
-    const selectedMapType = mapTypeSelect ? mapTypeSelect.value : 'standard'; // Default if dropdown doesn't exist
+    const selectedMapType = mapTypeSelect ? mapTypeSelect.value : 'standard';
 
-    if (map) { // Check if map is initialized
+    if (map) {
         if (currentMapLayer) {
-            map.removeLayer(currentMapLayer); // Remove previous layer
+            map.removeLayer(currentMapLayer);
         }
 
         let tileUrl;
         let tileOptions = {
-            // attribution: set below based on type
-            maxZoom: 19, // Consistent maxZoom
-            subdomains: ['a', 'b', 'c'] // Default subdomains
+            maxZoom: 13,
+            subdomains: ['a', 'b', 'c']
         };
 
         if (theme === 'dark') {
-            // Always use dark map in dark mode
-             tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-             tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
-             tileOptions.subdomains = 'abcd'; // Carto uses abcd
+            tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+            tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+            tileOptions.subdomains = 'abcd';
         } else {
-            // Use selected map type in light mode
             switch (selectedMapType) {
                 case 'satellite':
                     tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
                     tileOptions.attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
-                    tileOptions.subdomains = undefined; // Esri doesn't use subdomains typically
+                    tileOptions.maxZoom = 17;
+                    delete tileOptions.subdomains;
                     break;
                 case 'terrain':
-                     // Using OpenTopoMap as an example terrain layer
-                     tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
-                     tileOptions.attribution = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)';
-                     tileOptions.subdomains = ['a', 'b', 'c']; // OpenTopoMap uses subdomains
-                     break;
-                // case 'dark': // This case is now handled by the theme='dark' block above
+                    tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+                    tileOptions.attribution = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)';
+                    tileOptions.maxZoom = 15;
+                    break;
                 case 'standard':
                 default:
                     tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
                     tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-                    break; // Subdomains already set to default ['a', 'b', 'c']
+                    break;
             }
         }
 
@@ -195,51 +191,60 @@ function initMap() {
         center: [0, 0],
         zoom: 2,
         minZoom: 2,
-        worldCopyJump: true
+        maxZoom: 13,
+        worldCopyJump: true // Keep this for better user experience when panning
     });
 
-    // Set initial tile layer based on the current theme AFTER map is created
     const initialTheme = localStorage.getItem('theme') || 'dark';
-    updateMapTileLayer(initialTheme); // This adds the initial layer
-
-    // Removed default tile layer addition here as it's handled by updateMapTileLayer
-    // Removed commented-out graticule code
+    updateMapTileLayer(initialTheme);
 }
 
 // Removed updateMapType function as its logic is merged into updateMapTileLayer
 
 // Load satellite data from local active.json file using NORAD ID
-async function loadSatelliteDataFromLocal(satId) { // Already async
-    showLoading(`Loading TLE data for NORAD ID ${satId} from ${activeJsonFile}...`);
+async function loadSatelliteDataFromLocal(satId) {
+    showLoading(`Loading TLE data for NORAD ID ${satId}...`);
     let foundSatellite = null;
 
     try {
+        // First check if this is a custom satellite
+        const customSat = loadCustomSatellite(satId);
+        if (customSat) {
+            satellite = customSat;
+            const titleElement = document.getElementById('satellite-title');
+            if (titleElement) {
+                titleElement.innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
+            }
+            hideLoading(true);
+            return true;
+        }
+
+        // If not found in custom satellites, try active.json
         const res = await fetch(activeJsonFile);
         if (!res.ok) {
             throw new Error(`Could not fetch ${activeJsonFile}: ${res.statusText}`);
         }
         const data = await res.json();
-        // Simplified data validation
         if (!Array.isArray(data)) {
-             throw new Error(`Data in ${activeJsonFile} is not in the expected array format.`);
+            throw new Error(`Data in ${activeJsonFile} is not in the expected array format.`);
         }
 
         const satIdNum = parseInt(satId, 10);
         foundSatellite = data.find(sat => parseInt(sat.NORAD_CAT_ID, 10) === satIdNum);
 
         if (!foundSatellite) {
-            throw new Error(`NOT_FOUND: No TLE data found for NORAD ID ${satId} in ${activeJsonFile}.`);
+            throw new Error(`NOT_FOUND: No TLE data found for NORAD ID ${satId}.`);
         }
 
-        satellite = foundSatellite; // Assign to global variable
+        satellite = foundSatellite;
 
         const titleElement = document.getElementById('satellite-title');
         if (titleElement) {
-             titleElement.innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
+            titleElement.innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
         }
 
-        hideLoading(true); // Indicate success
-        return true; // Return success
+        hideLoading(true);
+        return true;
 
     } catch (error) {
         if (error.message.startsWith('NOT_FOUND:')) {
@@ -247,7 +252,7 @@ async function loadSatelliteDataFromLocal(satId) { // Already async
         } else {
             showError(`Failed to load satellite data: ${error.message}`);
         }
-        return false; // Return failure
+        return false;
     }
 }
 
@@ -341,75 +346,51 @@ function createSatellitePopup(position) {
 
 // Update the orbit visualization
 function updateOrbitVisualization() {
-    const orbitPoints = calculateOrbitPoints();
+    const orbitSegments = calculateOrbitPoints();
     
     if (orbitLine) {
         map.removeLayer(orbitLine);
     }
     
-    orbitLine = L.polyline(orbitPoints, {
-        color: '#3498db',
-        weight: 2,
-        opacity: 0.7,
-        dashArray: '5, 5',
-        className: 'orbit-path'
-    }).addTo(map);
-}
-
-// Calculate orbit points for visualization
-function calculateOrbitPoints() {
-    const points = [];
-    const now = new Date();
+    // Create a feature group to hold all orbit segments
+    orbitLine = L.featureGroup();
     
-    for (let i = 0; i < ORBIT_POINTS; i++) {
-        const minutesOffset = (i / ORBIT_POINTS) * ORBIT_PERIOD_MINUTES;
-        const timeOffset = minutesOffset * 60 * 1000;
-        const time = new Date(now.getTime() + timeOffset);
-        const position = calculateSatellitePosition(satellite, time);
-        
-        // Add check for valid position before pushing
-        if (position && !isNaN(position.lat) && !isNaN(position.lng)) {
-            points.push([position.lat, position.lng]);
-        }
-    }
+    // Add each segment as a separate polyline
+    orbitSegments.forEach(segment => {
+        L.polyline(segment, {
+            color: '#3498db',
+            weight: 2,
+            opacity: 0.7,
+            dashArray: '5, 5',
+            className: 'orbit-path'
+        }).addTo(orbitLine);
+    });
     
-    return points;
+    orbitLine.addTo(map);
 }
 
 // Update the ground track visualization
 function updateGroundTrackVisualization() {
-    const trackPoints = calculateGroundTrackPoints();
+    const trackSegments = calculateGroundTrackPoints();
     
     if (groundTrackLine) {
         map.removeLayer(groundTrackLine);
     }
     
-    groundTrackLine = L.polyline(trackPoints, {
-        color: '#e74c3c',
-        weight: 2,
-        opacity: 0.8,
-        className: 'ground-track'
-    }).addTo(map);
-}
-
-// Calculate ground track points
-function calculateGroundTrackPoints() {
-    const points = [];
-    const now = new Date();
+    // Create a feature group to hold all ground track segments
+    groundTrackLine = L.featureGroup();
     
-    for (let i = 0; i < ORBIT_POINTS / 2; i++) {
-        const minutesOffset = (i / (ORBIT_POINTS / 2)) * (ORBIT_PERIOD_MINUTES / 2);
-        const timeOffset = minutesOffset * 60 * 1000;
-        const time = new Date(now.getTime() + timeOffset);
-        const position = calculateSatellitePosition(satellite, time);
-        
-        // Add check for valid position before pushing
-        if (position && !isNaN(position.lat) && !isNaN(position.lng)) {
-            points.push([position.lat, position.lng]);
-        }
-    }
+    // Add each segment as a separate polyline
+    trackSegments.forEach(segment => {
+        L.polyline(segment, {
+            color: '#e74c3c',
+            weight: 2,
+            opacity: 0.8,
+            className: 'ground-track'
+        }).addTo(groundTrackLine);
+    });
     
-    return points;
+    groundTrackLine.addTo(map);
 }
 
 // Update the footprint visualization (coverage area)
@@ -492,28 +473,37 @@ function displaySatelliteInfo() {
     const satelliteTableBody = document.querySelector('#satellite-table tbody');
     const positionTableBody = document.querySelector('#position-table tbody'); // Clear initial position too
 
-    // Reformat orbital data into fewer rows with more columns
-    orbitalTableBody.innerHTML = `
-        <tr>
-            <th>NORAD ID</th><td>${satellite.NORAD_CAT_ID}</td>
-            <th>Int'l Designator</th><td>${satellite.OBJECT_ID || 'N/A'}</td>
-            <th>Epoch</th><td>${satellite.EPOCH || 'N/A'}</td>
-        </tr>
-        <tr>
-            <th>Eccentricity</th><td>${satellite.ECCENTRICITY?.toFixed(6) || 'N/A'}</td>
-            <th>Inclination</th><td>${satellite.INCLINATION?.toFixed(4) || 'N/A'}°</td>
-            <th>RAAN</th><td>${satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A'}°</td>
-        </tr>
-        <tr>
-            <th>Arg. of Perigee</th><td>${satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A'}°</td>
-            <th>Mean Anomaly</th><td>${satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A'}°</td>
-            <th>Mean Motion</th><td>${satellite.MEAN_MOTION?.toFixed(6) || 'N/A'} rev/day</td>
-        </tr>
-    `;
-
+    // Display satellite info in a vertical layout
     satelliteTableBody.innerHTML = `
         <tr><th>Name</th><td>${satellite.OBJECT_NAME || 'N/A'}</td></tr>
-        <tr><th>Launch Date</th><td>${formatLaunchDate(satellite.OBJECT_ID) || 'N/A'}</td></tr>        <tr><th>Orbital Period</th><td>${calculateOrbitalPeriod(satellite) || 'N/A'} minutes</td></tr>
+        <tr><th>Launch Date</th><td>${formatLaunchDate(satellite.OBJECT_ID) || 'N/A'}</td></tr>
+        <tr><th>Orbital Period</th><td>${calculateOrbitalPeriod(satellite) || 'N/A'} minutes</td></tr>
+    `;
+
+    // Display orbital elements in a horizontal layout
+    orbitalTableBody.innerHTML = `
+        <tr>
+            <th>NORAD ID</th>
+            <th>Int'l Designator</th>
+            <th>Epoch</th>
+            <th>Eccentricity</th>
+            <th>Inclination</th>
+            <th>RAAN</th>
+            <th>Arg. of Perigee</th>
+            <th>Mean Anomaly</th>
+            <th>Mean Motion</th>
+        </tr>
+        <tr>
+            <td>${satellite.NORAD_CAT_ID}</td>
+            <td>${satellite.OBJECT_ID || 'N/A'}</td>
+            <td>${satellite.EPOCH || 'N/A'}</td>
+            <td>${satellite.ECCENTRICITY?.toFixed(6) || 'N/A'}</td>
+            <td>${satellite.INCLINATION?.toFixed(4) || 'N/A'}°</td>
+            <td>${satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A'}°</td>
+            <td>${satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A'}°</td>
+            <td>${satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A'}°</td>
+            <td>${satellite.MEAN_MOTION?.toFixed(6) || 'N/A'} rev/day</td>
+        </tr>
     `;
 
     // Clear position table initially
@@ -639,4 +629,93 @@ function showError(message) {
 
     // Call hideLoading with false to ensure title/map/details remain hidden
     hideLoading(false);
+}
+
+// Improve orbit calculation for smoother paths
+function calculateOrbitPoints() {
+    const points = [];
+    const segments = [];
+    const now = new Date();
+    
+    const orbitDuration = ORBIT_PERIOD_MINUTES * 60 * 1000;
+    const timeStep = orbitDuration / ORBIT_POINTS;
+    const numPoints = ORBIT_POINTS * 2; // Two full orbits
+    
+    let currentSegment = [];
+    let prevLng = null;
+    
+    for (let i = 0; i < numPoints; i++) {
+        const timeOffset = i * timeStep;
+        const time = new Date(now.getTime() + timeOffset);
+        const position = calculateSatellitePosition(satellite, time);
+        
+        if (position && !isNaN(position.lat) && !isNaN(position.lng)) {
+            let lng = position.lng;
+            
+            // Handle longitude wrapping by creating new segments
+            if (prevLng !== null) {
+                const diff = lng - prevLng;
+                if (Math.abs(diff) > 180) {
+                    if (currentSegment.length > 0) {
+                        segments.push(currentSegment);
+                        currentSegment = [];
+                    }
+                }
+            }
+            
+            currentSegment.push([position.lat, lng]);
+            prevLng = lng;
+        }
+    }
+    
+    // Add the last segment if it contains points
+    if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+    }
+    
+    return segments;
+}
+
+// Update ground track calculation
+function calculateGroundTrackPoints() {
+    const segments = [];
+    const now = new Date();
+    
+    const orbitDuration = ORBIT_PERIOD_MINUTES * 60 * 1000;
+    const timeStep = orbitDuration / ORBIT_POINTS;
+    const numPoints = Math.floor(ORBIT_POINTS * 1.5); // One and a half orbits
+    
+    let currentSegment = [];
+    let prevLng = null;
+    
+    for (let i = 0; i < numPoints; i++) {
+        const timeOffset = i * timeStep;
+        const time = new Date(now.getTime() + timeOffset);
+        const position = calculateSatellitePosition(satellite, time);
+        
+        if (position && !isNaN(position.lat) && !isNaN(position.lng)) {
+            let lng = position.lng;
+            
+            // Handle longitude wrapping by creating new segments
+            if (prevLng !== null) {
+                const diff = lng - prevLng;
+                if (Math.abs(diff) > 180) {
+                    if (currentSegment.length > 0) {
+                        segments.push(currentSegment);
+                        currentSegment = [];
+                    }
+                }
+            }
+            
+            currentSegment.push([position.lat, lng]);
+            prevLng = lng;
+        }
+    }
+    
+    // Add the last segment if it contains points
+    if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+    }
+    
+    return segments;
 }

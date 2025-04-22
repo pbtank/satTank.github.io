@@ -1,912 +1,518 @@
-/* Satellite Tracker Individual Page CSS */
-:root {
-    --background-color: #181a1b;
-    --text-color: #e0e0e0;
-    --primary-color: #2196f3;
-    --secondary-color: #888;
-    --accent-color: #ff5252;
-    --border-color: #23272a;
-    --link-color: #90caf9;
-    --header-bg: #23272a;
-    --header-text: #e0e0e0;
-    --button-bg: #2196f3;
-    --button-text: #fff;
-    --panel-bg: #23272a;
-    --table-border: #23272a;
-    --table-header-bg: #23272a;
-}
-
-[data-theme="dark"] {
-    --background-color: #1a1a1a;
-    --text-color: #e0e0e0;
-    --primary-color: #0d6efd; /* Dark theme primary */
-    --secondary-color: #6c757d; /* Dark theme secondary */
-    --accent-color: #dc3545; /* Dark theme accent */
-    --border-color: #444444;
-    --link-color: #3b9dff;
-    --header-bg: #2c2c2c;
-    --header-text: #e0e0e0;
-    --button-bg: #0d6efd;
-    --button-text: #ffffff;
-    --panel-bg: #2c2c2c;
-    --table-border: #444444;
-    --table-header-bg: #3a3a3a;
-}
-
-[data-theme="light"] {
-    --background-color: #fff;
-    --text-color: #23272a;
-    --primary-color: #1976d2;
-    --secondary-color: #888;
-    --accent-color: #e53935;
-    --border-color: #e0e0e0;
-    --link-color: #1976d2;
-    --header-bg: #f8f9fa;
-    --header-text: #23272a;
-    --button-bg: #1976d2;
-    --button-text: #fff;
-    --panel-bg: #f8f9fa;
-    --table-border: #e0e0e0;
-    --table-header-bg: #f0f0f0;
-}
-
+/* Modern Reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* Custom Properties */
+:root {
+    /* Light Theme Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --text-primary: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --accent-color: #3498db;
+    --border-color: #e0e0e0;
+    --hover-color: #f0f0f0;
+    
+    /* Layout Dimensions */
+    --header-height: 60px;
+    --footer-height: 0px;
+    --panel-width: 300px;
+    
+    /* Typography */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+}
+
+/* Dark Theme Colors */
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #f5f5f5;
+    --text-secondary: #b0b0b0;
+    --accent-color: #4a9eff;
+    --border-color: #404040;
+    --hover-color: #333333;
+}
+
+/* Base Layout */
 body {
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    background: var(--background-color);
-    color: var(--text-color);
-    min-height: 100vh;
-    transition: background 0.2s, color 0.2s;
-    padding: 0; /* Remove body padding if main handles it */
+    font-family: var(--font-primary);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 main {
-    max-width: 1200px; /* Limit content width */
-    margin: 1.5rem auto; /* Center main content and add top/bottom margin */
-    padding: 0 1.5rem; /* Add left/right padding */
-}
-
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
-}
-
-.content {
-    background: var(--panel-bg);
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    box-shadow: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Critical for nested flexbox scrolling */
     overflow: hidden;
-    margin-top: 1rem;
-    margin-bottom: 1.2rem;
-    padding: 1.2rem 1rem;
 }
 
 /* Header Styles */
 header {
-    background: var(--header-bg);
-    color: var(--header-text);
-    padding: 1rem 0;
+    height: var(--header-height);
+    padding: 0 var(--spacing-xl);
+    background-color: var(--bg-primary);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: none;
+    position: relative;
+    z-index: 1000;
 }
 
-header h1 {
-    margin: 0;
-    padding: 0;
-    font-size: 1.3rem;
+#satellite-title {
+    font-size: 1.8rem;
     font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-nav {
-    background-color: transparent;
-    padding: 0;
-}
-
-nav ul {
-    display: flex;
-    list-style: none;
+    color: var(--text-primary);
     margin: 0;
-    gap: 0.5rem;
 }
 
-nav ul li {
-    margin-left: 0.5rem;
-}
-
-nav ul li a {
-    color: var(--link-color);
-    text-decoration: none;
-    padding: 0.3rem 0.7rem;
-    border-radius: 3px;
-    font-size: 1rem;
-    transition: background 0.2s, color 0.2s;
-}
-
-nav ul li a:hover {
-    background: var(--primary-color);
-    color: var(--button-text);
-}
-
-nav ul li a.active {
-    background: var(--primary-color);
-    color: var(--button-text);
-    border-radius: 4px;
-}
-
-#p5canvas {
-    height: 400px;
-    width: 100%;
-    border: 1px solid var(--border-color);
-    background: #000;
-    display: block;
-    margin-bottom: 1.2rem;
-}
-
-/* Map container - critical for Leaflet */
-#mapid {
-    height: 500px; /* Or any desired height */
-    width: 100%; /* Ensure it takes available width */
-    z-index: 1;
-    border-radius: 4px; /* Optional: round corners */
-    border: 1px solid var(--border-color);
-}
-
-#canvas-container {
-    height: 250px;
-    width: 100%;
-    margin-bottom: 1.2rem;
-    border: 1px solid var(--border-color);
-    background: #000;
-}
-
-.info-panel {
-    padding: 0;
-    background: var(--panel-bg);
-    border-radius: 4px;
-    margin-bottom: 1.2rem;
-    border: 1px solid var(--border-color);
-    box-shadow: none;
-}
-
-.info-panel h2 {
-    padding: 0.8rem 1rem;
-    margin: 0;
-    font-size: 1.1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.info-table-container {
-    padding: 0.5rem 1rem 1rem 1rem;
-    overflow-x: auto;
-}
-
-.info-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-}
-
-.info-table th, .info-table td {
-    border: none;
-    padding: 0.5rem 0.4rem;
-    text-align: left;
-    vertical-align: top;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.info-table tr:last-child th, .info-table tr:last-child td {
-    border-bottom: none;
-}
-
-.info-table th {
-    font-weight: 600;
-    color: var(--primary-color);
-    background: transparent;
-    width: 35%;
-}
-
-.info-table td {
-    color: var(--text-color);
-}
-
-.info-table tr:nth-child(even) {
-    background: transparent;
-}
-
-.info-table tr:hover td {
-    background-color: rgba(128, 128, 128, 0.05);
-}
-
-.loading-message {
-    text-align: center;
-    padding: 1rem;
-    margin: 1rem;
-    font-weight: normal;
-    color: var(--secondary-color);
-    border-radius: 4px;
-    background-color: rgba(108, 117, 125, 0.1);
-}
-
-.error-message {
-    text-align: center;
-    padding: 1rem;
-    margin: 1rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    background-color: rgba(220, 53, 69, 0.1);
-    color: var(--accent-color);
-    border: 1px solid rgba(220, 53, 69, 0.3);
-}
-
-/* Button styling */
-.btn {
-    background: var(--button-bg);
-    color: var(--button-text);
-    border: none;
-    padding: 0.45rem 1.1rem;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
-    margin-right: 0.5rem;
-    font-weight: normal;
-    font-size: 0.95rem;
-}
-
-.btn:hover {
-    opacity: 0.85;
-}
-
-.btn-group {
-    margin-bottom: 1rem;
-}
-
-/* Satellite orbit trail styling */
-.orbit-trail {
-    stroke: rgba(255, 165, 0, 0.7);
-    stroke-width: 1.5;
-    fill: none;
-}
-
-/* Satellite marker styling */
-.satellite-marker {
-    color: var(--accent-color);
-    font-size: 1.5rem;
-    filter: none;
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-}
-
-/* Satellite info popup */
-.satellite-popup {
-    padding: 5px;
-    font-size: 0.85rem;
-}
-
-.satellite-popup h4 {
-    margin-top: 0;
-    margin-bottom: 3px;
-    font-size: 0.9rem;
-}
-
-/* Search box styling */
-.search-container {
-    margin-bottom: 1rem;
-}
-
-#satellite-search {
-    padding: 0.5rem;
-    width: 250px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--background-color);
-    color: var(--text-color);
-}
-
-/* Status indicators */
-.status-indicator {
-    display: inline-block;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    margin-right: 0.4em;
-    vertical-align: middle;
-}
-
-.status-active {
-    background: #43e97b;
-}
-
-.status-inactive {
-    background: var(--accent-color);
-}
-
-/* Satellite Header */
-.satellite-header {
-    padding: 0.75rem 1rem;
-    background-color: var(--panel-bg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.satellite-header h2 {
-    color: var(--text-color);
-    margin-right: 1rem;
-    font-size: 1.25rem;
-}
-
-.satellite-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-}
-
-.track-options {
-    display: flex;
-    gap: 0.75rem;
-}
-
-.map-select {
-    padding: 0.4rem 0.6rem;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 0.9rem;
-}
-
-/* Map Styles */
-.map-container {
-    height: 450px;
-    width: 100%;
-    border: 1px solid var(--border-color);
-    margin-bottom: 1.5rem; /* Increase space below map */
-    position: relative; /* Needed for absolute positioning of controls */
-}
-
-/* Map Controls adjustments */
-#map-controls {
-    padding: 0.6rem 1rem;
-    border-radius: 4px;
-    display: flex;
-    justify-content: center; /* Center items horizontally */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    gap: 1rem; /* Spacing between controls */
-    align-items: center;
-    margin-bottom: 1rem; /* Add space below controls */
-    border: 1px solid var(--border-color); /* Use theme border color */
-    background-color: var(--panel-bg); /* Use theme panel background */
-}
-
-#map-controls label {
-    color: var(--text-color); /* Use theme text color */
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    cursor: pointer;
-}
-
-#map-controls select,
-#map-controls input[type="checkbox"] {
-    background-color: var(--background-color); /* Use theme background */
-    color: var(--text-color); /* Use theme text */
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
-    padding: 0.2rem 0.4rem;
-}
-
-/* Remove responsive absolute positioning */
-@media (max-width: 600px) {
-    #map-controls {
-        padding: 0.5rem;
-        gap: 0.6rem;
-    }
-}
-
-/* Explicit theme styles for controls (redundant if using variables correctly, but ensures override) */
-[data-theme="light"] #map-controls {
-    background-color: #ffffff; /* White background for light mode */
-    border-color: #e0e0e0;
-}
-
-[data-theme="light"] #map-controls label,
-[data-theme="light"] #map-controls select {
-    color: #23272a; /* Black text for light mode */
-}
-
-[data-theme="light"] #map-controls select,
-[data-theme="light"] #map-controls input[type="checkbox"] {
-    background-color: #f8f9fa;
-    border-color: #ced4da;
-}
-
-[data-theme="dark"] #map-controls {
-    background-color: #2c2c2c; /* Dark background for dark mode */
-    border-color: #444444;
-}
-
-[data-theme="dark"] #map-controls label,
-[data-theme="dark"] #map-controls select {
-    color: #e0e0e0; /* White text for dark mode */
-}
-
-[data-theme="dark"] #map-controls select,
-[data-theme="dark"] #map-controls input[type="checkbox"] {
-    background-color: #1a1a1a;
-    border-color: #555555;
-}
-
-/* Satellite Details */
-.satellite-details {
-    padding: 1rem;
-}
-
-.detail-panels {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.detail-panel {
-    background: var(--panel-bg);
-    border-radius: 4px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-    margin-bottom: 1.2rem;
-    padding: 0;
-}
-
-.detail-panel h3 {
-    background-color: var(--table-header-bg);
-    color: var(--text-color);
-    padding: 0.8rem 1rem;
-    margin: 0;
-    font-size: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.detail-content {
-    padding: 0.5rem 1rem 1rem 1rem;
-    font-size: 0.95rem;
-}
-
-.detail-content table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.detail-content table th,
-.detail-content table td {
-    padding: 0.5rem 0.4rem;
-    border-bottom: 1px solid var(--border-color);
-    text-align: left;
-}
-
-.detail-content table tr:last-child th,
-.detail-content table tr:last-child td {
-    border-bottom: none;
-}
-
-.detail-content table th {
-    background-color: transparent;
-    font-weight: 600;
-    width: 35%;
-}
-
-.detail-content table tr:nth-child(even) {
-    background-color: transparent;
-}
-
-.detail-content table tr:hover td {
-    background-color: rgba(128, 128, 128, 0.05);
-}
-
-/* Passes Panel */
-.passes-panel {
-    background: var(--panel-bg);
-    border-radius: 4px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-    margin-bottom: 1.2rem;
-    padding: 1.2rem 1rem;
-}
-
-.passes-panel h3 {
-    background-color: var(--table-header-bg);
-    color: var(--text-color);
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.location-input {
-    padding: 1rem;
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-#observer-location {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    min-width: 180px;
-    background-color: var(--background-color);
-    color: var(--text-color);
-}
-
-/* Footprint and track styling */
-.orbit-path {
-    stroke: var(--primary-color);
-    stroke-width: 1.5;
-    fill: none;
-    stroke-dasharray: 4, 4;
-    opacity: 0.7;
-}
-
-.ground-track {
-    stroke: var(--accent-color);
-    stroke-width: 1.5;
-    fill: none;
-    opacity: 0.8;
-}
-
-.footprint {
-    stroke: var(--secondary-color);
-    stroke-width: 1;
-    fill: var(--secondary-color);
-    fill-opacity: 0.1;
-    stroke-opacity: 0.5;
-}
-
-/* Footer */
-footer {
-    text-align: center;
-    padding: 1.2rem 0 0.5rem 0;
-    background: none;
-    color: var(--secondary-color);
-    margin-top: 2rem;
-    border-top: 1px solid var(--border-color);
-    font-size: 0.9rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    nav ul {
-        margin-top: 0.5rem;
-    }
-    .satellite-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .satellite-controls {
-        margin-top: 0.75rem;
-        width: 100%;
-    }
-
-    .map-container {
-        height: 300px;
-    }
-    #p5canvas {
-        height: 300px;
-    }
-     #canvas-container {
-        height: 200px;
-    }
-
-    .detail-panels {
-        grid-template-columns: 1fr;
-    }
-    .location-input {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    #observer-location {
-        min-width: unset;
-        width: 100%;
-    }
-    main {
-        padding: 0 1rem;
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-    }
-    .map-container {
-        margin-bottom: 1rem;
-    }
-    #info-panels {
-        gap: 1rem;
-    }
-}
-
-@media (max-width: 700px) {
-    .container {
-        padding: 1rem 0.3rem;
-    }
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .content, .info-panel, .detail-panel, .passes-panel {
-        padding: 1rem 0.5rem;
-    }
-}
-
-/* Info Panels */
-#info-panels {
-    display: flex;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens if needed */
-    gap: 1.5rem; /* Increase gap between panels */
-    margin-bottom: 1.5rem; /* Add space below panels */
-}
-
-#info-panels .panel {
-    flex: 1; /* Allow panels to grow and shrink */
-    min-width: 280px; /* Minimum width before wrapping */
-    margin-bottom: 0; /* Remove bottom margin as gap handles spacing */
-    /* Existing panel styles like background, border, etc., remain */
-    background: var(--panel-bg);
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    box-shadow: none;
-    overflow: hidden; /* Ensure content stays within borders */
-}
-
-/* Remove individual panel padding, handled by container/table */
-#info-panels .panel {
-    padding: 0;
-}
-
-/* Responsive adjustments */
-@media (max-width: 900px) { /* Adjust breakpoint as needed */
-    #info-panels {
-        flex-direction: column; /* Stack panels vertically */
-    }
-
-    #info-panels .panel {
-        margin-bottom: 1rem; /* Add margin back when stacked */
-    }
-}
-
-/* Responsive adjustments for map controls */
-@media (max-width: 600px) {
-    #map-controls {
-        /* Keep stacking for very small screens, but adjust position */
-        top: 5px;
-        right: 5px;
-        /* bottom: 5px; */
-        /* left: 5px; */
-        flex-direction: column; /* Stack controls vertically */
-        align-items: flex-end; /* Align items to the right when stacked */
-        padding: 0.4rem;
-        gap: 0.4rem;
-    }
-}
-
-/* Container for Map and Right Column Info */
+/* Map and Info Container Layout */
 #map-info-container {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    gap: 1.5rem; /* Space between map and right column */
-    margin-bottom: 1.5rem; /* Space below this container */
+    flex-direction: column;
+    flex: 1;
+    min-height: 0; /* Critical for nested flexbox scrolling */
+}
+
+.map-content-wrapper {
+    display: flex;
+    flex: 1;
+    min-height: 0; /* Critical for nested flexbox scrolling */
+    overflow: hidden;
 }
 
 #map-container {
-    flex: 2; /* Map takes more space */
-    min-width: 300px; /* Minimum width for the map */
-    position: relative; /* Keep for potential overlays */
-    margin-bottom: 0; /* Remove margin as gap handles spacing */
+    flex: 1;
+    position: relative;
+    min-height: 0; /* Critical for nested flexbox scrolling */
 }
 
-/* Right Column for Satellite and Position Info */
+#mapid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Right Column Info Panel */
 #right-column-info {
-    flex: 1; /* Right column takes less space */
-    min-width: 280px; /* Minimum width for the column */
+    width: var(--panel-width);
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+    border-left: 1px solid var(--border-color);
+    padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Space between satellite and position panels */
+    gap: var(--spacing-md);
+    min-height: 0; /* Critical for nested flexbox scrolling */
 }
 
-#right-column-info .panel {
-    margin-bottom: 0; /* Remove bottom margin as gap handles spacing */
-    /* Inherits panel styles */
+/* Orbital Elements Panel - Full Width at Bottom */
+#orbital-panel {
+    flex-shrink: 0;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+    margin: 0;
+    overflow-x: auto;
 }
 
-/* Container for Orbital Info Panel */
-#orbital-info-panel-container {
-    margin-bottom: 1.5rem;
-}
-
-#orbital-info-panel-container .panel {
-    margin-bottom: 0; /* Remove bottom margin */
-    /* Inherits panel styles */
-}
-
-/* Orbital Table specific adjustments for multi-column layout */
-#orbital-table th,
-#orbital-table td {
-    /* Adjust padding if needed */
-    padding: 0.5rem 0.3rem; 
-    white-space: nowrap; /* Prevent wrapping within cells */
-}
-
-#orbital-table th {
-    width: auto; /* Let browser determine width based on content */
-    padding-right: 0.6rem; /* Add space between label and value */
-}
-
-#orbital-table td {
-     padding-right: 1rem; /* Add space between value and next label */
-}
-
-/* Remove old #other-info-panels styling if it exists */
-/* #other-info-panels { ... } */
-
-/* Responsive adjustments */
-@media (max-width: 800px) { /* Adjust breakpoint as needed */
-    #map-info-container {
-        flex-direction: column; /* Stack map and right column */
-    }
-    #map-container {
-        margin-bottom: 1.5rem; /* Add space when stacked */
-    }
-    #right-column-info {
-        gap: 1rem; /* Reduce gap when stacked */
-    }
-    #mapid {
-        height: 350px; /* Adjust map height for smaller screens */
-    }
-    /* Adjust orbital table font size on smaller screens if needed */
-    #orbital-table {
-        font-size: 0.9rem;
-    }
-    #orbital-table th,
-    #orbital-table td {
-        white-space: normal; /* Allow wrapping on small screens */
-        padding: 0.4rem 0.2rem;
-    }
-}
- 
-/* Styles for Status Messages */
-.status-message {
-    padding: 10px 15px;
-    margin-bottom: 1rem; /* Space below the message */
-    border-radius: 4px;
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: bold;
-}
-
-.status-message.loading {
-    background-color: #e0e0e0; /* Light gray for loading */
-    color: #333;
-    border: 1px solid #ccc;
-}
-
-.status-message.error {
-    background-color: #f8d7da; /* Light red for errors */
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-/* Ensure title is block level for display toggle */
-#satellite-title {
-    display: block; /* Or inline-block if preferred */
-    text-align: center; /* Center the title */
-    margin-bottom: 1rem; /* Space below title */
-}
-
-/* Dark Mode adjustments for status messages */
-body[data-theme='dark'] .status-message.loading {
-    background-color: #444;
-    color: #eee;
-    border-color: #555;
-}
-
-body[data-theme='dark'] .status-message.error {
-    background-color: #721c24; /* Darker red */
-    color: #f8d7da; /* Lighter text */
-    border-color: #802029;
-}
-
-/* satpage.css */
-/* Add styles for the details sections if they don't have a common class */
-/* Removed empty ruleset for #satellite-details, #position-details */
-
-/* Ensure map has a defined height even when hidden initially */
-#mapid {
-    height: 500px; /* Or your desired height */
+#orbital-table {
     width: 100%;
-    /* display: block; */ /* Managed by JS now */
+    table-layout: fixed;
 }
 
-/* General table cell styling */
-.satellite-details-section table th,
-.satellite-details-section table td {
-    padding: 8px;
+#orbital-table td, #orbital-table th {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Panel Styles */
+.panel {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.panel h2 {
+    font-size: 1.2rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+/* Info Tables */
+.info-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: var(--spacing-md);
+}
+
+.info-table th {
+    text-align: left;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.info-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+
+/* Map Controls */
+#map-controls {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 1000;
+    background: var(--bg-primary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+#map-controls select {
+    width: 100%;
+    padding: var(--spacing-xs) var(--spacing-sm);
     border: 1px solid var(--border-color);
-    text-align: center; /* Center text */
-    vertical-align: middle; /* Vertically align middle */
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-/* Header specific styling if needed */
-.satellite-details-section table th {
-    background-color: var(--table-header-bg);
-    font-weight: bold;
+#map-controls label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+/* Back Button */
+#back-button {
+    padding: var(--spacing-sm);
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+#back-button:hover {
+    color: var(--accent-color);
+}
+
+/* Theme Toggle */
+.theme-switch-wrapper {
+    margin-left: auto;
+    padding: var(--spacing-sm);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        overflow: auto;
+    }
+
+    .map-content-wrapper {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    #right-column-info {
+        width: 100%;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+
+    #map-container {
+        height: 50vh;
+        min-height: 400px; /* Ensure minimum height on mobile */
+    }
+
+    #orbital-panel {
+        overflow-x: auto;
+    }
+
+    #map-controls {
+        bottom: var(--spacing-md);
+        top: auto;
+        right: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* Loading and Error States */
+.loading-overlay,
+.error-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(var(--bg-primary-rgb), 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.loading-content,
+.error-content {
+    background: var(--bg-primary);
+    padding: 2rem;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    max-width: 400px;
+    width: calc(100% - 4rem);
+}
+
+.loading-spinner {
+    border: 4px solid var(--bg-secondary);
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Theme Toggle Button */
+.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: 50%;
+    transition: background-color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.icon-button:hover {
+    background-color: var(--hover-color);
+}
+
+/* Loading and Error Messages */
+#loading-message,
+#error-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--bg-primary);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 2000;
+    text-align: center;
+    min-width: 300px;
+    max-width: 80%;
+}
+
+#error-message {
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+}
+
+#loading-message {
+    border: 2px solid var(--accent-color);
+    color: var(--text-primary);
+}
+
+#loading-message::after {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin: var(--spacing-md) auto 0;
+    border: 3px solid var(--accent-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Map Popup Styles */
+.leaflet-popup-content-wrapper {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.leaflet-popup-tip {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+.satellite-popup {
+    padding: var(--spacing-sm);
+}
+
+.satellite-popup h4 {
+    margin: 0 0 var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+.satellite-popup p {
+    margin: var(--spacing-xs) 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Orbit and Track Lines */
+.orbit-path {
+    stroke: var(--accent-color);
+    stroke-width: 2;
+    stroke-opacity: 0.7;
+    fill: none;
+}
+
+.ground-track {
+    stroke: #e74c3c;
+    stroke-width: 2;
+    stroke-opacity: 0.7;
+    fill: none;
+}
+
+.footprint {
+    stroke: #f39c12;
+    stroke-width: 1;
+    stroke-opacity: 0.7;
+    fill: #f39c12;
+    fill-opacity: 0.1;
+}
+
+/* Message Overlays */
+.message-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.message-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.message-text {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+/* Loading Spinner */
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--text-secondary);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Error Message Specific Styles */
+#error-message {
+    background: var(--error-bg, #ff5252);
+    color: var(--error-text, #ffffff);
+}
+
+#error-message .fa-exclamation-circle {
+    color: var(--error-text, #ffffff);
+    font-size: 1.25rem;
+}
+
+.close-message {
+    background: none;
+    border: none;
+    color: var(--error-text, #ffffff);
+    cursor: pointer;
+    padding: 0.5rem;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.close-message:hover {
+    opacity: 1;
 }
 
 /* Dark mode adjustments */
-body[data-theme='dark'] .satellite-details-section table th,
-body[data-theme='dark'] .satellite-details-section table td {
-    border-color: var(--dark-border-color);
-    text-align: center; /* Ensure centered */
-    vertical-align: middle; /* Ensure vertically centered */
+[data-theme="dark"] .message-overlay {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-body[data-theme='dark'] .satellite-details-section table th {
-    background-color: var(--dark-table-header-bg);
-}
-
-/* --- Dark Mode Toggle Switch Styles (Copied from index.css) --- */
-.theme-switch-wrapper {
-    /* position: fixed; */ /* Keep it relative to header for now */
-    /* top: 15px; */
-    /* right: 20px; */
-    z-index: 1001;   /* Ensure it's above other elements if needed */
-    display: flex; /* Use flexbox to align items */
-    align-items: center; /* Vertically center items */
-    gap: 8px; /* Add space between flex items (icons and label) */
-    /* Add margin if needed when not fixed */
-    margin-right: 1rem; /* Example margin */
-}
-
-/* Style the button used for the toggle */
-#theme-toggle.icon-button {
-    background: none;
-    border: none;
-    color: var(--text-color); /* Use theme text color */
-    font-size: 1.3rem; /* Adjust icon size */
-    cursor: pointer;
-    padding: 0.3rem;
-    line-height: 1;
-}
-
-#theme-toggle.icon-button:hover {
-    opacity: 0.8;
-}
-
-/* Ensure icon color changes with theme */
-[data-theme="light"] #theme-toggle.icon-button {
-    color: #333; /* Or specific light mode icon color */
-}
-
-[data-theme="dark"] #theme-toggle.icon-button {
-    color: #e0e0e0; /* Or specific dark mode icon color */
-}
-
-/* Hide FontAwesome default display styles if they interfere */
-#theme-toggle i {
-    display: inline-block; /* Ensure icon displays correctly */
-    vertical-align: middle;
+[data-theme="dark"] #error-message {
+    background: var(--error-bg-dark, #d32f2f);
 }

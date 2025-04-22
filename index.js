@@ -108,14 +108,12 @@ function displaySatelliteTable(satellites) {
         // Active: Create the link
         let satLink = document.createElement('a');
         satLink.href = `satPage.html?ID=${encodeURIComponent(noradId)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
-        // Use innerHTML to add a line break
         satLink.innerHTML = 'Active<br>(Track it!)';
-        // satLink.style.color = 'blue'; // Can be styled via CSS
         trackingCell.appendChild(satLink);
     } else {
         // Inactive: Display text
         trackingCell.textContent = 'Inactive';
-        trackingCell.classList.add('inactive-satellite'); // Add class for styling
+        trackingCell.classList.add('inactive-satellite');
     }
 
     // Launch Year
@@ -227,85 +225,83 @@ function getCustomSatellitesFromStorage() {
     }
 }
 
-// Function to save custom satellite
-async function saveCustomSatellite() { // Make async to await loadAndDisplaySatellites
-    const name = document.getElementById('customSatName').value.trim();
-    const tle1 = document.getElementById('customTleLine1').value.trim();
-    const tle2 = document.getElementById('customTleLine2').value.trim();
-
-    if (!name || !tle1 || !tle2) {
-        alert("Please fill in all fields.");
-        return;
-    }
-
-    // Basic TLE validation
-    if (!tle1.startsWith('1 ') || !tle2.startsWith('2 ') || tle1.length < 69 || tle2.length < 69) {
-        alert("Invalid TLE format. Ensure lines start with '1 ' and '2 ' and have correct length.");
-        return;
-    }
-
-    // Attempt to parse TLE to validate and get NORAD ID/Epoch
-    let noradId = null;
-    let epochYear = null;
+// Function to handle form submission and save custom satellite
+async function handleFormSubmission() {
     try {
-        const satrec = satellite.twoline2satrec(tle1, tle2);
-        noradId = satrec.satnum || `CUSTOM-${Date.now()}`; // Use parsed or generate custom ID
-        epochYear = getEpochYearFromTLE(tle1); // Extract epoch year
-    } catch (e) {
-        alert(`Error parsing TLE: ${e.message}. Please check the TLE data.`);
-        console.error("TLE Parsing Error:", e);
-        return; // Stop saving if TLE is invalid
+        console.log('Starting handleFormSubmission...');
+        
+        // Get form elements
+        const nameInput = document.getElementById('customSatName');
+        const tle1Input = document.getElementById('customTleLine1');
+        const tle2Input = document.getElementById('customTleLine2');
+
+        console.log('Form elements:', {
+            nameInput: nameInput ? 'found' : 'not found',
+            tle1Input: tle1Input ? 'found' : 'not found',
+            tle2Input: tle2Input ? 'found' : 'not found'
+        });
+
+        if (!nameInput || !tle1Input || !tle2Input) {
+            console.error('Missing form elements:', { nameInput, tle1Input, tle2Input });
+            alert("Error: Form elements not found. Please refresh the page and try again.");
+            return;
+        }
+
+        // Get and trim input values
+        const name = nameInput.value.trim();
+        const tle1 = tle1Input.value.trim();
+        const tle2 = tle2Input.value.trim();
+
+        console.log('Raw input values:', {
+            name: name,
+            tle1: tle1,
+            tle2: tle2
+        });
+
+        if (!name || !tle1 || !tle2) {
+            alert("Please fill in all fields.");
+            return;
+        }
+
+        // First validate the TLE format
+        console.log('Validating TLE...');
+        if (!validateTLE(tle1, tle2)) {
+            alert("Invalid TLE format. Please check the TLE data and try again.");
+            return;
+        }
+
+        // Parse the TLE data
+        console.log('Parsing TLE...');
+        const satelliteData = parseTLE(name, tle1, tle2);
+        if (!satelliteData) {
+            alert("Failed to parse TLE data. Please check the format and try again.");
+            return;
+        }
+
+        console.log('Parsed satellite data:', satelliteData);
+
+        // Save to localStorage using the customSat.js function
+        if (!window.saveCustomSatellite(satelliteData)) {
+            alert("Failed to save satellite data. Please try again.");
+            return;
+        }
+
+        // Update in-memory data for the 'Custom' category
+        categoryData['Custom'] = getCustomSatellitesFromStorage();
+
+        // Clear form and hide
+        nameInput.value = '';
+        tle1Input.value = '';
+        tle2Input.value = '';
+        toggleTleForm();
+
+        // Redirect to satPage.html with the new satellite's data
+        window.location.href = `satPage.html?ID=${encodeURIComponent(satelliteData.NORAD_CAT_ID)}&name=${encodeURIComponent(name)}`;
+
+    } catch (error) {
+        console.error("Error saving satellite:", error);
+        alert(`Error saving satellite: ${error.message}`);
     }
-
-    const customSatellites = getCustomSatellitesFromStorage();
-    const newSatId = `CUSTOM-${Date.now()}`; // Fallback internal ID if NORAD ID parsing failed (though satrec usually provides one)
-
-    const newSat = {
-        id: newSatId, // Internal custom ID
-        NORAD_CAT_ID: noradId,
-        OBJECT_NAME: name,
-        TLE_LINE1: tle1,
-        TLE_LINE2: tle2,
-        LAUNCH_YEAR: epochYear, // Use epoch year as launch year for custom sats
-        FILE: 'custom' // Mark as custom
-    };
-
-    // Check for duplicates (optional, based on NORAD ID)
-    const existingIndex = customSatellites.findIndex(sat => sat.NORAD_CAT_ID === newSat.NORAD_CAT_ID);
-    if (existingIndex > -1) {
-        // Optionally: Ask user if they want to overwrite or just update
-        console.log(`Updating existing custom satellite with NORAD ID: ${newSat.NORAD_CAT_ID}`);
-        customSatellites[existingIndex] = newSat;
-    } else {
-        customSatellites.push(newSat);
-    }
-
-    localStorage.setItem('customSatellites', JSON.stringify(customSatellites));
-
-    // Update in-memory data for the 'Custom' category
-    categoryData['Custom'] = customSatellites;
-    // Ensure LAUNCH_YEAR is set for all custom sats in memory (might be redundant but safe)
-     categoryData['Custom'].forEach(sat => {
-         if (!sat.LAUNCH_YEAR) sat.LAUNCH_YEAR = getEpochYearFromTLE(sat.TLE_LINE1);
-     });
-
-
-    // Clear form and hide
-    document.getElementById('customSatName').value = '';
-    document.getElementById('customTleLine1').value = '';
-    document.getElementById('customTleLine2').value = '';
-    toggleTleForm(); // Hide the form
-
-    alert("Custom satellite saved!");
-
-    // --- Switch to Custom category and reload table ---
-    const categorySelect = document.getElementById('categorySelect');
-    if (categorySelect) {
-        categorySelect.value = 'Custom'; // Set dropdown to 'Custom'
-    }
-    // Reload the table to show the 'Custom' category including the new satellite
-    await loadAndDisplaySatellites('Custom');
-    console.log("Switched to and reloaded 'Custom' satellite category.");
 }
 
 // Helper to get Epoch Year from TLE Line 1
@@ -649,16 +645,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTheme(newTheme);
         });
     }
-    // Removed old dark mode setup using darkModeCheckboxIndex
 
     // Setup Add TLE button listeners
     const addTleBtn = document.getElementById('add-tle-btn');
     if (addTleBtn) {
         addTleBtn.addEventListener('click', toggleTleForm);
     }
+
+    // Setup Save TLE button listener
     const saveTleBtn = document.getElementById('save-tle-btn');
     if (saveTleBtn) {
-        saveTleBtn.addEventListener('click', saveCustomSatellite);
+        saveTleBtn.addEventListener('click', handleFormSubmission);
     }
 
     // --- Load Categories and Initial Data ---
@@ -699,39 +696,99 @@ function updateUtcClock() {
     }
 }
 
-function setTheme(theme) {
-    var pageBody = document.getElementById('pageBody');
-    if (pageBody) pageBody.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    }
-}
-
-// --- Theme Toggle Logic (Minimal, Robust) ---
+// --- Theme Toggle Logic (Consolidated) ---
 document.addEventListener('DOMContentLoaded', () => {
     const pageBody = document.getElementById('pageBody');
     const themeToggle = document.getElementById('theme-toggle');
+    
     // Set initial theme from localStorage or default to light
     const currentTheme = localStorage.getItem('theme') || 'light';
     setTheme(currentTheme);
 
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
-            const newTheme = (pageBody.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+            const newTheme = pageBody.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             setTheme(newTheme);
         });
     }
-
-    function setTheme(theme) {
-        pageBody.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        if (themeToggle) {
-            themeToggle.innerHTML = theme === 'dark'
-                ? '<i class="fas fa-sun"></i>'
-                : '<i class="fas fa-moon"></i>';
-        }
-    }
 });
+
+// Consolidated theme setting function
+function setTheme(theme) {
+    const pageBody = document.getElementById('pageBody');
+    if (!pageBody) return;
+
+    // Update body attribute
+    pageBody.setAttribute('data-theme', theme);
+    
+    // Update localStorage
+    localStorage.setItem('theme', theme);
+    
+    // Update theme toggle icon
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.innerHTML = theme === 'dark' 
+            ? '<i class="fas fa-sun"></i>'
+            : '<i class="fas fa-moon"></i>';
+    }
+}
+
+// Loading and Error Message Functions
+function showLoading(message) {
+    const loadingElement = document.createElement('div');
+    loadingElement.id = 'loading-message';
+    loadingElement.className = 'message-overlay';
+    loadingElement.setAttribute('role', 'alert');
+    loadingElement.setAttribute('aria-live', 'polite');
+    
+    loadingElement.innerHTML = `
+        <div class="message-content">
+            <div class="spinner"></div>
+            <span class="message-text">${message || 'Loading...'}</span>
+        </div>
+    `;
+    
+    // Remove any existing loading message
+    const existingLoading = document.getElementById('loading-message');
+    if (existingLoading) {
+        existingLoading.remove();
+    }
+    
+    document.body.appendChild(loadingElement);
+}
+
+function hideLoading() {
+    const loadingElement = document.getElementById('loading-message');
+    if (loadingElement) {
+        loadingElement.remove();
+    }
+}
+
+function showError(message) {
+    const errorElement = document.createElement('div');
+    errorElement.id = 'error-message';
+    errorElement.className = 'message-overlay';
+    errorElement.setAttribute('role', 'alert');
+    errorElement.setAttribute('aria-live', 'assertive');
+    
+    errorElement.innerHTML = `
+        <div class="message-content">
+            <i class="fas fa-exclamation-circle"></i>
+            <span class="message-text">${message}</span>
+            <button class="close-message" aria-label="Close error message" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Remove any existing error message
+    const existingError = document.getElementById('error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Hide loading if it's showing
+    hideLoading();
+    
+    document.body.appendChild(errorElement);
+}

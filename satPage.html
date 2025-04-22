@@ -11,14 +11,12 @@
     <link rel="stylesheet" href="satPage.css">
 </head>
 <body>
-    <!-- Dark Mode Toggle Switch Removed from here -->
-
     <header>
-        <button id="back-button" class="icon-button" title="Back to List"><i class="fas fa-arrow-left"></i></button>
+        <button id="back-button" class="icon-button" title="Back to List">
+            <i class="fas fa-arrow-left"></i>
+        </button>
         <h1 id="satellite-title"></h1>
-        <!-- Dark Mode Toggle Switch - Replaced with index.html structure -->
         <div class="theme-switch-wrapper">
-            <!-- Icons will be managed by JS, but structure matches index.html -->
             <button id="theme-toggle" class="icon-button" title="Toggle Theme">
                 <!-- Icon content (sun/moon) is set by JS -->
             </button>
@@ -26,69 +24,80 @@
     </header>
 
     <main>
-        <!-- Map controls moved here -->
-        <div id="map-controls">
-            <label for="map-type">Map Type:</label>
-            <select id="map-type">
-                <option value="standard">Standard</option>
-                <option value="satellite">Satellite</option>
-                <option value="dark">Dark</option>
-                <option value="terrain">Terrain</option>
-            </select>
-            <label><input type="checkbox" id="show-orbit"> Show Orbit</label>
-            <label><input type="checkbox" id="show-groundtrack"> Show Ground Track</label>
-            <label><input type="checkbox" id="show-footprint"> Show Footprint</label>
-        </div>
-
-        <!-- Container for Map and Right Column Info -->
         <div id="map-info-container">
-            <div id="map-container">
-                <div id="mapid"></div>
-            </div>
-            <!-- Right Column for Satellite and Position Info -->
-            <div id="right-column-info">
-                <div class="panel" id="satellite-panel">
-                    <h2>Satellite Info</h2>
-                    <div id="satellite-info" class="info-table-container">
-                        <table class="info-table" id="satellite-table">
-                            <tbody><!-- Satellite info will be populated here by JS --></tbody>
-                        </table>
+            <div class="map-content-wrapper">
+                <div id="map-container">
+                    <div id="mapid"></div>
+                    <!-- Map controls inside map container -->
+                    <div id="map-controls">
+                        <select id="map-type">
+                            <option value="standard">Standard</option>
+                            <option value="satellite">Satellite</option>
+                            <option value="dark">Dark</option>
+                            <option value="terrain">Terrain</option>
+                        </select>
+                        <label><input type="checkbox" id="show-orbit" checked> Show Orbit</label>
+                        <label><input type="checkbox" id="show-groundtrack" checked> Show Ground Track</label>
+                        <label><input type="checkbox" id="show-footprint" checked> Show Footprint</label>
                     </div>
                 </div>
-                <div class="panel" id="position-panel">
-                    <h2>Current Position</h2>
-                    <div id="position-info" class="info-table-container">
-                        <table class="info-table" id="position-table">
-                            <tbody><!-- Position data will be populated here by JS --></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Container for Orbital Info (now separate) -->
-        <div id="orbital-info-panel-container">
+                <div id="right-column-info">
+                    <div class="panel" id="satellite-panel">
+                        <h2>Satellite Info</h2>
+                        <div class="info-table-container">
+                            <table class="info-table" id="satellite-table">
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel" id="position-panel">
+                        <h2>Current Position</h2>
+                        <div class="info-table-container">
+                            <table class="info-table" id="position-table">
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="panel" id="orbital-panel">
                 <h2>Orbital Elements (TLE)</h2>
-                <div id="orbital-info" class="info-table-container">
+                <div class="info-table-container">
                     <table class="info-table" id="orbital-table">
-                        <tbody><!-- Orbital data will be populated here by JS --></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
-            <!-- Position panel moved out -->
+        </div>
+
+        <!-- Loading and Error Messages -->
+        <div id="loading-message" class="message-overlay" role="alert" aria-live="polite" style="display: none;">
+            <div class="message-content">
+                <div class="spinner"></div>
+                <span class="message-text">Loading satellite data...</span>
+            </div>
+        </div>
+        <div id="error-message" class="message-overlay" role="alert" aria-live="assertive" style="display: none;">
+            <div class="message-content">
+                <i class="fas fa-exclamation-circle"></i>
+                <span class="message-text"></span>
+                <button class="close-message" aria-label="Close error message">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     </main>
 
-    <!-- Removed redundant container div -->
-
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.4/satellite.min.js"></script>
-    <!-- Make sure calculations.js is loaded first -->
+    <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
     <script src="calculations.js"></script>
-    <!-- Then load satPage.js -->
+    <script src="customSat.js"></script>
     <script src="satPage.js"></script>
 </body>
 </html>
