@@ -508,15 +508,15 @@ function displaySatelliteInfo() {
             <th>Mean Motion</th>
         </tr>
         <tr>
-            <td>${satellite.NORAD_CAT_ID}</td>
-            <td>${satellite.OBJECT_ID || 'N/A'}</td>
-            <td>${satellite.EPOCH || 'N/A'}</td>
-            <td>${satellite.ECCENTRICITY?.toFixed(6) || 'N/A'}</td>
-            <td>${satellite.INCLINATION?.toFixed(4) || 'N/A'}°</td>
-            <td>${satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A'}°</td>
-            <td>${satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A'}°</td>
-            <td>${satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A'}°</td>
-            <td>${satellite.MEAN_MOTION?.toFixed(6) || 'N/A'} rev/day</td>
+            <td>${escapeHTML(satellite.NORAD_CAT_ID || 'N/A')}</td>
+            <td>${escapeHTML(satellite.OBJECT_ID || 'N/A')}</td>
+            <td>${escapeHTML(satellite.EPOCH || 'N/A')}</td>
+            <td>${escapeHTML(satellite.ECCENTRICITY?.toFixed(6) || 'N/A')}</td>
+            <td>${escapeHTML(satellite.INCLINATION?.toFixed(4) || 'N/A')}°</td>
+            <td>${escapeHTML(satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A')}°</td>
+            <td>${escapeHTML(satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A')}°</td>
+            <td>${escapeHTML(satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A')}°</td>
+            <td>${escapeHTML(satellite.MEAN_MOTION?.toFixed(6) || 'N/A')} rev/day</td>
         </tr>
     `;
 
