@@ -733,20 +733,14 @@ function setTheme(theme) {
     }
 }
 
-// Loading and Error Message Functions
+// Utility function to escape HTML special characters
 function escapeHTML(str) {
-    return str.replace(/[&<>"']/g, function(match) {
-        const escapeMap = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        };
-        return escapeMap[match];
-    });
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
+// Loading and Error Message Functions
 function showLoading(message) {
     const loadingElement = document.createElement('div');
     loadingElement.id = 'loading-message';
@@ -787,7 +781,7 @@ function showError(message) {
     errorElement.innerHTML = `
         <div class="message-content">
             <i class="fas fa-exclamation-circle"></i>
-            <span class="message-text">${message}</span>
+            <span class="message-text">${escapeHTML(message)}</span>
             <button class="close-message" aria-label="Close error message" onclick="this.parentElement.parentElement.remove()">
                 <i class="fas fa-times"></i>
             </button>
