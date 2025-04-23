@@ -12,6 +12,13 @@ let footprintCircle;
 // let currentTileLayer; // Removed, replaced by currentMapLayer
 let currentMapLayer; // Renamed for clarity and consistency
 
+// Utility function to escape HTML special characters
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // Constants
 const EARTH_RADIUS_KM = 6371;
 const UPDATE_INTERVAL_MS = 1000;
@@ -474,11 +481,18 @@ function displaySatelliteInfo() {
     const positionTableBody = document.querySelector('#position-table tbody'); // Clear initial position too
 
     // Display satellite info in a vertical layout
-    satelliteTableBody.innerHTML = `
-        <tr><th>Name</th><td>${satellite.OBJECT_NAME || 'N/A'}</td></tr>
-        <tr><th>Launch Date</th><td>${formatLaunchDate(satellite.OBJECT_ID) || 'N/A'}</td></tr>
-        <tr><th>Orbital Period</th><td>${calculateOrbitalPeriod(satellite) || 'N/A'} minutes</td></tr>
-    `;
+    satelliteTableBody.textContent = '';
+    const nameRow = document.createElement('tr');
+    nameRow.innerHTML = `<th>Name</th><td>${escapeHTML(satellite.OBJECT_NAME || 'N/A')}</td>`;
+    satelliteTableBody.appendChild(nameRow);
+
+    const launchDateRow = document.createElement('tr');
+    launchDateRow.innerHTML = `<th>Launch Date</th><td>${escapeHTML(formatLaunchDate(satellite.OBJECT_ID) || 'N/A')}</td>`;
+    satelliteTableBody.appendChild(launchDateRow);
+
+    const orbitalPeriodRow = document.createElement('tr');
+    orbitalPeriodRow.innerHTML = `<th>Orbital Period</th><td>${escapeHTML(calculateOrbitalPeriod(satellite) || 'N/A')} minutes</td>`;
+    satelliteTableBody.appendChild(orbitalPeriodRow);
 
     // Display orbital elements in a horizontal layout
     orbitalTableBody.innerHTML = `
