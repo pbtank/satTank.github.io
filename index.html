@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="index.css">
 </head>
@@ -66,7 +65,8 @@
     </header>
 
     <!-- Hidden TLE Form -->
-    <div id="tle-form" class="tle-form-container" style="display: none; max-width: 600px; margin: 10px auto; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9;">
+    <div id="tle-form" class="tle-form-container"
+        style="display: none; max-width: 600px; margin: 10px auto; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9;">
         <h5>Add Custom Satellite TLE</h5>
         <div class="form-group">
             <label for="customSatName">Satellite Name (24 characters max):</label>
@@ -74,13 +74,17 @@
         </div>
         <div class="form-group">
             <label for="customTleLine1">TLE Line 1 (69 characters):</label>
-            <input type="text" id="customTleLine1" class="form-control" placeholder="1 23455U 94089A   97320.90946019  .00000140  00000-0  10191-3 0  2621" maxlength="69">
-            <small class="form-text text-muted">Format: 1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N NNNNN</small>
+            <input type="text" id="customTleLine1" class="form-control"
+                placeholder="1 23455U 94089A   97320.90946019  .00000140  00000-0  10191-3 0  2621" maxlength="69">
+            <small class="form-text text-muted">Format: 1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N
+                NNNNN</small>
         </div>
         <div class="form-group">
             <label for="customTleLine2">TLE Line 2 (69 characters):</label>
-            <input type="text" id="customTleLine2" class="form-control" placeholder="2 23455  99.0090 272.6745 0008546 223.1686 136.8816 14.11711747148495" maxlength="69">
-            <small class="form-text text-muted">Format: 2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN NN.NNNNNNNNNNNNNN</small>
+            <input type="text" id="customTleLine2" class="form-control"
+                placeholder="2 23455  99.0090 272.6745 0008546 223.1686 136.8816 14.11711747148495" maxlength="69">
+            <small class="form-text text-muted">Format: 2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN
+                NN.NNNNNNNNNNNNNN</small>
         </div>
         <button id="save-tle-btn" class="btn btn-success">Save Satellite</button>
         <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
@@ -94,56 +98,62 @@
         <div class="footer-content">
             <div class="version">Version: 2.1</div>
             <div class="credits">
-                Created by: <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu Tank</a> & <a href="https://github.com/carbform">Carbform</a>
+                Created by: <a href="https://pbtank.github.io/Tank_Priyansu/"
+                    style="text-decoration-line: underline;">Priyansu Tank</a> & <a
+                    href="https://github.com/carbform">Carbform</a>
                 <div class="attribution">
                     Satellite data provided by <a href="https://celestrak.org/" target="_blank">CELESTRAK</a>
                 </div>
             </div>
             <div class="india-flag">
-                <img src="src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
+                <img src="src\images\india.png"
+                    style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
                 Proud to be Indian.
             </div>
         </div>
     </footer>
 
     <!-- Scripts -->
-    <!-- jQuery first, then other dependencies -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"
+        integrity="sha256-lpQbyCSrPqrv7IZbdk1u4zJ3Ft/DUAIfZElc0Zi25Kw=" crossorigin="anonymous"></script>
+
     <!-- Leaflet -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-    
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+
     <!-- Satellite.js -->
     <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
-    
+
     <!-- Custom Scripts -->
     <script src="customSat.js"></script>
     <script src="index.js"></script>
 
     <script>
         // Theme Toggle Initialization
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const themeToggle = document.getElementById('theme-toggle');
             const pageBody = document.getElementById('pageBody');
-            
+
             // Set initial theme from localStorage or default to light
             const currentTheme = localStorage.getItem('theme') || 'light';
             pageBody.setAttribute('data-theme', currentTheme);
-            
+
             // Update toggle icon based on current theme
             updateThemeIcon(currentTheme);
-            
+
             // Add click event listener
-            themeToggle.addEventListener('click', function() {
+            themeToggle.addEventListener('click', function () {
                 const newTheme = pageBody.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
                 pageBody.setAttribute('data-theme', newTheme);
                 localStorage.setItem('theme', newTheme);
                 updateThemeIcon(newTheme);
             });
-            
+
             function updateThemeIcon(theme) {
                 const icon = themeToggle.querySelector('i');
                 icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
@@ -178,7 +188,7 @@
             }
 
             if (saveTleBtn) {
-                saveTleBtn.addEventListener('click', function(e) {
+                saveTleBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     handleFormSubmission();
                 });
