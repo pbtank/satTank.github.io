@@ -734,6 +734,19 @@ function setTheme(theme) {
 }
 
 // Loading and Error Message Functions
+function escapeHTML(str) {
+    return str.replace(/[&<>"']/g, function(match) {
+        const escapeMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        };
+        return escapeMap[match];
+    });
+}
+
 function showLoading(message) {
     const loadingElement = document.createElement('div');
     loadingElement.id = 'loading-message';
@@ -744,7 +757,7 @@ function showLoading(message) {
     loadingElement.innerHTML = `
         <div class="message-content">
             <div class="spinner"></div>
-            <span class="message-text">${message || 'Loading...'}</span>
+            <span class="message-text">${escapeHTML(message || 'Loading...')}</span>
         </div>
     `;
     
