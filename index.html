@@ -164,9 +164,9 @@
         // Document ready function for table initialization
         $(document).ready(function () {
             $('#table tbody').delegate("tr", "click", function () {
-                var ID = $(this).children('td:first').text();
-                var name = $(this).children('td:nth-child(2)').text();
-                window.location.href = "satPage.html?ID=" + ID + "&" + "name=" + name;
+                var ID = encodeURIComponent($(this).children('td:first').text());
+                var name = encodeURIComponent($(this).children('td:nth-child(2)').text());
+                window.location.href = "satPage.html?ID=" + ID + "&name=" + name;
             });
 
             // Setup TLE form button listeners
