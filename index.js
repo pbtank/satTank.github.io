@@ -133,17 +133,31 @@ function displaySatelliteTable(satellites) {
             pageLength: 10,
             lengthMenu: [10, 25, 50, 100],
             searching: true,
-            ordering: true, // Ensure ordering is enabled
+            ordering: true,
             responsive: true,
-            // Define column types if necessary for correct sorting (optional but good practice)
             columnDefs: [
                 { type: 'string', targets: 0 }, // Name
                 { type: 'num', targets: 1 },    // NORAD ID
-                { orderable: false, targets: 2 }, // Tracking link/status - disable sorting
+                { orderable: false, targets: 2 }, // Tracking link/status
                 { type: 'num', targets: 3 }     // Launch Year
             ],
-            // Set default sort order if desired (e.g., by Name ascending)
-            order: [[0, 'asc']]
+            order: [[0, 'asc']],
+            initComplete: function() {
+                // Add custom filtering function
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    const showActiveOnly = $('#showActiveOnly').is(':checked');
+                    if (!showActiveOnly) return true;
+                    
+                    // Check if the status column (index 2) contains "Active"
+                    const status = $(dataTable.cell(dataIndex, 2).node()).text();
+                    return status.includes('Active');
+                });
+
+                // Add change event handler for checkbox
+                $('#showActiveOnly').on('change', function() {
+                    dataTable.draw(); // Redraw table with filter applied
+                });
+            }
         });
         console.log("DataTables initialized.");
 
@@ -203,10 +217,10 @@ const categoryData = {};
 
 // Function to toggle TLE form visibility
 function toggleTleForm() {
-    var form = document.getElementById("tle-form");
-    form.style.display = form.style.display === "none" ? "block" : "none";
-    var btn = document.getElementById("add-tle-btn");
-    btn.innerText = form.style.display === "none" ? "Add Custom TLE" : "Hide Form";
+    const form = document.getElementById("tle-form");
+    form.classList.toggle('visible');
+    const btn = document.getElementById("add-tle-btn");
+    btn.innerText = form.classList.contains('visible') ? "Hide Form" : "Add Custom TLE";
 }
 
 // Function to get custom satellites from localStorage - Ensure it always returns an array
@@ -420,130 +434,12 @@ function getEpochYearFromTLE(tleLine1) {
     }
 }
 
-// Create dropdown for categories
-function createCategoryDropdown() {
-    const container = document.getElementById('categoryDropdownContainer');
-    if (!container) {
-        console.error('Dropdown container not found!');
-        return null; // Exit if container doesn't exist
-    }
-    container.innerHTML = ''; // Clear previous content
-    const select = document.createElement('select');
-    select.id = 'categoryDropdown';
-    select.className = 'form-control mb-2'; // Add some basic styling
-
-    // Add a label for the dropdown
-    const label = document.createElement('label');
-    label.htmlFor = 'categoryDropdown';
-    label.textContent = 'Select Satellite Category: ';
-    container.appendChild(label);
-
-    for (const cat of Object.keys(categoryMap)) {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        select.appendChild(option);
-    }
-    container.appendChild(select);
-    return select;
-}
-
-// Display satellites for a given category
-function displaySatelliteTableForCategory(category) {
-    const satellites = categoryData[category] || [];
-    const tableContainer = document.getElementById('satelliteTableContainer');
-    if (!tableContainer) {
-        console.error("Table container not found!");
-        return;
-    }
-    tableContainer.innerHTML = ''; // Clear previous table/message
-    let table = document.createElement('table');
-    // Use DataTables default classes for styling
-    table.className = 'display compact stripe hover order-column'; 
-    table.id = 'satTable';
-    table.style.width = '100%'; // Ensure table takes width
-
-    // ... (thead and tbody creation remains the same) ...
-    let thead = table.createTHead();
-    let headerRow = thead.insertRow();
-    // Add Launch Year header
-    let headers = ['Name', 'NORAD ID', 'Tracking', 'Launch Year'];
-    headers.forEach(headerText => {
-        let header = document.createElement('th');
-        header.textContent = headerText;
-        headerRow.appendChild(header);
-    });
-    let tbody = table.createTBody();
-    satellites.forEach(sat => {
-        let row = tbody.insertRow();
-        // Name
-        row.insertCell().textContent = sat.OBJECT_NAME || sat.name || '';
-        // NORAD ID
-        row.insertCell().textContent = sat.NORAD_CAT_ID || sat.id || '';
-        // Details Link
-        let detailsCell = row.insertCell();
-        let satLink = document.createElement('a');
-        satLink.href = `satPage.html?ID=${encodeURIComponent(sat.NORAD_CAT_ID || sat.id)}&name=${encodeURIComponent(sat.OBJECT_NAME || sat.name)}`;
-        satLink.textContent = 'Track it!';
-        detailsCell.appendChild(satLink);
-        // Launch Year
-        row.insertCell().textContent = sat.LAUNCH_YEAR || 'N/A'; // Display launch year
-    });
-
-    tableContainer.appendChild(table);
-
-    // Initialize DataTables
-    try {
-        if (window.jQuery && window.jQuery.fn.dataTable) {
-             // Check if DataTable is already initialized
-            if ($.fn.dataTable.isDataTable('#satTable')) {
-                $('#satTable').DataTable().destroy(); // Destroy existing instance first
-            }
-            const dataTable = $('#satTable').DataTable({
-                pageLength: 10, // Set default page length to 10
-                lengthMenu: [10, 25, 50, 100],
-                searching: true,
-                ordering: true,
-                responsive: true, // Add responsiveness
-                // destroy: true // Already handled above
-            });
-            console.log("DataTables initialized.");
-
-            // Remove previous sort button listener
-            // $('#sortTableBtn').off('click'); // No longer needed
-
-            // Function to apply sorting based on dropdowns
-            const applySorting = () => {
-                const columnIndex = parseInt($('#sortColumn').val());
-                const sortOrder = $('#sortOrder').val();
-                console.log(`Auto-sorting by column index: ${columnIndex}, order: ${sortOrder}`);
-                if (dataTable) {
-                    dataTable.order([columnIndex, sortOrder]).draw();
-                    console.log("Table auto-sorted and redrawn.");
-                } else {
-                    console.error("DataTable instance not found for auto-sorting.");
-                }
-            };
-
-            // Add change listeners to dropdowns for auto-sorting
-            // Use .off().on() to prevent duplicate listeners if function is called multiple times
-            $('#sortColumn, #sortOrder').off('change').on('change', applySorting);
-
-        } else {
-            console.error("jQuery or DataTables not loaded.");
-        }
-    } catch (e) {
-        console.error("Error initializing DataTables:", e);
-    }
-}
-
 // Function to populate the category dropdown
 function populateCategoryDropdown(categories) {
-    const dropdownContainer = document.getElementById('categoryDropdownContainer');
+    const dropdownContainer = document.getElementById('categorySelectContainer');
     if (!dropdownContainer) return; // Guard clause
 
-    let dropdownHTML = '<label for="categorySelect">Select Satellite Category:</label> ';
-    dropdownHTML += '<select id="categorySelect" class="form-control-sm">';
+    let dropdownHTML = '<select id="categorySelect" class="form-control-sm">';
     // Add 'All' option first, not selected by default
     dropdownHTML += '<option value="all">All Satellites</option>';
 

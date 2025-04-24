@@ -39,12 +39,12 @@
 
 /* Dark Theme Colors */
 [data-theme="dark"] {
-	--bg-primary: #1a1a1a;
-	--bg-secondary: #2d2d2d;
+	--bg-primary: #000000;
+	--bg-secondary: #000000;
 	--text-primary: #f5f5f5;
 	--text-secondary: #b0b0b0;
 	--accent-color: #4a9eff;
-	--border-color: #404040;
+	--border-color: #000000;
 	--hover-color: #333333;
 }
 
@@ -60,10 +60,9 @@ body {
 /* Header Styles */
 #pageHeader {
 	width: 100%;
-	padding: var(--spacing-lg) 0;
+	padding: var(--spacing-sm) 0;
 	background-color: var(--bg-primary);
-	border-bottom: 1px solid var(--border-color);
-	margin-bottom: var(--spacing-xl);
+	margin-bottom: 0;
 }
 
 .header-content {
@@ -75,47 +74,96 @@ body {
 	padding: 0 var(--spacing-xl);
 }
 
-.header-content h1 {
-	font-size: 2.5rem;
-	font-weight: normal;
-	color: var(--text-primary);
-	margin: 0;
-	padding: var(--spacing-sm) 0;
-}
-
 .header-divider {
-	width: 100%;
-	height: 1px;
-	background-color: var(--border-color);
-	margin: var(--spacing-sm) 0;
+	display: none; /* Hide the divider */
 }
 
 .subheading {
 	color: var(--text-secondary);
 	font-size: 1.1rem;
 	letter-spacing: 1px;
-	padding: var(--spacing-sm) 0;
+	padding: var(--spacing-xs) 0;
+	margin-bottom: 0;
+	border-bottom: none; /* Remove bottom border */
 }
 
 /* Header Controls Container */
 #header-controls-container {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: var(--spacing-xl);
 	max-width: 1200px;
-	margin: var(--spacing-lg) auto 0;
-	padding: 0 var(--spacing-xl);
+	margin: 0.5rem auto;
+	padding: 0.75rem 2rem;
+	background-color: var(--bg-secondary);
+	border-radius: var(--radius-md);
+	box-shadow: none;
+	border: none;
+	border-top: none; /* Remove top border */
 }
 
-#categoryDropdownContainer,
-#sortingControls {
+.controls-group {
 	display: flex;
 	align-items: center;
-	gap: var(--spacing-md);
-	padding: var(--spacing-sm);
+	justify-content: center;
+	gap: 2rem;
+}
+
+.sort-group, .category-group {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.sort-group label, .category-group label {
+	margin: 0;
+	white-space: nowrap;
+	font-weight: 500;
+	color: var(--text-primary);
+}
+
+.form-control-sm {
+	height: 35px;
+	padding: 0.25rem 0.75rem;
+	background-color: var(--bg-primary);
 	border: 1px solid var(--border-color);
 	border-radius: var(--radius-sm);
+	color: var(--text-primary);
+	min-width: 150px;
+	font-size: 1.1rem;
+}
+
+.btn-primary {
+	height: 35px;
+	padding: 0 1.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--accent-color);
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color var(--transition-fast);
+}
+
+.btn-primary:hover {
+	background-color: #2980b9;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] #header-controls-container {
+	background-color: #000000;
+	border: none;
+	box-shadow: none;
+}
+
+#pageBody[data-theme="dark"] #pageHeader {
+	background-color: #000000;
+}
+
+#pageBody[data-theme="dark"] .form-control-sm {
+	background-color: var(--bg-primary);
+	border-color: var(--border-color);
+	color: var(--text-primary);
 }
 
 /* Dropdown Styles */
@@ -149,16 +197,6 @@ body {
 	gap: var(--spacing-xs);
 }
 
-.btn-primary {
-	background-color: var(--accent-color);
-	color: white;
-}
-
-.btn-primary:hover {
-	background-color: #2980b9;
-	transform: translateY(-1px);
-}
-
 .btn-secondary {
 	background-color: var(--bg-secondary);
 	color: var(--text-primary);
@@ -184,12 +222,16 @@ body {
 	padding: var(--spacing-md);
 	text-align: left;
 	border-bottom: 2px solid var(--border-color);
+	font-family: 'Lettera', var(--font-mono);
+	font-size: 1.21rem;
 }
 
 .satelliteTable td {
 	padding: var(--spacing-md);
 	border-bottom: 1px solid var(--border-color);
 	color: var(--text-primary);
+	font-family: 'Lettera', var(--font-mono);
+	font-size: 1.21rem;
 }
 
 .satelliteTable tr:hover {
@@ -198,35 +240,101 @@ body {
 
 /* TLE Form Styles */
 .tle-form-container {
-	background-color: var(--bg-secondary);
-	border-radius: var(--radius-md);
-	padding: var(--spacing-lg);
-	margin: var(--spacing-xl) auto;
+	display: none; /* Hidden by default */
 	max-width: 600px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	margin: 10px auto;
+	padding: 15px;
+	background-color: var(--bg-primary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+}
+
+.tle-form-container.visible {
+	display: block;
 }
 
 .tle-form-container h5 {
 	margin-bottom: var(--spacing-lg);
 	color: var(--text-primary);
 	font-size: 1.25rem;
+	font-family: 'Lettera', var(--font-mono);
 }
 
-.form-group {
+.tle-form-container .form-group {
 	margin-bottom: var(--spacing-md);
 }
 
-.form-group label {
+.tle-form-container .form-group label {
 	display: block;
 	margin-bottom: var(--spacing-xs);
 	color: var(--text-primary);
 	font-weight: 500;
+	font-family: 'Lettera', var(--font-mono);
 }
 
-.form-text {
+.tle-form-container .form-group input[type="text"] {
+	width: 100%;
+	padding: var(--spacing-sm);
+	background-color: var(--bg-primary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	color: var(--text-primary);
+	font-family: 'Lettera', var(--font-mono);
+}
+
+.tle-form-container .form-text {
 	color: var(--text-secondary);
 	font-size: 0.875rem;
 	margin-top: var(--spacing-xs);
+	font-family: 'Lettera', var(--font-mono);
+}
+
+/* Dark mode specific styles for TLE form */
+#pageBody[data-theme="dark"] .tle-form-container {
+	background-color: #000000;
+	border-color: var(--border-color);
+}
+
+#pageBody[data-theme="dark"] .tle-form-container input[type="text"] {
+	background-color: #000000;
+	border-color: var(--border-color);
+	color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .tle-form-container .form-text {
+	color: var(--text-secondary);
+}
+
+/* Button styles for TLE form */
+.tle-form-container .btn {
+	margin-right: var(--spacing-sm);
+	font-family: 'Lettera', var(--font-mono);
+}
+
+/* Cancel button styles */
+.tle-form-container .btn-secondary {
+	background-color: #dc3545;
+	border-color: #dc3545;
+	color: white;
+}
+
+.tle-form-container .btn-secondary:hover {
+	background-color: #c82333;
+	border-color: #bd2130;
+	color: white;
+}
+
+/* Dark mode button styles */
+#pageBody[data-theme="dark"] .tle-form-container .btn-secondary {
+	background-color: #dc3545;
+	border-color: #dc3545;
+	color: white;
+}
+
+#pageBody[data-theme="dark"] .tle-form-container .btn-secondary:hover {
+	background-color: #c82333;
+	border-color: #bd2130;
+	color: white;
 }
 
 /* Footer Styles */
@@ -245,23 +353,29 @@ body {
 	max-width: 1200px;
 	margin: 0 auto;
 	padding: 0 var(--spacing-xl);
-	font-family: var(--font-primary);
+	font-family: 'Lettera', var(--font-mono);
+	font-size: 1.01rem;
 }
 
 .version {
-	font-family: var(--font-mono);
+	font-family: 'Lettera', var(--font-mono);
 	min-width: 200px;
+	font-size: 1.01rem;
 }
 
 .credits {
 	text-align: center;
 	flex-grow: 1;
+	font-family: 'Lettera', var(--font-mono);
+	font-size: 1.01rem;
 }
 
 .credits a {
 	color: var(--accent-color);
 	text-decoration: none;
 	transition: color var(--transition-fast);
+	font-family: 'Lettera', var(--font-mono);
+	font-size: 1.01rem;
 }
 
 .credits a:hover {
@@ -275,6 +389,8 @@ body {
 	justify-content: flex-end;
 	gap: var(--spacing-sm);
 	min-width: 300px;
+	font-family: 'Lettera', var(--font-mono);
+	font-size: 1.01rem;
 }
 
 .india-flag img {
@@ -339,7 +455,7 @@ body {
 /* Dark Theme Specific Styles */
 #pageBody[data-theme="dark"] {
 	--bg-primary: #1a1a1a;
-	--bg-secondary: #2d2d2d;
+	--bg-secondary: #1a1a1a;
 	--text-primary: #f5f5f5;
 	--text-secondary: #b0b0b0;
 	--accent-color: #4a9eff;
@@ -470,7 +586,7 @@ th, td {
 
 #pageHeader,
 #pageFooter {
-	width: 1000px;
+	width: 100%;
 	margin: 0 auto;
 	text-align: center;
 	font-family: sans-serif;
@@ -538,10 +654,18 @@ th, td {
 
 #categoryDropdownContainer,
 #sortingControls {
-    padding: 0.5rem; /* Add padding inside the border */
-    border: 1px solid #ccc; /* Add a light grey border */
-    border-radius: 4px; /* Optional: round the corners */
-    margin-bottom: 0.5rem; /* Add some space below if needed */
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: none;
+}
+
+#categoryDropdownContainer select,
+#sortingControls select {
+    padding: 0.3rem 0.5rem;
+    font-size: 1.1rem;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border-radius: 3px;
 }
 
 #categoryDropdown {
@@ -568,14 +692,14 @@ th, td {
 }
 
 #satelliteTableContainer {
-	padding: 10px;
-	margin: 10px auto;
+	padding: 0.5rem;
+	margin: 0.5rem auto;
 	max-width: 1000px;
 }
 
 .dataTables_wrapper {
 	margin: 0 auto;
-	padding: var(--spacing-md);
+	padding: 0.5rem;
 	width: 100%;
 	max-width: 1000px;
 }
@@ -793,8 +917,8 @@ table.dataTable tbody tr.even td:first-child {
 
 #pageBody[data-theme="dark"] table.dataTable thead th {
 	color: #e0e0e0 !important; /* Ensure header text is visible */
-	background-color: #2a2a2a; /* Darker header background */
-	border-bottom: 1px solid #555;
+	background-color: #000000; /* Darker header background */
+	border-bottom: 1px solid #000000;
 	text-align: center; /* Ensure centered in dark mode */
 }
 
@@ -877,12 +1001,15 @@ header {
 
 #header-controls-container {
     display: flex;
-    justify-content: center; /* Center items horizontally */
+    justify-content: center;
     align-items: center;
-    flex-wrap: wrap; /* Allow wrapping */
-    gap: 1.5rem; /* Space between control groups */
-    padding: 0.8rem 1rem; /* Add padding */
-    margin-top: 0.5rem; /* Space below the title/hr */
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1rem var(--spacing-xl);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #center-controls {
@@ -904,7 +1031,7 @@ header {
 #categoryDropdownContainer select,
 #sortingControls select {
     padding: 0.3rem 0.5rem;
-    font-size: 0.9rem;
+    font-size: 0.6rem;
     border: 1px solid var(--border-color);
     background-color: var(--background-color);
     color: var(--text-color);
@@ -1106,14 +1233,17 @@ table.dataTable tbody tr td.inactive-satellite {
 /* Attribution Styles */
 .attribution {
     margin-top: var(--spacing-sm);
-    font-size: 0.9rem;
+    font-size: 1.01rem;
     color: var(--text-secondary);
+    font-family: 'Lettera', var(--font-mono);
 }
 
 .attribution a {
     color: var(--accent-color);
     text-decoration: none;
     transition: color var(--transition-fast);
+    font-family: 'Lettera', var(--font-mono);
+    font-size: 1.21rem;
 }
 
 .attribution a:hover {
@@ -1170,6 +1300,215 @@ table.dataTable tbody tr td.inactive-satellite {
 
 #pageBody[data-theme="dark"] .dark-logo {
     display: block;
+}
+
+@font-face {
+    font-family: 'Lettera';
+    src: url('src/LetteraMonoLLCondLight-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Apply Lettera font to table text */
+.satelliteTable th,
+.satelliteTable td {
+    font-family: 'Lettera', var(--font-mono);
+}
+
+/* Active Satellites Checkbox Container */
+.active-satellites-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: 1.5rem;
+    padding: 0.25rem 0;
+}
+
+.active-satellites-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    position: relative;
+    top: -1px;
+}
+
+.active-satellites-filter label {
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .active-satellites-filter label {
+    color: var(--text-primary);
+}
+
+/* DataTables length and filter container adjustments */
+.dataTables_wrapper .dataTables_length {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Ensure proper alignment for DataTables controls */
+.dataTables_length label,
+.dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+/* Apply Lettera font to all labels */
+label {
+    font-family: 'Lettera', var(--font-mono);
+}
+
+/* Ensure all form control labels use Lettera font */
+.form-control-sm,
+.form-control,
+#sortColumn,
+#sortOrder,
+#categorySelect,
+.dataTables_length label,
+.dataTables_filter label {
+    font-family: 'Lettera', var(--font-mono);
+}
+
+/* Table Controls Styling */
+.controls-group label,
+.controls-group select,
+.active-satellites-filter label {
+    font-family: 'Lettera', var(--font-mono);
+    font-size: 1.21rem;
+    color: var(--text-primary);
+}
+
+.sort-group, 
+#categoryDropdownContainer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sort-group label, 
+#categoryDropdownContainer label {
+    margin: 0;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.form-control-sm {
+    height: 35px;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    min-width: 150px;
+    font-size: 1.1rem;
+}
+
+/* Active Satellites Checkbox Container */
+.active-satellites-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: 1.5rem;
+    padding: 0.25rem 0;
+}
+
+.active-satellites-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    position: relative;
+    top: -1px;
+}
+
+.active-satellites-filter label {
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .controls-group label,
+#pageBody[data-theme="dark"] .form-control-sm,
+#pageBody[data-theme="dark"] .active-satellites-filter label {
+    color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .form-control-sm {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+/* Category Select Container Styles */
+.category-select-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem auto;
+    padding: 0.5rem;
+    max-width: 1200px;
+}
+
+.category-select-container label {
+    font-family: 'Lettera', var(--font-mono);
+    font-size: 1.21rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.category-select-container select {
+    min-width: 200px;
+    height: 35px;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 1.21rem;
+    font-family: 'Lettera', var(--font-mono);
+    text-align: center;
+    text-align-last: center; /* For Firefox */
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    appearance: none; /* Standard */
+}
+
+/* Add a custom dropdown arrow */
+.category-select-container select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.5rem; /* Make room for the arrow */
+}
+
+/* Center the text in the dropdown options */
+.category-select-container select option {
+    text-align: center;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .category-select-container select {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
 }
 
 

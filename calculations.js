@@ -14,36 +14,29 @@ function calculateSatellitePosition(satellite, time) {
     try {
         let satrec;
         
-        // First try using original TLE if available
-        if (satellite.TLE_LINE1 && satellite.TLE_LINE2 &&
-            satellite.TLE_LINE1.length === 69 && satellite.TLE_LINE2.length === 69) {
-            satrec = window.satellite.twoline2satrec(satellite.TLE_LINE1, satellite.TLE_LINE2);
-            console.log('Using original TLE lines');
-        } else {
-            // Use Celestrak JSON format
-            const satJson = {
-                OBJECT_NAME: satellite.OBJECT_NAME,
-                OBJECT_ID: satellite.OBJECT_ID,
-                EPOCH: satellite.EPOCH,
-                MEAN_MOTION: satellite.MEAN_MOTION,
-                ECCENTRICITY: satellite.ECCENTRICITY,
-                INCLINATION: satellite.INCLINATION,
-                RA_OF_ASC_NODE: satellite.RA_OF_ASC_NODE,
-                ARG_OF_PERICENTER: satellite.ARG_OF_PERICENTER,
-                MEAN_ANOMALY: satellite.MEAN_ANOMALY,
-                EPHEMERIS_TYPE: 0,
-                CLASSIFICATION_TYPE: "U",
-                NORAD_CAT_ID: parseInt(satellite.NORAD_CAT_ID),
-                ELEMENT_SET_NO: 999,
-                REV_AT_EPOCH: 0,
-                BSTAR: 0.00048021,  // Using a typical value for LEO satellites
-                MEAN_MOTION_DOT: 0.00005995,  // First derivative
-                MEAN_MOTION_DDOT: 0  // Second derivative
-            };
-            
-            satrec = window.satellite.json2satrec(satJson);
-            console.log('Using Celestrak JSON format:', satJson);
-        }
+        // Convert satellite data to the format expected by satellite.js
+        const satJson = {
+            OBJECT_NAME: satellite.OBJECT_NAME,
+            OBJECT_ID: satellite.OBJECT_ID,
+            EPOCH: satellite.EPOCH,
+            MEAN_MOTION: parseFloat(satellite.MEAN_MOTION),
+            ECCENTRICITY: parseFloat(satellite.ECCENTRICITY),
+            INCLINATION: parseFloat(satellite.INCLINATION),
+            RA_OF_ASC_NODE: parseFloat(satellite.RA_OF_ASC_NODE),
+            ARG_OF_PERICENTER: parseFloat(satellite.ARG_OF_PERICENTER),
+            MEAN_ANOMALY: parseFloat(satellite.MEAN_ANOMALY),
+            EPHEMERIS_TYPE: 0,
+            CLASSIFICATION_TYPE: "U",
+            NORAD_CAT_ID: parseInt(satellite.NORAD_CAT_ID),
+            ELEMENT_SET_NO: 999,
+            REV_AT_EPOCH: 0,
+            BSTAR: 0.00048021,  // Using a typical value for LEO satellites
+            MEAN_MOTION_DOT: 0.00005995,  // First derivative
+            MEAN_MOTION_DDOT: 0  // Second derivative
+        };
+        
+        // Create satellite record using json2satrec
+        satrec = window.satellite.json2satrec(satJson);
 
         if (!satrec) {
             throw new Error('Failed to create satellite record');
@@ -65,14 +58,6 @@ function calculateSatellitePosition(satellite, time) {
 
         // Calculate minutes since epoch
         const minutesSinceEpoch = (jday - satrec.jdsatepoch) * 24 * 60;
-        
-        console.log('Time details:', {
-            currentTime: time.toISOString(),
-            epochTime: satellite.EPOCH,
-            jday: jday,
-            epochJday: satrec.jdsatepoch,
-            minutesSinceEpoch: minutesSinceEpoch
-        });
 
         // Get position and velocity
         const positionAndVelocity = window.satellite.sgp4(satrec, minutesSinceEpoch);
@@ -97,13 +82,6 @@ function calculateSatellitePosition(satellite, time) {
             Math.pow(positionAndVelocity.velocity.z, 2)
         );
 
-        console.log('Calculated position:', {
-            lat: lat,
-            lng: lng,
-            alt: alt / 1000, // Display in km
-            velocity: velocity
-        });
-
         return {
             lat: lat,
             lng: lng,
@@ -112,7 +90,6 @@ function calculateSatellitePosition(satellite, time) {
             time: time
         };
     } catch (error) {
-        console.error('Position calculation error:', error);
         return null;
     }
 }

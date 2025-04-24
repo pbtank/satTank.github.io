@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="satpage.css">
 </head>
-<body>
+<body id="pageBody" data-theme="dark">
     <header>
         <button id="back-button" class="icon-button" title="Back to List">
             <i class="fas fa-arrow-left"></i>
@@ -18,7 +18,7 @@
         <h1 id="satellite-title"></h1>
         <div class="theme-switch-wrapper">
             <button id="theme-toggle" class="icon-button" title="Toggle Theme">
-                <!-- Icon content (sun/moon) is set by JS -->
+                <i class="fas fa-moon"></i>
             </button>
         </div>
     </header>
@@ -26,9 +26,9 @@
     <main>
         <div id="map-info-container">
             <div class="map-content-wrapper">
+                <!-- Map Container -->
                 <div id="map-container">
                     <div id="mapid"></div>
-                    <!-- Map controls inside map container -->
                     <div id="map-controls">
                         <select id="map-type">
                             <option value="standard">Standard</option>
@@ -42,32 +42,131 @@
                     </div>
                 </div>
 
+                <!-- Right Column Info -->
                 <div id="right-column-info">
-                    <div class="panel" id="satellite-panel">
+                    <!-- Satellite Info Panel -->
+                    <div class="panel">
                         <h2>Satellite Info</h2>
-                        <div class="info-table-container">
-                            <table class="info-table" id="satellite-table">
-                                <tbody></tbody>
-                            </table>
-                        </div>
+                        <table class="info-table">
+                            <tr>
+                                <th>Name</th>
+                                <td id="satName">-</td>
+                            </tr>
+                            <tr>
+                                <th>Year Launched</th>
+                                <td id="yearLaunched">-</td>
+                            </tr>
+                            <tr>
+                                <th>Orbital Period</th>
+                                <td id="orbitalPeriod">-</td>
+                            </tr>
+                        </table>
                     </div>
 
-                    <div class="panel" id="position-panel">
+                    <!-- Current Position Panel -->
+                    <div class="panel">
                         <h2>Current Position</h2>
-                        <div class="info-table-container">
-                            <table class="info-table" id="position-table">
-                                <tbody></tbody>
-                            </table>
-                        </div>
+                        <table class="info-table">
+                            <tr>
+                                <th>Time (UTC)</th>
+                                <td id="timeUTC">-</td>
+                            </tr>
+                            <tr>
+                                <th>Time (Local)</th>
+                                <td id="timeLocal">-</td>
+                            </tr>
+                            <tr>
+                                <th>Latitude</th>
+                                <td id="latitude">-</td>
+                            </tr>
+                            <tr>
+                                <th>Longitude</th>
+                                <td id="longitude">-</td>
+                            </tr>
+                            <tr>
+                                <th>Altitude</th>
+                                <td id="altitude">-</td>
+                            </tr>
+                            <tr>
+                                <th>Velocity</th>
+                                <td id="velocity">-</td>
+                            </tr>
+                            <tr>
+                                <th>Ground Speed</th>
+                                <td id="groundSpeed">-</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Orbital Elements Panel -->
+                    <div class="panel">
+                        <h2>Orbital Elements</h2>
+                        <table class="info-table">
+                            <tr>
+                                <th>Eccentricity</th>
+                                <td id="eccentricity">-</td>
+                            </tr>
+                            <tr>
+                                <th>Inclination</th>
+                                <td id="inclination">-</td>
+                            </tr>
+                            <tr>
+                                <th>RAAN</th>
+                                <td id="raan">-</td>
+                            </tr>
+                            <tr>
+                                <th>Arg. of Perigee</th>
+                                <td id="argPerigee">-</td>
+                            </tr>
+                            <tr>
+                                <th>Mean Motion</th>
+                                <td id="meanMotion">-</td>
+                            </tr>
+                            <tr>
+                                <th>Mean Anomaly</th>
+                                <td id="meanAnomaly">-</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="panel" id="orbital-panel">
-                <h2>Orbital Elements (TLE)</h2>
-                <div class="info-table-container">
-                    <table class="info-table" id="orbital-table">
-                        <tbody></tbody>
+        <!-- Pass Predictions Panel -->
+        <div class="pass-predictions-container">
+            <div class="panel">
+                <h2>Pass Predictions</h2>
+                <div class="location-input-form">
+                    <div class="input-group">
+                        <label for="observerLat">Latitude:</label>
+                        <input type="number" id="observerLat" step="0.0001" placeholder="e.g., 36.9613">
+                    </div>
+                    <div class="input-group">
+                        <label for="observerLon">Longitude:</label>
+                        <input type="number" id="observerLon" step="0.0001" placeholder="e.g., -122.0308">
+                    </div>
+                    <button id="predictPassesBtn" class="predict-button">
+                        <i class="fas fa-satellite"></i> Predict Passes
+                    </button>
+                </div>
+                <div class="pass-results" style="display: none;">
+                    <table class="info-table">
+                        <tr>
+                            <th>Next Pass</th>
+                            <td id="nextPassTime" class="next-pass-highlight">-</td>
+                        </tr>
+                        <tr>
+                            <th>Max Elevation</th>
+                            <td id="maxElevation">-</td>
+                        </tr>
+                        <tr>
+                            <th>Duration</th>
+                            <td id="passDuration">-</td>
+                        </tr>
+                        <tr>
+                            <th>Direction</th>
+                            <td id="passDirection">-</td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -90,6 +189,26 @@
             </div>
         </div>
     </main>
+
+    <!-- Footer -->
+    <footer id="pageFooter">
+        <div class="footer-content">
+            <div class="version">Version: 2.1</div>
+            <div class="credits">
+                Created by: <a href="https://pbtank.github.io/Tank_Priyansu/"
+                    style="text-decoration-line: underline;">Priyansu Tank</a> & <a
+                    href="https://github.com/carbform">Carbform</a>
+                <div class="attribution">
+                    Satellite data provided by <a href="https://celestrak.org/" target="_blank">CELESTRAK</a>
+                </div>
+            </div>
+            <div class="india-flag">
+                <img src="src\images\india.png"
+                    style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
+                Proud to be Indian.
+            </div>
+        </div>
+    </footer>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

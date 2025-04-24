@@ -25,11 +25,23 @@ const UPDATE_INTERVAL_MS = 1000;
 const ORBIT_POINTS = 180; // Number of points to calculate for orbit visualization
 const ORBIT_PERIOD_MINUTES = 90; // Approximate period for most LEO satellites
 
+// Constants for pass prediction
+const PASS_PREDICTION_INTERVAL = 1000; // 1 second
+const MAX_PREDICTION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const MIN_ELEVATION = 10; // Minimum elevation angle for a pass (degrees)
+
 // Only load data from active.json
 const activeJsonFile = 'data/active.json';
 
 // Initialize the page when DOM is loaded
-document.addEventListener('DOMContentLoaded', async function() { // Make async
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check if satellite.js is loaded
+    if (typeof window.satellite === 'undefined') {
+        console.error('satellite.js library not loaded!');
+        showError('Required library satellite.js is not loaded. Please check your internet connection and refresh the page.');
+        return;
+    }
+
     // --- Non-Map Related Setup ---
     const backButton = document.getElementById('back-button');
     if (backButton) {
@@ -85,6 +97,14 @@ document.addEventListener('DOMContentLoaded', async function() { // Make async
         // Display initial info and start tracking
         displaySatelliteInfo(); // Display static info
         startTracking(); // Start dynamic updates
+
+        // Add event listener for predict passes button
+        const predictPassesBtn = document.getElementById('predictPassesBtn');
+        if (predictPassesBtn) {
+            predictPassesBtn.addEventListener('click', updatePassPredictions);
+        }
+
+        console.log('Satellite data:', satellite);
 
     } else {
         console.log("Satellite data load failed, map and tracking will not initialize.");
@@ -476,74 +496,48 @@ function displaySatelliteInfo() {
     // Ensure satellite object exists before trying to access properties
     if (!satellite) return;
 
-    const orbitalTableBody = document.querySelector('#orbital-table tbody');
-    const satelliteTableBody = document.querySelector('#satellite-table tbody');
-    const positionTableBody = document.querySelector('#position-table tbody'); // Clear initial position too
+    // Update satellite info panel
+    const satNameElement = document.getElementById('satName');
+    const yearLaunchedElement = document.getElementById('yearLaunched');
+    const orbitalPeriodElement = document.getElementById('orbitalPeriod');
 
-    // Display satellite info in a vertical layout
-    satelliteTableBody.textContent = '';
-    const nameRow = document.createElement('tr');
-    nameRow.innerHTML = `<th>Name</th><td>${escapeHTML(satellite.OBJECT_NAME || 'N/A')}</td>`;
-    satelliteTableBody.appendChild(nameRow);
+    if (satNameElement) satNameElement.textContent = satellite.OBJECT_NAME || 'N/A';
+    if (yearLaunchedElement) yearLaunchedElement.textContent = formatLaunchDate(satellite.OBJECT_ID) || 'N/A';
+    if (orbitalPeriodElement) orbitalPeriodElement.textContent = `${calculateOrbitalPeriod(satellite) || 'N/A'} minutes`;
 
-    const launchDateRow = document.createElement('tr');
-    launchDateRow.innerHTML = `<th>Launch Date</th><td>${escapeHTML(formatLaunchDate(satellite.OBJECT_ID) || 'N/A')}</td>`;
-    satelliteTableBody.appendChild(launchDateRow);
+    // Update orbital elements panel
+    const elements = {
+        'eccentricity': { value: satellite.ECCENTRICITY, decimals: 6, unit: '' },
+        'inclination': { value: satellite.INCLINATION, decimals: 1, unit: '°' },
+        'raan': { value: satellite.RA_OF_ASC_NODE, decimals: 1, unit: '°' },
+        'argPerigee': { value: satellite.ARG_OF_PERICENTER, decimals: 1, unit: '°' },
+        'meanMotion': { value: satellite.MEAN_MOTION, decimals: 2, unit: ' rev/day' },
+        'meanAnomaly': { value: satellite.MEAN_ANOMALY, decimals: 1, unit: '°' }
+    };
 
-    const orbitalPeriodRow = document.createElement('tr');
-    orbitalPeriodRow.innerHTML = `<th>Orbital Period</th><td>${escapeHTML(calculateOrbitalPeriod(satellite) || 'N/A')} minutes</td>`;
-    satelliteTableBody.appendChild(orbitalPeriodRow);
-
-    // Display orbital elements in a horizontal layout
-    orbitalTableBody.innerHTML = `
-        <tr>
-            <th>NORAD ID</th>
-            <th>Int'l Designator</th>
-            <th>Epoch</th>
-            <th>Eccentricity</th>
-            <th>Inclination</th>
-            <th>RAAN</th>
-            <th>Arg. of Perigee</th>
-            <th>Mean Anomaly</th>
-            <th>Mean Motion</th>
-        </tr>
-        <tr>
-            <td>${escapeHTML(satellite.NORAD_CAT_ID || 'N/A')}</td>
-            <td>${escapeHTML(satellite.OBJECT_ID || 'N/A')}</td>
-            <td>${escapeHTML(satellite.EPOCH || 'N/A')}</td>
-            <td>${escapeHTML(satellite.ECCENTRICITY?.toFixed(6) || 'N/A')}</td>
-            <td>${escapeHTML(satellite.INCLINATION?.toFixed(4) || 'N/A')}°</td>
-            <td>${escapeHTML(satellite.RA_OF_ASC_NODE?.toFixed(4) || 'N/A')}°</td>
-            <td>${escapeHTML(satellite.ARG_OF_PERICENTER?.toFixed(4) || 'N/A')}°</td>
-            <td>${escapeHTML(satellite.MEAN_ANOMALY?.toFixed(4) || 'N/A')}°</td>
-            <td>${escapeHTML(satellite.MEAN_MOTION?.toFixed(6) || 'N/A')} rev/day</td>
-        </tr>
-    `;
-
-    // Clear position table initially
-    if(positionTableBody) positionTableBody.innerHTML = '';
+    for (const [id, config] of Object.entries(elements)) {
+        const element = document.getElementById(id);
+        if (element) {
+            const formattedValue = (config.value || 0).toFixed(config.decimals);
+            element.textContent = `${formattedValue}${config.unit}`;
+        }
+    }
 }
 
 // Update position information panel with current data
 function updatePositionInfo(position) {
-     // Ensure satellite object exists
+    // Ensure satellite object exists
     if (!satellite) return;
     const { lat, lng, alt, velocity, time } = position;
-    const positionTableBody = document.querySelector('#position-table tbody');
 
-    const utcTimeString = time.toISOString();
-    const localTimeString = time.toLocaleString();
-
-    // Populate Current Position table body
-    positionTableBody.innerHTML = `
-        <tr><th>Time (UTC)</th><td>${utcTimeString}</td></tr>
-        <tr><th>Time (Local)</th><td>${localTimeString}</td></tr>
-        <tr><th>Latitude</th><td>${lat.toFixed(4)}°</td></tr>
-        <tr><th>Longitude</th><td>${lng.toFixed(4)}°</td></tr>
-        <tr><th>Altitude</th><td>${alt.toFixed(2)} km</td></tr>
-        <tr><th>Velocity</th><td>${velocity.toFixed(2)} km/s</td></tr>
-        <tr><th>Ground Speed</th><td>${calculateGroundSpeed(velocity, alt).toFixed(2)} km/s</td></tr>
-    `;
+    // Update each element individually
+    document.getElementById('timeUTC').textContent = time.toISOString();
+    document.getElementById('timeLocal').textContent = time.toLocaleString();
+    document.getElementById('latitude').textContent = `${lat.toFixed(4)}°`;
+    document.getElementById('longitude').textContent = `${lng.toFixed(4)}°`;
+    document.getElementById('altitude').textContent = `${alt.toFixed(2)} km`;
+    document.getElementById('velocity').textContent = `${velocity.toFixed(2)} km/s`;
+    document.getElementById('groundSpeed').textContent = `${calculateGroundSpeed(velocity, alt).toFixed(2)} km/s`;
 }
 
 // Calculate ground speed from orbital velocity
@@ -574,11 +568,9 @@ function getObjectType(typeCode) {
 // Helper function to format launch date from international designator
 function formatLaunchDate(objectId) {
     if (!objectId) return null;
-    const match = objectId.match(/^(\d{4})-(\d{3})/);
+    const match = objectId.match(/^(\d{4})/);
     if (match) {
-        const year = match[1];
-        const launchNum = match[2];
-        return `${year} (Launch #${parseInt(launchNum, 10)})`;
+        return match[1]; // Return only the year
     }
     return objectId;
 }
@@ -732,4 +724,158 @@ function calculateGroundTrackPoints() {
     }
     
     return segments;
+}
+
+// Function to calculate next pass
+function calculateNextPass(satellite, observerLat, observerLon) {
+    const now = new Date();
+    const endTime = new Date(now.getTime() + MAX_PREDICTION_TIME);
+    let currentTime = now;
+    let passStart = null;
+    let maxElevation = 0;
+    let passEnd = null;
+    let isInPass = false;
+
+    // Create satellite record from TLE data
+    const satrec = window.satellite.twoline2satrec(
+        satellite.TLE_LINE1,
+        satellite.TLE_LINE2
+    );
+
+    while (currentTime < endTime) {
+        // Calculate time since epoch in minutes
+        const timeSinceEpoch = (currentTime - new Date(satellite.EPOCH)) / (1000 * 60);
+        
+        // Get satellite position
+        const positionAndVelocity = window.satellite.sgp4(satrec, timeSinceEpoch);
+        if (!positionAndVelocity) continue;
+
+        const position = positionAndVelocity.position;
+        if (!position) continue;
+
+        // Convert observer coordinates to radians
+        const observerGd = {
+            longitude: observerLon * Math.PI / 180,
+            latitude: observerLat * Math.PI / 180,
+            height: 0.370
+        };
+
+        // Get GMST for coordinate transforms
+        const gmst = window.satellite.gstime(currentTime);
+
+        // Convert satellite position to ECF
+        const positionEcf = window.satellite.eciToEcf(position, gmst);
+
+        // Calculate look angles
+        const lookAngles = window.satellite.ecfToLookAngles(observerGd, positionEcf);
+        const elevation = lookAngles.elevation * 180 / Math.PI;
+
+        if (elevation >= MIN_ELEVATION) {
+            if (!isInPass) {
+                passStart = new Date(currentTime);
+                isInPass = true;
+            }
+            maxElevation = Math.max(maxElevation, elevation);
+        } else if (isInPass) {
+            passEnd = new Date(currentTime);
+            break;
+        }
+
+        currentTime = new Date(currentTime.getTime() + PASS_PREDICTION_INTERVAL);
+    }
+
+    if (passStart && passEnd) {
+        return {
+            startTime: passStart,
+            endTime: passEnd,
+            maxElevation: maxElevation,
+            duration: (passEnd - passStart) / 1000,
+            direction: calculatePassDirection(satellite, passStart, observerLat, observerLon)
+        };
+    }
+
+    return null;
+}
+
+// Function to calculate pass direction (N to S or S to N)
+function calculatePassDirection(satellite, time, observerLat, observerLon) {
+    // Create satellite record from TLE data
+    const satrec = window.satellite.twoline2satrec(
+        satellite.TLE_LINE1,
+        satellite.TLE_LINE2
+    );
+
+    // Calculate time since epoch in minutes
+    const timeSinceEpoch = (time - new Date(satellite.EPOCH)) / (1000 * 60);
+    
+    // Get satellite position
+    const positionAndVelocity = window.satellite.sgp4(satrec, timeSinceEpoch);
+    if (!positionAndVelocity || !positionAndVelocity.position) return 'Unknown';
+
+    const position = positionAndVelocity.position;
+
+    const observerGd = {
+        longitude: observerLon * Math.PI / 180,
+        latitude: observerLat * Math.PI / 180,
+        height: 0.370
+    };
+
+    const gmst = window.satellite.gstime(time);
+    const positionEcf = window.satellite.eciToEcf(position, gmst);
+    const lookAngles = window.satellite.ecfToLookAngles(observerGd, positionEcf);
+    const azimuth = lookAngles.azimuth * 180 / Math.PI;
+
+    // Determine direction based on azimuth
+    if (azimuth >= 0 && azimuth < 180) {
+        return 'S to N';
+    } else {
+        return 'N to S';
+    }
+}
+
+// Function to update pass predictions
+function updatePassPredictions() {
+    if (!satellite) return;
+
+    const observerLat = parseFloat(document.getElementById('observerLat').value);
+    const observerLon = parseFloat(document.getElementById('observerLon').value);
+
+    if (isNaN(observerLat) || isNaN(observerLon)) {
+        showError('Please enter valid latitude and longitude values');
+        return;
+    }
+
+    // Validate latitude and longitude ranges
+    if (observerLat < -90 || observerLat > 90) {
+        showError('Latitude must be between -90 and 90 degrees');
+        return;
+    }
+    if (observerLon < -180 || observerLon > 180) {
+        showError('Longitude must be between -180 and 180 degrees');
+        return;
+    }
+
+    const nextPass = calculateNextPass(satellite, observerLat, observerLon);
+    const passResults = document.querySelector('.pass-results');
+    
+    if (nextPass) {
+        const now = new Date();
+        const timeUntilPass = nextPass.startTime - now;
+        const hours = Math.floor(timeUntilPass / (60 * 60 * 1000));
+        const minutes = Math.floor((timeUntilPass % (60 * 60 * 1000)) / (60 * 1000));
+
+        document.getElementById('nextPassTime').textContent = `In ${hours}h ${minutes}m`;
+        document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
+        document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
+        document.getElementById('passDirection').textContent = nextPass.direction;
+        
+        passResults.style.display = 'block';
+    } else {
+        document.getElementById('nextPassTime').textContent = 'No passes in next 24h';
+        document.getElementById('maxElevation').textContent = '-';
+        document.getElementById('passDuration').textContent = '-';
+        document.getElementById('passDirection').textContent = '-';
+        
+        passResults.style.display = 'block';
+    }
 }

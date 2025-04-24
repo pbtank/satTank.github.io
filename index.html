@@ -38,15 +38,30 @@
             </div>
             <div class="header-divider"></div>
             <div class="subheading">CATALOGUES | TRACKING</div>
-            <div class="header-divider"></div>
         </div>
+    </header>
 
-        <!-- Centered Controls Container -->
-        <div id="header-controls-container">
-            <div id="categoryDropdownContainer">
-                <!-- Dropdown will be generated here -->
-            </div>
-            <div id="sortingControls">
+    <!-- Category Select Container - Moved outside controls group -->
+    <div id="categorySelectContainer" class="category-select-container">
+        <label for="categorySelect">Select Category:</label>
+        <select id="categorySelect" class="form-control-sm">
+            <option value="all">All Satellites</option>
+            <option value="Active">Active</option>
+            <option value="Stations">Stations</option>
+            <option value="Weather">Weather</option>
+            <option value="NOAA" selected>NOAA</option>
+            <option value="GOES">GOES</option>
+            <option value="Resource">Resource</option>
+            <option value="Amateur">Amateur</option>
+            <option value="Starlink">Starlink</option>
+            <option value="Custom">Custom</option>
+        </select>
+    </div>
+
+    <!-- Controls Container - Moved outside header -->
+    <div id="header-controls-container">
+        <div class="controls-group">
+            <div class="sort-group">
                 <label for="sortColumn">Sort by:</label>
                 <select id="sortColumn" class="form-control-sm">
                     <option value="0">Name</option>
@@ -58,15 +73,16 @@
                     <option value="desc">Descending</option>
                 </select>
             </div>
-            <div id="right-controls">
-                <button id="add-tle-btn" class="btn btn-primary">Add TLE</button>
+            <div class="active-satellites-filter">
+                <input type="checkbox" id="showActiveOnly" />
+                <label for="showActiveOnly">Active</label>
             </div>
+            <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
         </div>
-    </header>
+    </div>
 
     <!-- Hidden TLE Form -->
-    <div id="tle-form" class="tle-form-container"
-        style="display: none; max-width: 600px; margin: 10px auto; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9;">
+    <div id="tle-form" class="tle-form-container" style="display: none;">
         <h5>Add Custom Satellite TLE</h5>
         <div class="form-group">
             <label for="customSatName">Satellite Name (24 characters max):</label>
@@ -76,15 +92,13 @@
             <label for="customTleLine1">TLE Line 1 (69 characters):</label>
             <input type="text" id="customTleLine1" class="form-control"
                 placeholder="1 23455U 94089A   97320.90946019  .00000140  00000-0  10191-3 0  2621" maxlength="69">
-            <small class="form-text text-muted">Format: 1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N
-                NNNNN</small>
+            <small class="form-text text-muted">Format: 1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N NNNNN</small>
         </div>
         <div class="form-group">
             <label for="customTleLine2">TLE Line 2 (69 characters):</label>
             <input type="text" id="customTleLine2" class="form-control"
                 placeholder="2 23455  99.0090 272.6745 0008546 223.1686 136.8816 14.11711747148495" maxlength="69">
-            <small class="form-text text-muted">Format: 2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN
-                NN.NNNNNNNNNNNNNN</small>
+            <small class="form-text text-muted">Format: 2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN NN.NNNNNNNNNNNNNN</small>
         </div>
         <button id="save-tle-btn" class="btn btn-success">Save Satellite</button>
         <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
