@@ -168,6 +168,8 @@
                             <td id="passDirection">-</td>
                         </tr>
                     </table>
+                    <!-- Canvas for pass visualization -->
+                    <canvas id="pass-visualization-canvas"></canvas>
                 </div>
             </div>
         </div>
@@ -215,8 +217,13 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
-    <script src="calculations.js"></script>
-    <script src="customSat.js"></script>
-    <script src="satPage.js"></script>
+    <!-- Load custom satellite functions FIRST -->
+    <script src="js/customSat.js"></script> 
+    <!-- Then pass prediction functions -->
+    <script src="js/pass.js"></script>
+    <!-- Then other calculation functions -->
+    <script src="js/calculations.js"></script>
+    <!-- Finally, the main page logic that depends on the others -->
+    <script src="js/satPage.js"></script>
 </body>
 </html>

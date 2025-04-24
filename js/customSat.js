@@ -66,82 +66,53 @@ function parseTLE(name, line1, line2) {
             REV_AT_EPOCH: revNum
         };
     } catch (error) {
-        console.error('Error parsing TLE:', error);
+        // console.error('Error parsing TLE:', error);
         throw new Error(`Invalid TLE format: ${error.message}`);
     }
 }
 
-// Validate TLE format
+// Validate TLE format and checksum
 function validateTLE(line1, line2) {
+    // console.log('Validating TLE lines:', { line1, line2 });
+    // console.log('Line types:', { line1Type: typeof line1, line2Type: typeof line2 });
     try {
-        console.log('Validating TLE lines:', { line1, line2 });
-        console.log('Line types:', { 
-            line1Type: typeof line1, 
-            line2Type: typeof line2 
-        });
-
-        // Check if inputs are strings
-        if (typeof line1 !== 'string' || typeof line2 !== 'string') {
-            console.error('TLE lines must be strings. Got:', {
-                line1Type: typeof line1,
-                line2Type: typeof line2
-            });
+        if (!line1 || !line2 || typeof line1 !== 'string' || typeof line2 !== 'string') {
+            console.error('Invalid TLE input: lines must be non-empty strings');
             return false;
         }
-
-        // Check line numbers
-        if (!line1.startsWith('1 ') || !line2.startsWith('2 ')) {
-            console.error('TLE lines must start with "1 " and "2 ". Got:', {
-                line1Start: line1.substring(0, 2),
-                line2Start: line2.substring(0, 2)
-            });
+        
+        // Basic format checks
+        if (!line1.startsWith('1 ') || line1.length !== 69) {
+             console.error(`Invalid TLE line 1 format or length (${line1.length}): ${line1}`);
             return false;
         }
-
-        // Check line lengths
-        if (line1.length !== 69 || line2.length !== 69) {
-            console.error('TLE lines must be exactly 69 characters long. Got:', {
-                line1Length: line1.length,
-                line2Length: line2.length
-            });
+        if (!line2.startsWith('2 ') || line2.length !== 69) {
+             console.error(`Invalid TLE line 2 format or length (${line2.length}): ${line2}`);
             return false;
         }
-
-        // Check satellite numbers match
+        
+        // Verify satellite numbers match
         const satNum1 = line1.substring(2, 7).trim();
         const satNum2 = line2.substring(2, 7).trim();
         if (satNum1 !== satNum2) {
-            console.error('Satellite numbers in TLE lines do not match:', {
-                line1SatNum: satNum1,
-                line2SatNum: satNum2
-            });
+            console.error('Satellite numbers in TLE lines do not match');
             return false;
         }
 
-        // Check classification character
-        const classification = line1.charAt(7);
-        if (!['U', 'C', 'S'].includes(classification)) {
-            console.error('Invalid classification character:', classification);
+        // Validate checksums
+        if (!validateChecksum(line1)) {
+             console.error('Invalid checksum for TLE line 1');
+            return false;
+        }
+        if (!validateChecksum(line2)) {
+             console.error('Invalid checksum for TLE line 2');
             return false;
         }
 
-        // Check checksums
-        const checksum1Valid = validateChecksum(line1);
-        const checksum2Valid = validateChecksum(line2);
-        if (!checksum1Valid || !checksum2Valid) {
-            console.error('Invalid checksum:', {
-                line1Checksum: line1.charAt(68),
-                line2Checksum: line2.charAt(68),
-                line1Valid: checksum1Valid,
-                line2Valid: checksum2Valid
-            });
-            return false;
-        }
-
-        console.log('TLE validation successful');
+        // console.log('TLE validation successful');
         return true;
     } catch (error) {
-        console.error('Error validating TLE:', error);
+         console.error('Error during TLE validation:', error);
         return false;
     }
 }
@@ -151,7 +122,7 @@ function validateChecksum(line) {
     try {
         const checksum = parseInt(line.charAt(68));
         if (isNaN(checksum)) {
-            console.error('Invalid checksum character');
+            // console.error('Invalid checksum character');
             return false;
         }
 
@@ -166,7 +137,7 @@ function validateChecksum(line) {
         }
         return (sum % 10) === checksum;
     } catch (error) {
-        console.error('Error validating checksum:', error);
+        // console.error('Error validating checksum:', error);
         return false;
     }
 }
@@ -180,13 +151,15 @@ function loadCustomSatellite(satId) {
         if (customSat) {
             // Validate the stored TLE data
             if (!validateTLE(customSat.TLE_LINE1, customSat.TLE_LINE2)) {
-                throw new Error('Invalid TLE data in storage');
+                // console.error('Invalid TLE data found in localStorage for satellite', satId);
+                // Optionally remove the invalid entry from storage here
+                return null; // Return null if stored data is invalid
             }
             return customSat;
         }
         return null;
     } catch (error) {
-        console.error('Error loading custom satellite:', error);
+        // console.error('Error loading custom satellite:', error);
         return null;
     }
 }
@@ -210,7 +183,7 @@ function saveCustomSatellite(satelliteData) {
                 }
             }
         } catch (e) {
-            console.warn('Error parsing stored custom satellites, starting fresh:', e);
+            // console.warn('Error parsing stored custom satellites, starting fresh:', e);
         }
 
         const existingIndex = customSatellites.findIndex(sat => sat.NORAD_CAT_ID === satelliteData.NORAD_CAT_ID);
@@ -224,7 +197,7 @@ function saveCustomSatellite(satelliteData) {
         localStorage.setItem('customSatellites', JSON.stringify(customSatellites));
         return true;
     } catch (error) {
-        console.error('Error saving custom satellite:', error);
+        // console.error('Error saving custom satellite:', error);
         return false;
     }
 }
@@ -235,7 +208,7 @@ function isCustomSatellite(satId) {
         const customSatellites = JSON.parse(localStorage.getItem('customSatellites') || '[]');
         return customSatellites.some(sat => sat.NORAD_CAT_ID === satId);
     } catch (error) {
-        console.error('Error checking custom satellite:', error);
+        // console.error('Error checking custom satellite:', error);
         return false;
     }
 }

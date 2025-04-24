@@ -144,8 +144,8 @@
     <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
 
     <!-- Custom Scripts -->
-    <script src="customSat.js"></script>
-    <script src="index.js"></script>
+    <script src="js/customSat.js"></script>
+    <script src="js/index.js"></script>
 
     <script>
         // Theme Toggle Initialization
@@ -195,17 +195,9 @@
 
             // Setup TLE form button listeners
             const addTleBtn = document.getElementById('add-tle-btn');
-            const saveTleBtn = document.getElementById('save-tle-btn');
 
             if (addTleBtn) {
                 addTleBtn.addEventListener('click', toggleTleForm);
-            }
-
-            if (saveTleBtn) {
-                saveTleBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    handleFormSubmission();
-                });
             }
         });
 
