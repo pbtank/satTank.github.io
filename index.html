@@ -20,7 +20,7 @@
         <!-- Removed old darkModeToggle button -->
     </div>
 
-    <!-- Dark Mode Toggle Switch -->
+    <!-- Dark Mode Toggle Switch Moved Back Here -->
     <div class="theme-switch-wrapper">
         <button id="theme-toggle" class="icon-button" title="Toggle Theme">
             <i class="fas fa-moon"></i>
@@ -148,7 +148,8 @@
     <script src="js/index.js"></script>
 
     <script>
-        // Theme Toggle Initialization
+        // REMOVED Theme Toggle Initialization (Handled in js/index.js)
+        /*
         document.addEventListener('DOMContentLoaded', function () {
             const themeToggle = document.getElementById('theme-toggle');
             const pageBody = document.getElementById('pageBody');
@@ -173,6 +174,7 @@
                 icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
             }
         });
+        */
 
         // UTC Clock Update Function
         function updateUTCClock() {

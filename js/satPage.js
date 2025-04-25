@@ -155,6 +155,21 @@ function setTheme(theme) {
             }
         }
     }
+
+    // --- Trigger Plotly redraw if visible --- 
+    const plotDiv = document.getElementById('polarPlot');
+    const predictButton = document.getElementById('predictPassesBtn');
+    const observerLatInput = document.getElementById('observerLat');
+    const observerLonInput = document.getElementById('observerLon');
+
+    // Check if plot exists, button exists, and lat/lon have values
+    if (plotDiv && plotDiv.style.display !== 'none' && predictButton && 
+        observerLatInput?.value && observerLonInput?.value) {
+         console.log('Theme changed, triggering redraw of Plotly chart...');
+         // Re-run the prediction logic by simulating a button click
+         // This ensures drawPolarPlotly is called with correct data
+         predictButton.click(); 
+    }
 }
 
 // Function to update map tile layer based on theme and selection
@@ -227,21 +242,28 @@ function initMap() {
 async function loadSatelliteDataFromLocal(satId) {
     showLoading(`Loading TLE data for NORAD ID ${satId}...`);
     let foundSatellite = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlName = urlParams.get('name'); // Get name from URL too
 
     try {
         // First check if this is a custom satellite
-        const customSat = loadCustomSatellite(satId);
-        if (customSat) {
+        const customSat = loadCustomSatellite(satId); 
+        
+        // Check if custom satellite exists AND if its name matches the URL name (if provided)
+        if (customSat && (!urlName || customSat.OBJECT_NAME === urlName)) {
+            // Use the custom satellite only if names match or no URL name was given
+            console.log(`Using custom satellite found with ID ${satId} and matching name: ${customSat.OBJECT_NAME}`);
             satellite = customSat;
             const titleElement = document.getElementById('satellite-title');
             if (titleElement) {
                 titleElement.innerText = satellite.OBJECT_NAME || `Satellite ${satId}`;
             }
             hideLoading(true);
-            return true;
+            return true; // Return early as we found the intended custom satellite
         }
-
-        // If not found in custom satellites, try active.json
+        
+        // If no matching custom sat was found/used, try active.json
+        console.log(`Custom satellite check passed or name mismatch. Searching active.json for ID ${satId}...`);
         const res = await fetch(activeJsonFile);
         if (!res.ok) {
             throw new Error(`Could not fetch ${activeJsonFile}: ${res.statusText}`);
@@ -746,71 +768,212 @@ async function updatePassPredictions() {
     const predictButton = document.getElementById('predictPassesBtn');
     const originalButtonText = predictButton.innerHTML;
     predictButton.disabled = true;
-    predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
+    predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     const passResults = document.querySelector('.pass-results');
-    if (passResults) passResults.style.display = 'none'; // Hide previous results
+    const canvas = document.getElementById('pass-visualization-canvas');
+    // Get table rows and cells for dynamic updates
+    const passResultRows = passResults?.querySelectorAll('table.info-table tr');
+    const nextPassRow = passResultRows?.[0];
+    const maxElevationRow = passResultRows?.[1];
+    const durationRow = passResultRows?.[2]; // Already have this from before
+    const directionRow = passResultRows?.[3]; // Already have this from before
+
+    const nextPassLabel = nextPassRow?.querySelector('th');
+    const nextPassCell = nextPassRow?.querySelector('td');
+    const maxElevationLabel = maxElevationRow?.querySelector('th');
+    const maxElevationCell = maxElevationRow?.querySelector('td');
+    const geoStatusMessage = document.getElementById('geo-status-message'); // Get status message element
+    // durationCell and directionCell might be needed later if we restore fully
+
+    // Clear status message initially
+    if (geoStatusMessage) geoStatusMessage.textContent = '';
+
+    if (passResults) passResults.style.display = 'none'; 
+    if (canvas) canvas.style.display = 'none'; 
 
     try {
-        // console.log(`[updatePassPredictions] Requesting pass prediction for: ${satellite.OBJECT_NAME}`);
+        // --- Check if Geostationary --- 
+        if (window.isGeostationary(satellite)) {
+            console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
+            predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles'; 
 
-        // Ensure the global calculateNextPass function exists
-        if (typeof window.calculateNextPass !== 'function') {
-             throw new Error('calculateNextPass function is not available globally.');
-        }
+            // Hide pass-specific rows immediately
+            if (durationRow) durationRow.style.display = 'none';
+            if (directionRow) directionRow.style.display = 'none';
 
-        // Pass the entire satellite object
-        const nextPass = await window.calculateNextPass(satellite, observerLat, observerLon);
-        
-        if (passResults) { // Check if passResults element exists
-            if (nextPass) { 
-                // console.log('[updatePassPredictions] Pass prediction successful:', nextPass);
-                
-                // Ensure lookAnglePoints exists before using it
-                const lookAnglePoints = nextPass.lookAnglePoints || []; 
+            // --- Integrated satrec creation and look angle calculation ---
+            let satrec;
+            let tleSource = 'Unknown';
+            let lookAngles = null; 
+            try { 
+                 // Logic adapted from calculateSatellitePosition to get satrec
+                 if (satellite.TLE_LINE1 && satellite.TLE_LINE2 && /* ... TLE format checks ... */ 
+                     satellite.TLE_LINE1.startsWith('1 ') && satellite.TLE_LINE2.startsWith('2 ')) { // Basic check
+                    tleSource = 'Embedded';
+                    satrec = window.satellite.twoline2satrec(satellite.TLE_LINE1, satellite.TLE_LINE2);
+                } else if (satellite.OBJECT_NAME && satellite.NORAD_CAT_ID && satellite.EPOCH && satellite.MEAN_MOTION) {
+                    tleSource = 'Celestrak JSON';
+                    const satJson = { /* ... construct satJson object from satellite properties ... */ 
+                        OBJECT_NAME: satellite.OBJECT_NAME,
+                        OBJECT_ID: satellite.OBJECT_ID || satellite.INTL_DES || 'UNKNOWN',
+                        EPOCH: satellite.EPOCH,
+                        MEAN_MOTION: parseFloat(satellite.MEAN_MOTION),
+                        ECCENTRICITY: parseFloat(satellite.ECCENTRICITY),
+                        INCLINATION: parseFloat(satellite.INCLINATION),
+                        RA_OF_ASC_NODE: parseFloat(satellite.RA_OF_ASC_NODE),
+                        ARG_OF_PERICENTER: parseFloat(satellite.ARG_OF_PERICENTER),
+                        MEAN_ANOMALY: parseFloat(satellite.MEAN_ANOMALY),
+                        EPHEMERIS_TYPE: satellite.EPHEMERIS_TYPE || 0,
+                        CLASSIFICATION_TYPE: satellite.CLASSIFICATION_TYPE || "U",
+                        NORAD_CAT_ID: parseInt(satellite.NORAD_CAT_ID),
+                        ELEMENT_SET_NO: satellite.ELEMENT_SET_NO || 999,
+                        REV_AT_EPOCH: satellite.REV_AT_EPOCH || 0,
+                        BSTAR: satellite.BSTAR || 0.0001,
+                        MEAN_MOTION_DOT: satellite.MEAN_MOTION_DOT || 0,
+                        MEAN_MOTION_DDOT: satellite.MEAN_MOTION_DDOT || 0
+                    };
+                     if (isNaN(satJson.NORAD_CAT_ID) || isNaN(satJson.MEAN_MOTION) || !satJson.EPOCH) {
+                        throw new Error('Incomplete Celestrak JSON data for satrec creation');
+                    }
+                    satrec = window.satellite.json2satrec(satJson);
+                } else {
+                    throw new Error('Satellite object format not recognized or missing required data.');
+                }
 
-                // Draw the visualization using look angles and direction
-                drawPassVisualization('pass-visualization-canvas', lookAnglePoints, nextPass.direction);
-                
-                // Format start time to local string
-                const localStartTime = nextPass.startTime.toLocaleString(undefined, {
-                    // weekday: 'short', 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit' 
-                    // timeZoneName: 'short' // Optional: Add timezone name
-                });
+                if (!satrec || satrec.error !== 0) {
+                    throw new Error(`Failed to initialize satrec (source: ${tleSource}, error ${satrec?.error})`);
+                }
 
-                document.getElementById('nextPassTime').textContent = localStartTime; // Display local time
-                document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
-                document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
-                document.getElementById('passDirection').textContent = nextPass.direction;
-                
-            } else {
-                // console.log('[updatePassPredictions] No pass found.');
-                document.getElementById('nextPassTime').textContent = 'No passes in next 24h';
-                document.getElementById('maxElevation').textContent = '-';
-                document.getElementById('passDuration').textContent = '-';
-                document.getElementById('passDirection').textContent = '-';
-                // Clear visualization if no pass
-                clearPassVisualization('pass-visualization-canvas');
+                // Propagate position for NOW
+                const now = new Date();
+                const positionAndVelocity = window.satellite.propagate(satrec, now);
+                if (!positionAndVelocity || !positionAndVelocity.position) {
+                    throw new Error('Propagation failed for current time.');
+                }
+
+                // Calculate Look Angles
+                const gmst = window.satellite.gstime(now);
+                const positionEcf = window.satellite.eciToEcf(positionAndVelocity.position, gmst);
+                const observerGd = {
+                    longitude: observerLon * Math.PI / 180,
+                    latitude: observerLat * Math.PI / 180,
+                    height: 0.1 // Assume low height
+                };
+                const lookAnglesRad = window.satellite.ecfToLookAngles(observerGd, positionEcf);
+                lookAngles = {
+                    azimuth: lookAnglesRad.azimuth * 180 / Math.PI,
+                    elevation: lookAnglesRad.elevation * 180 / Math.PI
+                };
+            } catch (calcError) {
+                 console.error("[GEO Calculation] Error:", calcError);
+                 lookAngles = null; 
             }
-            passResults.style.display = 'block'; // Show results table
+            // --- End integrated calculation ---
+
+            // Display results based on calculated lookAngles
+            if (passResults && nextPassRow && maxElevationRow && nextPassLabel && maxElevationLabel && nextPassCell && maxElevationCell && geoStatusMessage) { 
+                
+                nextPassLabel.textContent = ' Current Azimuth';
+                maxElevationLabel.textContent = 'Current Elevation';
+
+                if (lookAngles && lookAngles.elevation >= 0) { 
+                    nextPassCell.textContent = `${lookAngles.azimuth.toFixed(1)}°`;
+                    maxElevationCell.textContent = `${lookAngles.elevation.toFixed(1)}°`;
+                    nextPassCell.classList.remove('status-not-visible');
+                    nextPassRow.style.display = ''; 
+                    maxElevationRow.style.display = ''; 
+                    // Set GEO visible message
+                    geoStatusMessage.textContent = 'Satellite in view currently...'; 
+                } else if (lookAngles) { // Calculated but below horizon
+                    nextPassCell.textContent = 'Below Horizon (not visible from the location)';
+                    nextPassCell.classList.add('status-not-visible');
+                    nextPassRow.style.display = ''; 
+                    nextPassLabel.textContent = ''; 
+                    maxElevationRow.style.display = 'none'; 
+                    geoStatusMessage.textContent = ''; // Clear message
+                } else { // Error during calculation
+                    nextPassCell.textContent = 'Error calculating';
+                    nextPassCell.classList.remove('status-not-visible');
+                    nextPassRow.style.display = ''; 
+                    maxElevationRow.style.display = 'none'; 
+                    geoStatusMessage.textContent = ''; // Clear message
+                }
+                passResults.style.display = 'block'; 
+                // Call visualization ONLY if GEO satellite is visible
+                if (lookAngles && lookAngles.elevation >= 0) {
+                    drawPolarPlotly('polarPlot', [lookAngles], true);
+                }
+            } else {
+                 console.error("Pass prediction table elements not found for GEO display.");
+            }
+            // Ensure canvas is NOT displayed if logic above didn't call draw (e.g., error finding elements)
+            if (!(passResults && nextPassRow && maxElevationRow)) { 
+                clearPolarPlotly('polarPlot'); // Clear plotly plot
+            }
+
+        } else { 
+            // --- Not Geostationary: Perform Pass Prediction --- 
+            console.log(`Satellite ${satellite.OBJECT_NAME} is not geostationary. Predicting passes...`);
+            predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting Passes...';
+            // Clear GEO status message for non-GEO cases
+            if (geoStatusMessage) geoStatusMessage.textContent = ''; 
+
+             // Restore original labels and row visibility
+             if (nextPassLabel) nextPassLabel.textContent = 'Next Pass';
+             if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation';
+             // Restore labels for duration/direction if needed (assuming they exist)
+             const durationLabel = durationRow?.querySelector('th');
+             const directionLabel = directionRow?.querySelector('th');
+             if(durationLabel) durationLabel.textContent = 'Duration';
+             if(directionLabel) directionLabel.textContent = 'Direction';
+
+             // Make all rows visible
+             if (nextPassRow) nextPassRow.style.display = '';
+             if (maxElevationRow) maxElevationRow.style.display = '';
+             if (durationRow) durationRow.style.display = ''; 
+             if (directionRow) directionRow.style.display = ''; 
+
+            // Ensure the global calculateNextPass function exists
+            if (typeof window.calculateNextPass !== 'function') {
+                 throw new Error('calculateNextPass function is not available globally.');
+             }
+             const nextPass = await window.calculateNextPass(satellite, observerLat, observerLon);
+             if (passResults) { 
+                 if (nextPass) { 
+                    // Display Pass Data 
+                    // Call Plotly function for non-GEO
+                    drawPolarPlotly('polarPlot', nextPass.lookAnglePoints, false);
+                    const localStartTime = nextPass.startTime.toLocaleString(undefined, {
+                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                    });
+                    document.getElementById('nextPassTime').textContent = localStartTime;
+                    document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
+                    document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
+                    document.getElementById('passDirection').innerHTML = nextPass.direction;
+                 } else {
+                    // Display No Pass 
+                    document.getElementById('nextPassTime').textContent = 'No passes in next 24h';
+                    document.getElementById('maxElevation').textContent = '-';
+                    document.getElementById('passDuration').textContent = '-';
+                    document.getElementById('passDirection').textContent = '-';
+                    clearPolarPlotly('polarPlot'); // Clear plot if no pass
+                 }
+                 passResults.style.display = 'block'; 
+             } 
         }
 
     } catch (error) {
-        console.error('[updatePassPredictions] Error calculating/displaying pass predictions:', error);
-        showError(`Failed to calculate pass predictions: ${error.message}`);
+        console.error('[updatePassPredictions] Error:', error);
+        showError(`Failed calculation: ${error.message}`);
         // Display error in the results table
         if (passResults) {
             document.getElementById('nextPassTime').textContent = 'Error';
             document.getElementById('maxElevation').textContent = '-';
-            document.getElementById('passDuration').textContent = '-';
-            document.getElementById('passDirection').textContent = '-';
+            if (durationRow) durationRow.style.display = 'none'; 
+            if (directionRow) directionRow.style.display = 'none'; 
             passResults.style.display = 'block';
         }
+        clearPolarPlotly('polarPlot'); // Clear plot on error
     } finally {
         // Restore button state
         predictButton.disabled = false;
@@ -818,183 +981,132 @@ async function updatePassPredictions() {
     }
 }
 
-// --- Pass Visualization --- //
-
-// Function to draw the pass visualization on a canvas (Sky Plot)
-function drawPassVisualization(canvasId, lookAnglePoints, direction) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas || !canvas.getContext) {
-        console.error('Canvas element not found or not supported.');
+// --- NEW Plotly Visualization Function --- //
+function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
+    const plotDiv = document.getElementById(plotDivId);
+    if (!plotDiv) {
+        console.error(`Plotly container #${plotDivId} not found.`);
         return;
     }
-    const ctx = canvas.getContext('2d');
-    // Get computed style from documentElement for theme variables
-    const computedStyle = getComputedStyle(document.documentElement); 
 
-    // --- Set Canvas Resolution based on CSS size and devicePixelRatio ---
-    const cssWidth = 400; // From CSS
-    const cssHeight = 200; // From CSS
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = cssWidth * dpr;
-    canvas.height = cssHeight * dpr;
-    // CSS size remains 400x200, but drawing buffer is higher resolution
-    ctx.scale(dpr, dpr); // Scale the context to draw appropriately
+    // Ensure lookAnglePoints is an array
+    if (!Array.isArray(lookAnglePoints)) {
+        console.warn('Invalid lookAnglePoints data for Plotly.');
+        lookAnglePoints = []; // Default to empty array
+    }
 
-    // --- Recalculate dimensions based on CSS size (used for drawing logic) ---
-    const width = cssWidth; 
-    const height = cssHeight;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(centerX, centerY) - 15;
+    let dataTraces = [];
+    let visiblePointExists = false;
 
-    // Get computed colors from CSS variables
-    const borderColor = computedStyle.getPropertyValue('--border-color').trim() || '#cccccc';
-    const gridColor = computedStyle.getPropertyValue('--grid-color').trim() || '#e0e0e0';
-    const textColor = computedStyle.getPropertyValue('--text-primary').trim() || '#555555'; // Use --text-primary
-    const accentColor = computedStyle.getPropertyValue('--accent-color').trim() || '#007bff';
-    const arrowColor = computedStyle.getPropertyValue('--direction-arrow-color').trim() || 'orange';
-
-    // Clear canvas - Use canvas attributes for actual pixel dimensions
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // --- Draw Background Elements --- (Drawing commands remain based on cssWidth/cssHeight due to ctx.scale)
-    ctx.beginPath();
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 1;
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.strokeStyle = gridColor;
-    ctx.setLineDash([2, 3]);
-    [30, 60].forEach(el => {
-        const r = radius * (1 - el / 90);
-        ctx.moveTo(centerX + r, centerY);
-        ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
-    });
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.beginPath();
-    ctx.strokeStyle = borderColor;
-    ctx.moveTo(centerX, centerY - radius);
-    ctx.lineTo(centerX, centerY + radius);
-    ctx.moveTo(centerX - radius, centerY);
-    ctx.lineTo(centerX + radius, centerY);
-    ctx.stroke();
-
-    ctx.fillStyle = textColor;
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('N', centerX, centerY - radius - 8);
-    ctx.fillText('S', centerX, centerY + radius + 8);
-    ctx.textAlign = 'left';
-    ctx.fillText('E', centerX + radius + 5, centerY);
-    ctx.textAlign = 'right';
-    ctx.fillText('W', centerX - radius - 5, centerY);
-
-    // --- Draw Observer Location (Center Dot) ---
-    ctx.beginPath();
-    ctx.fillStyle = 'red'; // Keep observer red
-    ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // --- Draw Pass Trajectory --- Using computed accentColor
-    ctx.beginPath();
-    ctx.strokeStyle = accentColor;
-    ctx.lineWidth = 2;
-    let firstPoint = true;
-
-    lookAnglePoints.forEach(p => {
-        // Convert Az/El to canvas coordinates
-        // Azimuth is angle (0=N, 90=E, 180=S, 270=W)
-        // Elevation is distance from center (90=center, 0=edge)
-        const angleRad = (p.azimuth - 90) * Math.PI / 180; // Convert Azimuth to canvas angle (0=E)
-        const dist = radius * (1 - p.elevation / 90);
-        
-        const x = centerX + dist * Math.cos(angleRad);
-        const y = centerY + dist * Math.sin(angleRad);
-
-        if (p.elevation >= 0) { // Only draw points above the horizon
-            if (firstPoint) {
-                ctx.moveTo(x, y);
-                // REMOVED start marker drawing
-                // ctx.fillStyle = 'var(--start-color, green)'; 
-                // ctx.fillRect(x - 2, y - 2, 4, 4);
-                firstPoint = false;
-            } else {
-                ctx.lineTo(x, y);
+    if (isGeostationary) {
+        // Handle single point for GEO
+        if (lookAnglePoints.length > 0) {
+            const currentPoint = lookAnglePoints[0];
+            if (currentPoint.elevation >= 0) {
+                visiblePointExists = true;
+                const trace = {
+                    type: 'scatterpolar',
+                    r: [90 - currentPoint.elevation], // Single r value
+                    theta: [currentPoint.azimuth], // Single theta value
+                    mode: 'markers',
+                    name: 'Current Position',
+                    marker: { color: 'red', size: 14, symbol: 'star' } 
+                };
+                dataTraces.push(trace);
             }
         }
-    });
-    ctx.stroke(); // Draw the path itself
+        // If not visible, dataTraces remains empty
+    } else {
+        // Handle pass trajectory for non-GEO
+        if (lookAnglePoints.length > 0) {
+            const r = lookAnglePoints.map(p => Math.max(0, 90 - p.elevation)); // Ensure r is not negative
+            const theta = lookAnglePoints.map(p => p.azimuth);
+            
+            // Only include points above horizon for plotting the line
+            const visibleR = [];
+            const visibleTheta = [];
+            lookAnglePoints.forEach((p, index) => {
+                if (p.elevation >= 0) {
+                    visibleR.push(r[index]);
+                    visibleTheta.push(theta[index]);
+                }
+            });
 
-    // --- Draw Direction Arrow ON the path start --- Using computed arrowColor
-    // Find the first two visible points to determine initial direction
-    let p1 = null, p2 = null;
-    for (const p of lookAnglePoints) {
-        if (p.elevation >= 0) {
-            if (p1 === null) {
-                p1 = p;
-            } else {
-                p2 = p;
-                break; // Found first two visible points
+            if (visibleR.length > 0) {
+                 visiblePointExists = true;
+                 const trace = {
+                    type: 'scatterpolar',
+                    r: visibleR,
+                    theta: visibleTheta,
+                    mode: 'lines', 
+                    name: 'Satellite Path',
+                    line: { color: 'var(--accent-color)', width: 2 },
+                    hoverinfo: 'none' // Disable hover text for path trace
+                };
+                dataTraces.push(trace);
             }
         }
+        // If no visible points, dataTraces remains empty
     }
 
-    // If we have two points, draw the arrow
-    if (p1 && p2) {
-        // Convert p1 and p2 to canvas coordinates
-        const angleRad1 = (p1.azimuth - 90) * Math.PI / 180;
-        const dist1 = radius * (1 - p1.elevation / 90);
-        const x1 = centerX + dist1 * Math.cos(angleRad1);
-        const y1 = centerY + dist1 * Math.sin(angleRad1);
-
-        const angleRad2 = (p2.azimuth - 90) * Math.PI / 180;
-        const dist2 = radius * (1 - p2.elevation / 90);
-        const x2 = centerX + dist2 * Math.cos(angleRad2);
-        const y2 = centerY + dist2 * Math.sin(angleRad2);
-
-        // Calculate angle of the path segment
-        const pathAngle = Math.atan2(y2 - y1, x2 - x1);
-        const arrowSize = 12;
-
-        ctx.save();
-        ctx.translate(x1, y1);
-        ctx.rotate(pathAngle);
-
-        ctx.beginPath();
-        ctx.fillStyle = arrowColor;
-        ctx.moveTo(0, 0);
-        ctx.lineTo(-arrowSize, -arrowSize / 2);
-        ctx.lineTo(-arrowSize, arrowSize / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.restore();
+    if (!visiblePointExists) {
+        // If no visible points (GEO below horizon, or non-GEO pass fully below horizon)
+        clearPolarPlotly(plotDivId); // Hide the plot area
+        return;
     }
-    // --- End Direction Arrow --- 
 
-    /* REMOVED old static arrow logic
-    if (direction) {
-        ctx.strokeStyle = 'var(--direction-arrow-color, orange)';
-        ctx.fillStyle = 'var(--direction-arrow-color, orange)';
-        // ... rest of old arrow code ...
-    }
-    */
+    // --- Define Layout (Theme Aware) ---
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const paperColor = currentTheme === 'dark' ? '#000000' : '#ffffff';
+    const fontColor = currentTheme === 'dark' ? '#f5f5f5' : '#2c3e50';
+    const gridColor = currentTheme === 'dark' ? '#555555' : '#cccccc'; // Use a visible grid color
+    const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#555555'; // Axis line color
 
-    // Show the canvas
-    canvas.style.display = 'block';
+    const layout = {
+        polar: {
+            radialaxis: {
+                tickvals: [0, 30, 60, 90], 
+                ticktext: ['90°', '60°', '30°', '0°'], // Simplified labels
+                angle: 90, 
+                range: [0, 90], 
+                autorange: false,
+                gridcolor: gridColor,
+                linecolor: lineColor,
+                tickcolor: lineColor,
+                tickfont: { color: fontColor },
+                showticklabels: true
+            },
+            angularaxis: {
+                direction: "clockwise",
+                rotation: 90, // North (0°) at top
+                tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
+                ticktext: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
+                gridcolor: gridColor,
+                linecolor: lineColor,
+                tickcolor: lineColor,
+                tickfont: { color: fontColor }
+            },
+            bgcolor: paperColor // Background of the polar area
+        },
+        paper_bgcolor: paperColor, // Background of the whole plot area
+        font: { color: fontColor },
+        showlegend: !isGeostationary, // Only show legend for passes
+        width: 450, // Match CSS max-width
+        height: 450, // Match CSS height
+        margin: { l: 40, r: 40, t: 40, b: 40 }, // Adjust margins
+        hovermode: false // Disable hover effects globally for the plot
+    };
+
+    // Create or update the plot
+    Plotly.react(plotDivId, dataTraces, layout);
+    plotDiv.style.display = 'block'; // Show the plot
 }
 
-// Function to clear the pass visualization canvas
-function clearPassVisualization(canvasId) {
-     const canvas = document.getElementById(canvasId);
-    if (canvas) {
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        canvas.style.display = 'none';
+// Function to clear/hide the Plotly plot
+function clearPolarPlotly(plotDivId) {
+     const plotDiv = document.getElementById(plotDivId);
+    if (plotDiv) {
+        Plotly.purge(plotDivId); // Remove the plot instance
+        plotDiv.style.display = 'none'; // Hide the container
     }
 }

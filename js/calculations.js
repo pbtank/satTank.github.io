@@ -119,5 +119,33 @@ function calculateSatellitePosition(satellite, time) {
     }
 }
 
-// Export functions to the global scope for use in other scripts
+// Function to calculate if a satellite is likely geostationary
+function isGeostationary(satellite) {
+    if (!satellite) return false;
+
+    // Geostationary/Geosynchronous Orbit characteristics:
+    const meanMotion = satellite.MEAN_MOTION; // Revolutions per day
+    const inclination = satellite.INCLINATION; // Degrees
+    const eccentricity = satellite.ECCENTRICITY; // Unitless
+
+    // Typical values (approximate)
+    const GEO_MEAN_MOTION_MIN = 0.99; // Slightly less than 1 rev/solar day
+    const GEO_MEAN_MOTION_MAX = 1.01; // Slightly more than 1 rev/solar day
+    const MAX_INCLINATION_DEG = 5.0;  // Allow for slightly inclined geosynchronous orbits
+    const MAX_ECCENTRICITY = 0.01;    // Should be very close to circular
+
+    // Check if orbital elements are within typical ranges for GEO/GSO
+    const isGeoMeanMotion = meanMotion >= GEO_MEAN_MOTION_MIN && meanMotion <= GEO_MEAN_MOTION_MAX;
+    const isLowInclination = inclination >= 0 && inclination <= MAX_INCLINATION_DEG;
+    const isLowEccentricity = eccentricity >= 0 && eccentricity <= MAX_ECCENTRICITY;
+
+    // Log the checks for debugging
+    console.log(`[isGeostationary Check] Name: ${satellite.OBJECT_NAME}, Mean Motion: ${meanMotion} (GEO? ${isGeoMeanMotion}), Inclination: ${inclination} (Low? ${isLowInclination}), Eccentricity: ${eccentricity} (Low? ${isLowEccentricity})`);
+
+    return isGeoMeanMotion && isLowInclination && isLowEccentricity;
+}
+
+// Expose functions if using modules or attaching to window
+// Assuming non-module environment based on previous code
 window.calculateSatellitePosition = calculateSatellitePosition;
+window.isGeostationary = isGeostationary; // Expose the new function

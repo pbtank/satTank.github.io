@@ -5,117 +5,62 @@ const PASS_PREDICTION_INTERVAL = 30000; // 30 seconds (Reduced loop iterations)
 const MAX_PREDICTION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 const MIN_ELEVATION = 10; // Minimum elevation angle for a pass (degrees)
 
-// Function to fetch TLE data for a specific satellite
-async function fetchTLEForSatellite(satelliteName) {
-    try {
-        // console.log('[fetchTLE] Fetching TLE data for satellite:', satelliteName);
-
-        const response = await fetch('data/active_tle.dat');
-        if (!response.ok) {
-            throw new Error(`[fetchTLE] Failed to fetch TLE data: ${response.statusText}`);
-        }
-
-        const tleData = await response.text();
-        // console.log('[fetchTLE] Raw TLE data fetched.');
-
-        // Handle potential \r\n line endings and filter empty lines
-        const lines = tleData.split(/\r?\n/).filter(line => line.trim() !== '');
-        // console.log('[fetchTLE] Number of lines after split and filter:', lines.length);
-
-        if (lines.length % 3 !== 0) {
-            // console.warn('[fetchTLE] TLE file line count is not a multiple of 3. Possible formatting issue.');
-        }
-
-        // TLE data is in groups of 3 lines (name, line1, line2)
-        for (let i = 0; i < lines.length - 2; i += 3) {
-            const name = lines[i].trim();
-            const line1 = lines[i + 1]?.trim(); // Optional chaining for safety
-            const line2 = lines[i + 2]?.trim(); // Optional chaining for safety
-
-            // console.log('[fetchTLE] Checking TLE entry:', { name, line1, line2 }); // Verbose
-
-            // Check if this is our satellite (Case-sensitive comparison)
-            if (name === satelliteName) {
-                // console.log(`[fetchTLE] Match found for ${satelliteName}. Validating TLE lines...`);
-                // Validate TLE lines
-                if (!line1 || !line2) {
-                    // console.error(`[fetchTLE] Invalid TLE data for satellite ${satelliteName}: missing line1 or line2.`);
-                    throw new Error(`Invalid TLE data for satellite ${satelliteName}: missing line1 or line2`);
-                }
-
-                // Basic TLE line format check
-                if (!line1.startsWith('1 ') || line1.length !== 69 || !line2.startsWith('2 ') || line2.length !== 69) {
-                    // console.error(`[fetchTLE] Invalid TLE format for satellite ${satelliteName}. L1(${line1.length}):"${line1}", L2(${line2.length}):"${line2}"`);
-                    throw new Error(`Invalid TLE format for satellite ${satelliteName}`);
-                }
-
-                // console.log('[fetchTLE] TLE data validated and found:', { name, line1, line2 });
-                return { line1, line2 };
-            }
-        }
-
-        // console.error(`[fetchTLE] No TLE data found after checking ${lines.length / 3} entries for satellite: ${satelliteName}`);
-        throw new Error(`No TLE data found for satellite: ${satelliteName}`);
-    } catch (error) {
-        // console.error('[fetchTLE] Error fetching/processing TLE data:', error);
-        throw error;
-    }
-}
-
-
-// Function to calculate next pass using TLE data
+// Function to calculate next pass using the provided satellite object
 async function calculateNextPass(satellite, observerLat, observerLon) { // Accept full satellite object
-    let satrec; // Declare satrec here
-    let tleSource = 'Unknown'; // To track where TLE came from
+    let satrec; 
+    let tleSource = 'Unknown'; 
     try {
         console.log('[calculateNextPass] Starting for:', satellite.OBJECT_NAME);
 
-        let tleLine1, tleLine2;
-
-        // Check if TLE is embedded in the satellite object (custom satellite)
-        if (satellite && typeof satellite.TLE_LINE1 === 'string' && satellite.TLE_LINE1.length === 69 &&
-            typeof satellite.TLE_LINE2 === 'string' && satellite.TLE_LINE2.length === 69) {
-            // console.log('[calculateNextPass] Found embedded TLE data in satellite object.');
-            tleLine1 = satellite.TLE_LINE1;
-            tleLine2 = satellite.TLE_LINE2;
+        // --- Robust Satrec Creation (Handles TLE or JSON) ---
+        if (satellite.TLE_LINE1 && satellite.TLE_LINE2 && 
+            typeof satellite.TLE_LINE1 === 'string' && satellite.TLE_LINE1.length === 69 &&
+            typeof satellite.TLE_LINE2 === 'string' && satellite.TLE_LINE2.length === 69 &&
+            satellite.TLE_LINE1.startsWith('1 ') && satellite.TLE_LINE2.startsWith('2 ')) {
+            
+            console.log('[calculateNextPass] Using embedded TLE data');
             tleSource = 'Embedded';
-        } else {
-            // If not embedded, fetch TLE from the file
-            // console.log('[calculateNextPass] No embedded TLE found, fetching from file...');
-            const tleData = await fetchTLEForSatellite(satellite.OBJECT_NAME);
-            if (!tleData || !tleData.line1 || !tleData.line2) {
-                throw new Error('Failed to fetch valid TLE data from file.');
+            satrec = window.satellite.twoline2satrec(satellite.TLE_LINE1, satellite.TLE_LINE2);
+
+        } else if (satellite.OBJECT_NAME && satellite.NORAD_CAT_ID && satellite.EPOCH && satellite.MEAN_MOTION) {
+            console.log('[calculateNextPass] Using Celestrak JSON data');
+            tleSource = 'Celestrak JSON';
+            const satJson = { 
+                OBJECT_NAME: satellite.OBJECT_NAME,
+                OBJECT_ID: satellite.OBJECT_ID || satellite.INTL_DES || 'UNKNOWN',
+                EPOCH: satellite.EPOCH,
+                MEAN_MOTION: parseFloat(satellite.MEAN_MOTION),
+                ECCENTRICITY: parseFloat(satellite.ECCENTRICITY),
+                INCLINATION: parseFloat(satellite.INCLINATION),
+                RA_OF_ASC_NODE: parseFloat(satellite.RA_OF_ASC_NODE),
+                ARG_OF_PERICENTER: parseFloat(satellite.ARG_OF_PERICENTER),
+                MEAN_ANOMALY: parseFloat(satellite.MEAN_ANOMALY),
+                EPHEMERIS_TYPE: satellite.EPHEMERIS_TYPE || 0,
+                CLASSIFICATION_TYPE: satellite.CLASSIFICATION_TYPE || "U",
+                NORAD_CAT_ID: parseInt(satellite.NORAD_CAT_ID),
+                ELEMENT_SET_NO: satellite.ELEMENT_SET_NO || 999,
+                REV_AT_EPOCH: satellite.REV_AT_EPOCH || 0,
+                BSTAR: satellite.BSTAR || 0.0001, 
+                MEAN_MOTION_DOT: satellite.MEAN_MOTION_DOT || 0,
+                MEAN_MOTION_DDOT: satellite.MEAN_MOTION_DDOT || 0
+            };
+             if (isNaN(satJson.NORAD_CAT_ID) || isNaN(satJson.MEAN_MOTION) || !satJson.EPOCH) {
+                throw new Error('Incomplete Celestrak JSON data for satrec creation');
             }
-            tleLine1 = tleData.line1;
-            tleLine2 = tleData.line2;
-            tleSource = 'Fetched';
-            // console.log('[calculateNextPass] Successfully fetched TLE data from file.');
+            satrec = window.satellite.json2satrec(satJson);
+        } else {
+            throw new Error('Satellite object format not recognized or missing required data for satrec creation.');
         }
-        console.log('[calculateNextPass] TLE Source:', tleSource);
-        console.log('[calculateNextPass] TLE Line 1:', tleLine1);
-        console.log('[calculateNextPass] TLE Line 2:', tleLine2);
 
-        // Rigorous check of the determined TLE lines
-        if (typeof tleLine1 !== 'string' || typeof tleLine2 !== 'string' || tleLine1.length !== 69 || tleLine2.length !== 69) {
-            // console.error(`[calculateNextPass] Invalid TLE data before creating satrec (Source: ${tleSource}):', { tleLine1, tleLine2 });
-            throw new Error(`Invalid or incomplete TLE data (Source: ${tleSource})`);
+        // Validate satrec creation
+        if (!satrec) {
+            throw new Error(`Failed to create satellite record (Source: ${tleSource}) - satrec is null/undefined.`);
         }
-        // console.log(`[calculateNextPass] TLE data (Source: ${tleSource}) seems valid for satrec. Line 1:`, tleLine1);
-        // console.log(`[calculateNextPass] TLE data (Source: ${tleSource}) seems valid for satrec. Line 2:`, tleLine2);
-
-        // Create satellite record from TLE data
-        if (typeof window.satellite === 'undefined' || typeof window.satellite.twoline2satrec === 'undefined') {
-             throw new Error("satellite.js library or twoline2satrec function not found.");
+        if (satrec.error !== 0) {
+            throw new Error(`Satellite record creation error (Source: ${tleSource}): ${satrec.error}`);
         }
-        satrec = window.satellite.twoline2satrec(tleLine1, tleLine2);
-        // console.log('[calculateNextPass] twoline2satrec result:', satrec);
-
-        if (!satrec || satrec.error !== 0) {
-            // console.error('[calculateNextPass] Failed to create satellite record. Error code:', satrec ? satrec.error : 'undefined');
-            throw new Error(`Failed to create satellite record from TLE data (Source: ${tleSource}). Error code: ${satrec?.error || 'N/A'}. Check TLE format/checksums for ${satellite.OBJECT_NAME}.`);
-        }
-        // console.log('[calculateNextPass] Successfully created satellite record.');
-        console.log('[calculateNextPass] satrec created successfully.', satrec);
+        console.log(`[calculateNextPass] Successfully created satrec from ${tleSource} data.`);
+        // --- End Satrec Creation ---
 
         // --- Pass Calculation Logic --- (Uses the created satrec)
         const now = new Date();
@@ -305,9 +250,9 @@ async function calculatePassDirection(satrec, time, observerLat, observerLon) { 
 
         // Determine direction based on azimuth at the start of the pass
         if (azimuth >= 0 && azimuth < 180) { // Azimuth 0-180 (Eastward component) -> Generally South to North
-            return 'S to N';
+            return 'South &rarr; North';
         } else { // Azimuth 180-360 (Westward component) -> Generally North to South
-            return 'N to S';
+            return 'North &rarr; South';
         }
     } catch (error) {
         // console.error('[calculatePassDirection] Error:', error);
@@ -316,6 +261,5 @@ async function calculatePassDirection(satrec, time, observerLat, observerLon) { 
 }
 
 // Make functions globally available if not using modules
-window.fetchTLEForSatellite = fetchTLEForSatellite;
 window.calculateNextPass = calculateNextPass;
 window.calculatePassDirection = calculatePassDirection; 

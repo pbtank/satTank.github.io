@@ -43,7 +43,9 @@
 
     /* Canvas Specific Colors (Defaults for Light Mode) */
     --canvas-bg-color: #ffffff;
-    --grid-color: #d3d3d3; /* Default light grey for grid */
+    --canvas-grid-color: #000000; /* Black grid for light mode */
+    --canvas-border-color: #000000; /* Black border/lines for light mode */
+    --canvas-text-color: #000000; /* Black text for light mode */
     --direction-arrow-color: rgba(0, 253, 135, 0.877); /* Default arrow color */
 }
 
@@ -57,9 +59,11 @@
     --border-color: #aaaaaa;        /* Lighter grey for main lines */
     --hover-color: #333333;
     /* Add/Update canvas specific colors for dark mode */
-    --grid-color:   #888888;        /* Lighter dimmer grey for grid lines */
-    --canvas-bg-color: #000000;     /* Match page background */
-    --direction-arrow-color: #FFD700; /* Gold/Yellow for arrow */
+    --canvas-bg-color: #000000;     
+    --canvas-grid-color: #ffffff;   /* White grid for dark mode */
+    --canvas-border-color: #ffffff;  /* White border/lines for dark mode */
+    --canvas-text-color: #ffffff;   /* White text for dark mode */
+    --direction-arrow-color: #FFD700;  /* Gold/Yellow for arrow */
     
     /* Layout Dimensions */
     --header-height: 60px;
@@ -341,34 +345,33 @@ header {
     margin-top: 1rem;
 }
 
-/* Pass Visualization Canvas Styling */
-#pass-visualization-canvas {
-    width: 400px;
-    height: 200px;
-    border: 1px solid var(--border-color);
-    margin-top: 1rem;
-    display: none;
-    background-color: var(--canvas-bg-color, #ffffff);
+/* Increase font size for pass results table data */
+.pass-results .info-table td {
+    font-size: 1.1rem; /* Increased from 0.9rem */
 }
 
-/* Dark mode adjustments */
-#pageBody[data-theme="dark"] .input-group input {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-color);
-    color: var(--text-primary);
+/* Style for Geostationary Status Message */
+.geo-status {
+    color: #2ecc71; /* Green color for visibility */
+    font-weight: bold;
+    margin-bottom: 0.5rem; /* Space below the message */
+    text-align: center;
+    font-size: 1rem;
 }
 
-#pageBody[data-theme="dark"] .input-group input:focus {
-    border-color: #2ecc71;
-    box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+/* Style for 'Below Horizon' or similar status messages */
+.status-not-visible {
+    color: #e74c3c !important; /* Red color for emphasis - Added !important for debugging */
+    font-style: italic; 
 }
 
-#pageBody[data-theme="dark"] .predict-button {
-    background-color: #2ecc71;
-}
-
-#pageBody[data-theme="dark"] .predict-button:hover {
-    background-color: #27ae60;
+/* Styles for Plotly Container */
+#polarPlot {
+    width: 100%; /* Take full width of container */
+    max-width: 450px; /* Limit max width */
+    height: 450px; /* Square aspect ratio */
+    margin: 1rem auto 0; /* Center horizontally with margin */
+    /* display: none; is handled inline in HTML initially */
 }
 
 /* Map Controls */

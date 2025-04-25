@@ -9,6 +9,7 @@
           crossorigin=""/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="satpage.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body id="pageBody" data-theme="dark">
     <header>
@@ -135,7 +136,7 @@
         <!-- Pass Predictions Panel -->
         <div class="pass-predictions-container">
             <div class="panel">
-                <h2>Pass Predictions</h2>
+                <h2 style="font-size: 1.475rem; text-align: center; font-family: 'Lettera', var(--font-mono);">Next Pass at a Location</h2>
                 <div class="location-input-form">
                     <div class="input-group">
                         <label for="observerLat">Latitude:</label>
@@ -146,30 +147,32 @@
                         <input type="number" id="observerLon" step="0.0001" placeholder="e.g., -122.0308">
                     </div>
                     <button id="predictPassesBtn" class="predict-button">
-                        <i class="fas fa-satellite"></i> Predict Passes
+                        <i class="fas fa-satellite"></i> Predict
                     </button>
                 </div>
                 <div class="pass-results" style="display: none;">
+                    <!-- Added placeholder for GEO status message -->
+                    <div id="geo-status-message" class="geo-status"></div> 
                     <table class="info-table">
                         <tr>
-                            <th>Next Pass</th>
+                            <th style="font-size: 1.2rem;"> Next Pass</th>
                             <td id="nextPassTime" class="next-pass-highlight">-</td>
                         </tr>
                         <tr>
-                            <th>Max Elevation</th>
+                            <th style="font-size: 1.2rem;">Max Elevation</th>
                             <td id="maxElevation">-</td>
                         </tr>
                         <tr>
-                            <th>Duration</th>
+                            <th style="font-size: 1.2rem;">Duration</th>
                             <td id="passDuration">-</td>
                         </tr>
                         <tr>
-                            <th>Direction</th>
+                            <th style="font-size: 1.2rem;">Direction</th>
                             <td id="passDirection">-</td>
                         </tr>
                     </table>
-                    <!-- Canvas for pass visualization -->
-                    <canvas id="pass-visualization-canvas"></canvas>
+                    <!-- Replace Canvas with Plotly Div -->
+                    <div id="polarPlot" style="display: none;"></div> 
                 </div>
             </div>
         </div>
@@ -197,11 +200,11 @@
         <div class="footer-content">
             <div class="version">Version: 2.1</div>
             <div class="credits">
-                Created by: <a href="https://pbtank.github.io/Tank_Priyansu/"
+                <a href="https://pbtank.github.io/Tank_Priyansu/"
                     style="text-decoration-line: underline;">Priyansu Tank</a> & <a
-                    href="https://github.com/carbform">Carbform</a>
+                    href="https://github.com/carbform" style="text-decoration-line: underline;">Carbform</a>
                 <div class="attribution">
-                    Satellite data provided by <a href="https://celestrak.org/" target="_blank">CELESTRAK</a>
+                    Using data from <a href="https://celestrak.org/">Celestrak</a>
                 </div>
             </div>
             <div class="india-flag">

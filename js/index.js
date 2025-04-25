@@ -143,20 +143,38 @@ function displaySatelliteTable(satellites) {
             ],
             order: [[0, 'asc']],
             initComplete: function() {
-                // Add custom filtering function
+                // Remove existing filter logic first if it exists to avoid duplicates
+                $.fn.dataTable.ext.search.pop(); 
+
+                // Add the corrected custom filtering function
                 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    // Check if the filter should be active
                     const showActiveOnly = $('#showActiveOnly').is(':checked');
-                    if (!showActiveOnly) return true;
+                    if (!showActiveOnly) {
+                        return true; // Show all rows if checkbox is not checked
+                    }
+
+                    // If checkbox is checked, filter based on activeSatelliteIds
+                    const noradIdString = data[1]; // Get NORAD ID string from column 1 data
+                    const noradId = parseInt(noradIdString, 10);
                     
-                    // Check if the status column (index 2) contains "Active"
-                    const status = $(dataTable.cell(dataIndex, 2).node()).text();
-                    return status.includes('Active');
+                    if (isNaN(noradId)) {
+                        // console.warn(`Row ${dataIndex}: Could not parse NORAD ID: ${noradIdString}`);
+                        return false; // Hide rows where ID cannot be parsed
+                    }
+
+                    // Check if the ID is in the globally loaded Set
+                    return activeSatelliteIds.has(noradId); 
                 });
 
-                // Add change event handler for checkbox
-                $('#showActiveOnly').on('change', function() {
-                    dataTable.draw(); // Redraw table with filter applied
+                // Ensure change handler is attached only once
+                $('#showActiveOnly').off('change').on('change', function() {
+                    console.log("Checkbox changed, redrawing table...");
+                    dataTable.draw(); // Redraw table to apply the filter
                 });
+
+                 // Initial draw to apply filter if checkbox is checked on load
+                 // dataTable.draw(); 
             }
         });
         console.log("DataTables initialized.");

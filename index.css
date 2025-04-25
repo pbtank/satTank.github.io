@@ -44,8 +44,10 @@
 	--text-primary: #f5f5f5;
 	--text-secondary: #b0b0b0;
 	--accent-color: #4a9eff;
-	--border-color: #000000;
+	--border-color: #404040;
 	--hover-color: #333333;
+    /* --- DEBUGGING --- */
+    background-color: red !important; /* Override body background for testing */
 }
 
 /* Base Styles */
@@ -92,8 +94,8 @@ body {
 	max-width: 1200px;
 	margin: 0.5rem auto;
 	padding: 0.75rem 2rem;
-	background-color: var(--bg-secondary);
-	border-radius: var(--radius-md);
+	/* background-color: var(--bg-secondary); */
+	/* border-radius: var(--radius-md); */
 	box-shadow: none;
 	border: none;
 	border-top: none; /* Remove top border */
@@ -421,7 +423,7 @@ body {
 	position: absolute;
 	top: 10px;
 	right: 10px;
-	z-index: 1000;
+	z-index: 9999;
 }
 
 #theme-toggle.icon-button {
@@ -1096,13 +1098,12 @@ header {
 
 /* Add new button-based styles (similar to satpage.css) */
 .theme-switch-wrapper {
-    position: fixed; /* Position fixed to viewport */
-    top: 15px;       /* Distance from top */
-    right: 20px;      /* Distance from right */
-    z-index: 1001;   /* Ensure it's above other elements */
-    display: flex; /* Use flexbox to align items */
-    align-items: center; /* Vertically center items */
-    /* gap: 8px; */ /* No gap needed if only button is visible */
+    /* position: absolute; */ /* Removed */
+    /* top: 10px; */       /* Removed */
+    /* right: 10px; */      /* Removed */
+    /* z-index: 1000; */    /* Removed */
+    /* Add some margin if needed for spacing */
+    /* margin-left: auto; */ /* Optionally push to the right */
 }
 
 /* Style the button used for the toggle */
