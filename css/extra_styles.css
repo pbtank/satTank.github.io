@@ -1,0 +1,23 @@
+.no-pass-warning {
+    background-color: rgba(248, 215, 218, 0.8); /* Light red with some transparency */
+    color: #58151c; /* Darker red text for contrast */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-md);
+    font-family: 'Lettera', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid rgba(220, 53, 69, 0.4);
+    display: inline-block; /* Prevent full width */
+    text-align: center;
+}
+
+[data-theme='dark'] .no-pass-warning {
+    background-color: rgba(114, 28, 36, 0.7); /* Darker red background */
+    color: #f8d7da; /* Lighter text for dark mode */
+    border-color: rgba(248, 215, 218, 0.4);
+}
+
+#pass-details-table.hidden {
+    display: none;
+} 

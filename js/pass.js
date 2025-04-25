@@ -93,7 +93,9 @@ async function calculateNextPass(satellite, observerLat, observerLon) { // Accep
                  const positionAndVelocity = window.satellite.propagate(satrec, currentTime);
 
                  // Log the result of propagate RIGHT AFTER calling it
-                 console.log(`[Loop ${iterations}] Time: ${currentTime.toISOString()}, Propagate Result:`, positionAndVelocity);
+                 // if (i % 100 === 0) { 
+                 //     console.log(`[Loop ${i}] Time: ${currentTime.toISOString()}, Propagate Result:`, positionAndVelocity);
+                 // }
 
                  if (!positionAndVelocity || !positionAndVelocity.position || !positionAndVelocity.velocity) {
                      // Log if propagation failed

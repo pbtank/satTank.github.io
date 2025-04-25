@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Satellite Tracker</title>
+    <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="satpage.css">
+    <link rel="stylesheet" href="css/satpage.css">
+    <link rel="stylesheet" href="css/extra_styles.css">
     <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
 </head>
 <body id="pageBody" data-theme="dark">
@@ -136,7 +138,7 @@
         <!-- Pass Predictions Panel -->
         <div class="pass-predictions-container">
             <div class="panel">
-                <h2 style="font-size: 1.475rem; text-align: center; font-family: 'Lettera', var(--font-mono);">Next Pass at Location</h2>
+                <h2 style="font-size: 1.475rem; text-align: center; font-family: 'Lettera', var(--font-mono);">Next pass at your location</h2>
                 <div class="location-input-form">
                     <div class="input-group">
                         <label for="observerLat">Latitude:</label>
@@ -153,7 +155,14 @@
                 <div class="pass-results" style="display: none;">
                     <!-- Added placeholder for GEO status message -->
                     <div id="geo-status-message" class="geo-status"></div> 
-                    <table class="info-table">
+                    
+                    <!-- Message shown when no passes are found -->
+                    <div id="no-pass-message" class="no-pass-warning" style="display: none;">
+                        
+                    </div>
+
+                    <!-- Table for displaying pass details (hidden if no passes) -->
+                    <table id="pass-details-table" class="info-table">
                         <tr>
                             <th style="font-size: 1.2rem;"> Next Pass at </th>
                             <td id="nextPassTime" class="next-pass-highlight">-</td>

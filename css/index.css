@@ -1305,7 +1305,7 @@ table.dataTable tbody tr td.inactive-satellite {
 
 @font-face {
     font-family: 'Lettera';
-    src: url('src/LetteraMonoLLCondLight-Regular.otf') format('opentype');
+    src: url('../src/LetteraMonoLLCondLight-Regular.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }

@@ -13,6 +13,12 @@ let observerMarker = null; // To hold the observer's location marker
 // let currentTileLayer; // Removed, replaced by currentMapLayer
 let currentMapLayer; // Renamed for clarity and consistency
 
+// --- Favicon Paths ---
+const defaultFaviconHref = 'favicon.ico'; // Assuming default is in root
+const sadFaviconHref = 'src/images/sad-face-in-rounded-square.png'; // Path to the sad favicon
+let faviconLink = null; // Will hold the link element reference
+// --- End Favicon Paths ---
+
 // Utility function to escape HTML special characters
 function escapeHTML(str) {
     const div = document.createElement('div');
@@ -31,6 +37,10 @@ const activeJsonFile = 'data/active.json';
 
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', async function() {
+    // --- Get Favicon Link Element ---
+    faviconLink = document.getElementById('favicon-link');
+    // --- End Get Favicon Link ---
+
     // Check if satellite.js is loaded
     if (typeof window.satellite === 'undefined') {
         console.error('satellite.js library not loaded!');
@@ -746,6 +756,9 @@ function calculateGroundTrackPoints() {
 
 // Update the updatePassPredictions function to handle async operations
 async function updatePassPredictions() {
+    // Reset favicon to default at the start of prediction
+    // setFavicon(defaultFaviconHref); 
+
     // Ensure the main satellite object is available
     if (!satellite || !satellite.OBJECT_NAME) {
         showError('Satellite data not fully loaded. Cannot predict passes.');
@@ -967,20 +980,23 @@ async function updatePassPredictions() {
              if(durationLabel) durationLabel.textContent = 'Duration';
              if(directionLabel) directionLabel.textContent = 'Direction';
 
-             // Make all rows visible
-             if (nextPassRow) nextPassRow.style.display = '';
-             if (maxElevationRow) maxElevationRow.style.display = '';
-             if (durationRow) durationRow.style.display = ''; 
-             if (directionRow) directionRow.style.display = ''; 
+             // Get references to the message div and details table
+             const noPassMessageDiv = document.getElementById('no-pass-message');
+             const passDetailsTable = document.getElementById('pass-details-table');
 
-            // Ensure the global calculateNextPass function exists
-            if (typeof window.calculateNextPass !== 'function') {
+             // Ensure the global calculateNextPass function exists
+             if (typeof window.calculateNextPass !== 'function') {
                  throw new Error('calculateNextPass function is not available globally.');
              }
              const nextPass = await window.calculateNextPass(satellite, observerLat, observerLon);
              if (passResults) { 
                  if (nextPass) { 
                     // Display Pass Data 
+
+                    // Hide the 'no pass' message and show the details table
+                    if (noPassMessageDiv) noPassMessageDiv.style.display = 'none';
+                    if (passDetailsTable) passDetailsTable.style.display = ''; // Show table
+
                     // Call Plotly function for non-GEO
                     drawPolarPlotly('polarPlot', nextPass.lookAnglePoints, false);
                     const localStartTime = nextPass.startTime.toLocaleString(undefined, {
@@ -991,11 +1007,13 @@ async function updatePassPredictions() {
                     document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
                     document.getElementById('passDirection').innerHTML = nextPass.direction;
                  } else {
-                    // Display No Pass 
-                    document.getElementById('nextPassTime').textContent = 'No passes in next 24h';
-                    document.getElementById('maxElevation').textContent = '-';
-                    document.getElementById('passDuration').textContent = '-';
-                    document.getElementById('passDirection').textContent = '-';
+                    // Show the 'no pass' message and hide the details table
+                    if (passDetailsTable) passDetailsTable.style.display = 'none'; // Hide table
+                    if (noPassMessageDiv) {
+                         noPassMessageDiv.textContent = 'No passes for the location in the next 24 hours!';
+                         noPassMessageDiv.style.display = 'block'; // Show message div
+                    }
+
                     clearPolarPlotly('polarPlot'); // Clear plot if no pass
                  }
                  passResults.style.display = 'block'; 
@@ -1007,10 +1025,20 @@ async function updatePassPredictions() {
         showError(`Failed calculation: ${error.message}`);
         // Display error in the results table
         if (passResults) {
-            document.getElementById('nextPassTime').textContent = 'Error';
-            document.getElementById('maxElevation').textContent = '-';
-            if (durationRow) durationRow.style.display = 'none'; 
-            if (directionRow) directionRow.style.display = 'none'; 
+            // Also hide table and show error message in the 'no pass' div on calculation error
+            const noPassMessageDiv = document.getElementById('no-pass-message');
+            const passDetailsTable = document.getElementById('pass-details-table');
+            if (passDetailsTable) passDetailsTable.style.display = 'none';
+            if (noPassMessageDiv) {
+                noPassMessageDiv.textContent = `Error calculating passes: ${error.message}`;
+                noPassMessageDiv.style.display = 'block';
+                noPassMessageDiv.classList.add('no-pass-warning'); // Ensure style is applied
+            }
+            // We no longer need to manipulate individual table cells for errors
+            // document.getElementById('nextPassTime').textContent = 'Error';
+            // document.getElementById('maxElevation').textContent = '-';
+            // if (durationRow) durationRow.style.display = 'none'; 
+            // if (directionRow) directionRow.style.display = 'none'; 
             passResults.style.display = 'block';
         }
         clearPolarPlotly('polarPlot'); // Clear plot and observer marker on error

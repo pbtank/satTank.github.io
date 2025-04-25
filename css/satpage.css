@@ -728,14 +728,14 @@ header {
 /* Font Declarations */
 @font-face {
     font-family: 'NType82';
-    src: url('src/NType82Mono-Regular.otf') format('opentype');
+    src: url('../src/NType82Mono-Regular.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Ndot-55';
-    src: url('src/Ndot-55.otf') format('opentype');
+    src: url('../src/Ndot-55.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }
