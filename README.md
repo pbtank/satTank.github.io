@@ -19,7 +19,7 @@ A web application to track satellites in real-time, visualize their orbits, grou
 
 This application is hosted on GitHub Pages. You can access it directly via the repository's GitHub Pages link:
 
-[https://carbsat.github.io/carbsat](here) (or your specific GitHub Pages URL)
+[https://carbsat.github.io/carbsat](here)
 
 1.  The main page lists active satellites. You can sort them or filter by category.
 2.  Click on a satellite name to view its dedicated tracking page.
