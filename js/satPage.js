@@ -1080,7 +1080,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                     theta: visibleTheta,
                     mode: 'lines', 
                     name: 'Satellite Path',
-                    line: { color: 'var(--accent-color-path)', width: 2.5 },
+                    line: { color: pathLineColor, width: 2.5 },
                     hoverinfo: 'none' // Disable hover text for path trace
                 };
                 dataTraces.push(trace);
@@ -1099,8 +1099,14 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     const currentTheme = document.body.getAttribute('data-theme') || 'light';
     const paperColor = currentTheme === 'dark' ? '#000000' : '#ffffff';
     const fontColor = currentTheme === 'dark' ? '#f5f5f5' : '#2c3e50';
-    const gridColor = currentTheme === 'dark' ? '#555555' : '#cccccc'; // Use a visible grid color
-    const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#555555'; // Axis line color
+    const gridColor = currentTheme === 'dark'
+        ? 'rgba(234, 245, 39, 0.33)' // New Yellowish transparent color for dark mode grid
+        : 'rgba(219, 80, 82, 0.5)'; // #DB5052 with 50% opacity for light mode
+    const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#099C11'; // Axis line color
+    // Define theme-dependent path line color
+    const pathLineColor = currentTheme === 'dark' 
+        ? 'rgba(6, 216, 210, 0.51)' // New Cyan transparent color for dark mode path
+        : '#3134D8';                // Keep blue for light mode path
 
     const layout = {
         polar: {
@@ -1131,9 +1137,21 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         paper_bgcolor: paperColor, // Background of the whole plot area
         font: { color: fontColor },
         showlegend: !isGeostationary, // Only show legend for passes
+        legend: { 
+            x: 0.5,            // Center horizontally
+            y: -0.15,          // Position below the plot area (adjust as needed for padding)
+            xanchor: 'center', // Anchor to the center for x
+            yanchor: 'top',    // Anchor to the top for y
+            orientation: "h",  // Horizontal orientation below the plot
+            font: {            // Set legend-specific font
+                family: 'Lettera, monospace', // Use Lettera with monospace fallback
+                size: 14                   // Set font size
+                // Color inherits from global layout.font.color unless specified here
+            }
+        },
         width: 450, // Match CSS max-width
         height: 450, // Match CSS height
-        margin: { l: 40, r: 40, t: 40, b: 40 }, // Adjust margins
+        margin: { l: 40, r: 40, t: 40, b: 50 }, // Increased bottom margin slightly for legend space
         hovermode: false // Disable hover effects globally for the plot
     };
 

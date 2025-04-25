@@ -1,25 +1,12 @@
-# Satellite Tracker Web Application
+# SatTank
 
-A web application to track satellites in real-time, visualize their orbits, ground tracks, and footprints on an interactive map, and predict passes over a specific location.
-
-## Features
-
-*   **Real-time Satellite Tracking:** Displays the current position of selected satellites on a Leaflet map.
-*   **Data Visualization:** Shows orbital paths, ground tracks, and satellite footprints.
-*   **Map Options:** Multiple map tile layers (Standard, Satellite, Dark, Terrain) and toggleable overlays.
-*   **Satellite Information:** Displays key details like launch year, orbital period, and current position data (latitude, longitude, altitude, velocity).
-*   **Orbital Elements:** Shows detailed orbital parameters (eccentricity, inclination, RAAN, etc.).
-*   **Pass Predictions:** Calculates and displays upcoming satellite passes over a user-defined location (latitude/longitude).
-*   **Pass Visualization:** Uses Plotly to generate a polar plot showing the path of a predicted pass (azimuth and elevation).
-*   **Theme Switching:** Supports both light and dark modes for user interface and map tiles.
-*   **Data Source:** Utilizes TLE data primarily from Celestrak's active satellite dataset.
-*   **Custom Satellites:** Supports adding and tracking custom satellites via TLE data.
+A minimalistic web application to track satellites in real-time, visualize their orbits, ground tracks, and footprints on an interactive map, and predict passes over a specific location.
 
 ## Usage
 
 This application is hosted on GitHub Pages. You can access it directly via the repository's GitHub Pages link:
 
-[https://carbform.github.io/carbsat](here)
+[https://carbform.github.io/carbsat]
 
 1.  The main page lists active satellites. You can sort them or filter by category.
 2.  Click on a satellite name to view its dedicated tracking page.
