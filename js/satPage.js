@@ -9,6 +9,7 @@ let orbitLine;
 let groundTrackLine;
 let updateIntervalId;
 let footprintCircle;
+let observerMarker = null; // To hold the observer's location marker
 // let currentTileLayer; // Removed, replaced by currentMapLayer
 let currentMapLayer; // Renamed for clarity and consistency
 
@@ -754,13 +755,22 @@ async function updatePassPredictions() {
     const observerLat = parseFloat(document.getElementById('observerLat').value);
     const observerLon = parseFloat(document.getElementById('observerLon').value);
 
+    // --- Remove previous observer marker ---
+    if (observerMarker) {
+        map.removeLayer(observerMarker);
+        observerMarker = null;
+    }
+    // --- End Remove previous observer marker ---
+
     // Basic validation for observer coordinates
     if (isNaN(observerLat) || isNaN(observerLon)) {
         showError('Please enter valid latitude and longitude values');
+        // clearPolarPlotly('polarPlot'); // Also clear plot/marker on input error - handled by clearPolarPlotly now
         return;
     }
     if (observerLat < -90 || observerLat > 90 || observerLon < -180 || observerLon > 180) {
         showError('Latitude must be -90 to 90, Longitude must be -180 to 180');
+        // clearPolarPlotly('polarPlot'); // Also clear plot/marker on input error - handled by clearPolarPlotly now
         return;
     }
 
@@ -792,6 +802,36 @@ async function updatePassPredictions() {
     if (canvas) canvas.style.display = 'none'; 
 
     try {
+        // --- Add Observer Marker to Map ---
+        const currentTheme = document.body.getAttribute('data-theme') || 'light';
+        const lightModeIconUrl = 'src/images/observer_pin_light.png'; // Placeholder - Needs creation
+        const darkModeIconUrl = 'src/images/observer_pin_dark.png';   // Placeholder - Needs creation
+        const observerIconUrl = currentTheme === 'dark' ? darkModeIconUrl : lightModeIconUrl;
+
+        try {
+            const observerIcon = L.icon({
+                iconUrl: observerIconUrl,
+                iconSize: [25, 41], // Standard marker size
+                iconAnchor: [12, 41], // Point of the icon
+                popupAnchor: [1, -34], // Popup location relative to anchor
+                // Optional: Add shadow for better visibility, especially in light mode
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                shadowSize: [41, 41]
+            });
+
+            observerMarker = L.marker([observerLat, observerLon], { icon: observerIcon })
+                              .addTo(map)
+                              .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(4)}°<br>Lon: ${observerLon.toFixed(4)}°`);
+            // Optionally pan to the marker
+            // map.panTo([observerLat, observerLon]);
+
+        } catch (iconError) {
+             console.warn(`Could not create observer marker icon (using ${observerIconUrl}): ${iconError}. Marker not added.`);
+             // Ensure observerMarker remains null if icon creation fails
+             observerMarker = null; 
+        }
+        // --- End Add Observer Marker to Map ---
+
         // --- Check if Geostationary --- 
         if (window.isGeostationary(satellite)) {
             console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
@@ -919,7 +959,7 @@ async function updatePassPredictions() {
             if (geoStatusMessage) geoStatusMessage.textContent = ''; 
 
              // Restore original labels and row visibility
-             if (nextPassLabel) nextPassLabel.textContent = 'Next Pass';
+             if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';
              if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation';
              // Restore labels for duration/direction if needed (assuming they exist)
              const durationLabel = durationRow?.querySelector('th');
@@ -973,7 +1013,7 @@ async function updatePassPredictions() {
             if (directionRow) directionRow.style.display = 'none'; 
             passResults.style.display = 'block';
         }
-        clearPolarPlotly('polarPlot'); // Clear plot on error
+        clearPolarPlotly('polarPlot'); // Clear plot and observer marker on error
     } finally {
         // Restore button state
         predictButton.disabled = false;
@@ -1040,7 +1080,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                     theta: visibleTheta,
                     mode: 'lines', 
                     name: 'Satellite Path',
-                    line: { color: 'var(--accent-color)', width: 2 },
+                    line: { color: 'var(--accent-color-path)', width: 2.5 },
                     hoverinfo: 'none' // Disable hover text for path trace
                 };
                 dataTraces.push(trace);
@@ -1109,4 +1149,10 @@ function clearPolarPlotly(plotDivId) {
         Plotly.purge(plotDivId); // Remove the plot instance
         plotDiv.style.display = 'none'; // Hide the container
     }
+    // --- Also remove observer marker ---
+    if (observerMarker) {
+        map.removeLayer(observerMarker);
+        observerMarker = null;
+    }
+    // --- End remove observer marker ---
 }
