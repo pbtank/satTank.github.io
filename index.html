@@ -110,13 +110,13 @@
 
     <footer id="pageFooter">
         <div class="footer-content">
-            <div class="version">Version: 2.1</div>
+            <div class="version">Version: 2.1 (Beta)</div>
             <div class="credits">
-                Created by: <a href="https://pbtank.github.io/Tank_Priyansu/"
+                <a href="https://pbtank.github.io/Tank_Priyansu/"
                     style="text-decoration-line: underline;">Priyansu Tank</a> & <a
-                    href="https://github.com/carbform">Carbform</a>
+                    href="https://github.com/carbform" style="text-decoration-line: underline;">Carbform</a>
                 <div class="attribution">
-                    Satellite data provided by <a href="https://celestrak.org/" target="_blank">CELESTRAK</a>
+                    Using data from <a href="https://celestrak.org/" style="font-size: 15px;">Celestrak</a>
                 </div>
             </div>
             <div class="india-flag">
@@ -148,33 +148,6 @@
     <script src="js/index.js"></script>
 
     <script>
-        // REMOVED Theme Toggle Initialization (Handled in js/index.js)
-        /*
-        document.addEventListener('DOMContentLoaded', function () {
-            const themeToggle = document.getElementById('theme-toggle');
-            const pageBody = document.getElementById('pageBody');
-
-            // Set initial theme from localStorage or default to light
-            const currentTheme = localStorage.getItem('theme') || 'light';
-            pageBody.setAttribute('data-theme', currentTheme);
-
-            // Update toggle icon based on current theme
-            updateThemeIcon(currentTheme);
-
-            // Add click event listener
-            themeToggle.addEventListener('click', function () {
-                const newTheme = pageBody.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                pageBody.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                updateThemeIcon(newTheme);
-            });
-
-            function updateThemeIcon(theme) {
-                const icon = themeToggle.querySelector('i');
-                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-            }
-        });
-        */
 
         // UTC Clock Update Function
         function updateUTCClock() {
