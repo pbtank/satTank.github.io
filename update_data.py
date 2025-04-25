@@ -47,7 +47,7 @@ def save_data_to_file(category, data):
     """Save the fetched data to a JSON file."""
     if data is None:
         return
-    
+    # test command
     # Create data directory if it doesn't exist
     data_dir = Path('data')
     data_dir.mkdir(exist_ok=True)

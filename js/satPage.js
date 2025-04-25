@@ -923,7 +923,7 @@ async function updatePassPredictions() {
                     nextPassRow.style.display = ''; 
                     maxElevationRow.style.display = ''; 
                     // Set GEO visible message
-                    geoStatusMessage.textContent = 'Satellite in view currently...'; 
+                    geoStatusMessage.textContent = 'Satellite is in view currently...'; 
                 } else if (lookAngles) { // Calculated but below horizon
                     nextPassCell.textContent = 'Below Horizon (not visible from the location)';
                     nextPassCell.classList.add('status-not-visible');
@@ -1029,6 +1029,20 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         return;
     }
 
+    // --- Define Theme-Aware Colors Upfront --- 
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const paperColor = currentTheme === 'dark' ? '#000000' : '#ffffff';
+    const fontColor = currentTheme === 'dark' ? '#f5f5f5' : '#2c3e50';
+    const gridColor = currentTheme === 'dark'
+        ? 'rgba(180, 180, 180, 0.4)' // Light gray transparent grid for dark mode
+        : 'rgba(200, 200, 200, 0.6)'; // Standard light gray transparent grid for light mode
+    const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#000000'; // Axis line color
+    // Define theme-dependent path line color
+    const pathLineColor = currentTheme === 'dark' 
+        ? 'rgba(23, 135, 240, 0.98)' // Light blue transparent path for dark mode
+        : '#3134D8';                // Keep blue for light mode path
+    // --- End Theme-Aware Colors ---
+
     // Ensure lookAnglePoints is an array
     if (!Array.isArray(lookAnglePoints)) {
         console.warn('Invalid lookAnglePoints data for Plotly.');
@@ -1096,18 +1110,6 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     }
 
     // --- Define Layout (Theme Aware) ---
-    const currentTheme = document.body.getAttribute('data-theme') || 'light';
-    const paperColor = currentTheme === 'dark' ? '#000000' : '#ffffff';
-    const fontColor = currentTheme === 'dark' ? '#f5f5f5' : '#2c3e50';
-    const gridColor = currentTheme === 'dark'
-        ? 'rgba(234, 245, 39, 0.33)' // New Yellowish transparent color for dark mode grid
-        : 'rgba(219, 80, 82, 0.5)'; // #DB5052 with 50% opacity for light mode
-    const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#099C11'; // Axis line color
-    // Define theme-dependent path line color
-    const pathLineColor = currentTheme === 'dark' 
-        ? 'rgba(6, 216, 210, 0.51)' // New Cyan transparent color for dark mode path
-        : '#3134D8';                // Keep blue for light mode path
-
     const layout = {
         polar: {
             radialaxis: {
@@ -1155,8 +1157,13 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         hovermode: false // Disable hover effects globally for the plot
     };
 
-    // Create or update the plot
-    Plotly.react(plotDivId, dataTraces, layout);
+    // Define configuration to disable interactivity
+    const config = {
+        staticPlot: true // Makes the plot non-interactive (disables zoom, pan, hover, modebar)
+    };
+
+    // Create or update the plot, adding the config object
+    Plotly.react(plotDivId, dataTraces, layout, config); 
     plotDiv.style.display = 'block'; // Show the plot
 }
 
@@ -1172,5 +1179,5 @@ function clearPolarPlotly(plotDivId) {
         map.removeLayer(observerMarker);
         observerMarker = null;
     }
-    // --- End remove observer marker ---
+    
 }
