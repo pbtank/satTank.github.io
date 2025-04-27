@@ -584,6 +584,7 @@ th, td {
 	border-radius: 5px;
 	padding: 15px;
 	margin-bottom: 20px;
+	font-family: "IBM Plex Mono", monospace;
 }
 
 #pageHeader,
@@ -1305,15 +1306,28 @@ table.dataTable tbody tr td.inactive-satellite {
 
 @font-face {
     font-family: 'Lettera';
-    src: url('../src/LetteraMonoLLCondLight-Regular.otf') format('opentype');
+    src: url('src/NType82-Regular.otf') ;
     font-weight: normal;
     font-style: normal;
 }
 
+.ibm-plex-mono-regular {
+	font-family: "IBM Plex Mono", monospace;
+	font-weight: 400;
+	font-style: normal;
+  }
+
+.ibm-plex-mono-light {
+	font-family: "IBM Plex Mono", monospace;
+	font-weight: 300;
+	font-style: normal;
+  }
+
 /* Apply Lettera font to table text */
 .satelliteTable th,
 .satelliteTable td {
-    font-family: 'Lettera', var(--font-mono);
+    /* font-family: 'Lettera', var(--font-mono); */
+	font-family: "IBM Plex Mono", monospace;
 }
 
 /* Active Satellites Checkbox Container */

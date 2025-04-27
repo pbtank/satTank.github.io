@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Satellite Tracker</title>
     <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/satpage.css">
     <link rel="stylesheet" href="css/extra_styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
 </head>
+
 <body id="pageBody" data-theme="dark">
     <header>
         <button id="back-button" class="icon-button" title="Back to List">
@@ -138,7 +143,8 @@
         <!-- Pass Predictions Panel -->
         <div class="pass-predictions-container">
             <div class="panel">
-                <h2 style="font-size: 1.475rem; text-align: center; font-family: 'Lettera', var(--font-mono);">Next pass at your location</h2>
+                <h2 style="font-size: 1.475rem; text-align: center; font-family: 'Ntype82';">Next pass 
+                    at your location</h2>
                 <div class="location-input-form">
                     <div class="input-group">
                         <label for="observerLat">Latitude:</label>
@@ -154,11 +160,11 @@
                 </div>
                 <div class="pass-results" style="display: none;">
                     <!-- Added placeholder for GEO status message -->
-                    <div id="geo-status-message" class="geo-status"></div> 
-                    
+                    <div id="geo-status-message" class="geo-status"></div>
+
                     <!-- Message shown when no passes are found -->
                     <div id="no-pass-message" class="no-pass-warning" style="display: none;">
-                        
+
                     </div>
 
                     <!-- Table for displaying pass details (hidden if no passes) -->
@@ -181,7 +187,7 @@
                         </tr>
                     </table>
                     <!-- Replace Canvas with Plotly Div -->
-                    <div id="polarPlot" style="display: none;"></div> 
+                    <div id="polarPlot" style="display: none;"></div>
                 </div>
             </div>
         </div>
@@ -209,9 +215,9 @@
         <div class="footer-content">
             <div class="version">Version: 2.1 (Beta)</div>
             <div class="credits">
-                <a href="https://pbtank.github.io/Tank_Priyansu/"
-                    style="text-decoration-line: underline;">Priyansu Tank</a> & <a
-                    href="https://github.com/carbform" style="text-decoration-line: underline;">Carbform</a>
+                <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu
+                    Tank</a> & <a href="https://github.com/carbform"
+                    style="text-decoration-line: underline;">Carbform</a>
                 <div class="attribution">
                     Using data from <a href="https://celestrak.org/">Celestrak</a>
                 </div>
@@ -226,11 +232,10 @@
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
     <!-- Load custom satellite functions FIRST -->
-    <script src="js/customSat.js"></script> 
+    <script src="js/customSat.js"></script>
     <!-- Then pass prediction functions -->
     <script src="js/pass.js"></script>
     <!-- Then other calculation functions -->
@@ -238,4 +243,5 @@
     <!-- Finally, the main page logic that depends on the others -->
     <script src="js/satPage.js"></script>
 </body>
+
 </html>
