@@ -765,6 +765,7 @@ async function updatePassPredictions() {
         return;
     }
 
+    // Use correct input IDs from HTML for observer location
     const observerLatInput = document.getElementById('observerLat');
     const observerLonInput = document.getElementById('observerLon');
     const observerLat = parseFloat(observerLatInput.value);
@@ -784,14 +785,6 @@ async function updatePassPredictions() {
      // Clear the plot and remove the observer marker at the start
      clearPolarPlotly('polarPlot');
 
-
-    // --- Remove previous observer marker ---
-    // This is now handled within clearPolarPlotly
-    // if (observerMarker) {
-    //     map.removeLayer(observerMarker);
-    //     observerMarker = null;
-    // }
-    // --- End Remove previous observer marker ---
 
     // Basic validation for observer coordinates
     let validationError = null;
@@ -1081,6 +1074,9 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         return;
     }
 
+    // Define a color variable for light mode elements
+    const lightModeAccentColor = 'rgb(117, 184, 240)';
+
     // --- Define Theme-Aware Colors Upfront --- 
     const currentTheme = document.body.getAttribute('data-theme') || 'light';
     const paperColor = currentTheme === 'dark' ? '#000000' : '#ffffff';
@@ -1091,8 +1087,8 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#000000'; // Axis line color
     // Define theme-dependent path line color
     const pathLineColor = currentTheme === 'dark' 
-        ? 'rgba(23, 135, 240, 0.98)' // Light blue transparent path for dark mode
-        : '#3134D8';                // Keep blue for light mode path
+        ? 'rgba(80,200,120,0.7)' // Match green used for button and dot in dark mode
+        : lightModeAccentColor;
     // --- End Theme-Aware Colors ---
 
     // Ensure lookAnglePoints is an array
@@ -1161,6 +1157,18 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         return;
     }
 
+    // Add a center dot with slightly more blue in light mode
+    const greenDotColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(117,184,240,0.7)';
+    dataTraces.push({
+        type: 'scatterpolar',
+        r: [0], // Center of the plot (user location)
+        theta: [0], // Angle is irrelevant at r=0
+        mode: 'markers',
+        name: 'Observer Location',
+        marker: { color: greenDotColor, size: 18, symbol: 'circle' },
+        showlegend: false
+    });
+
     // --- Define Layout (Theme Aware) ---
     const layout = {
         polar: {
@@ -1173,7 +1181,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                 gridcolor: gridColor,
                 linecolor: lineColor,
                 tickcolor: lineColor,
-                tickfont: { color: fontColor },
+                tickfont: { color: fontColor, family: 'NType82 Mono, monospace' },
                 showticklabels: true
             },
             angularaxis: {
@@ -1184,12 +1192,12 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                 gridcolor: gridColor,
                 linecolor: lineColor,
                 tickcolor: lineColor,
-                tickfont: { color: fontColor }
+                tickfont: { color: fontColor, family: 'NType82 Mono, monospace' }
             },
             bgcolor: paperColor // Background of the polar area
         },
         paper_bgcolor: paperColor, // Background of the whole plot area
-        font: { color: fontColor },
+        font: { color: fontColor, family: 'NType82 Mono, monospace' },
         showlegend: !isGeostationary, // Only show legend for passes
         legend: { 
             x: 0.5,            // Center horizontally
@@ -1198,9 +1206,9 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
             yanchor: 'top',    // Anchor to the top for y
             orientation: "h",  // Horizontal orientation below the plot
             font: {            // Set legend-specific font
-                family: 'Lettera, monospace', // Use Lettera with monospace fallback
-                size: 14                   // Set font size
-                // Color inherits from global layout.font.color unless specified here
+                family: 'NType82 Mono, monospace', // Use Ntype82 Mono with monospace fallback
+                size: 18,
+                color: currentTheme === 'dark' ? '#fff' : '#111' // White in dark, black in light
             }
         },
         width: 450, // Match CSS max-width

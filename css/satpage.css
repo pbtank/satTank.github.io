@@ -91,6 +91,13 @@
     /* Transitions */
     --transition-fast: 0.2s ease;
     --transition-normal: 0.3s ease;
+
+    /* Dark mode specific input border */
+    .input-group input {
+        border-color: #ffffff; /* White border for dark mode */
+        background-color: var(--bg-primary); /* Ensure background matches theme */
+        color: var(--text-primary); /* Ensure text matches theme */
+    }
 }
 
 /* Base Layout */
@@ -222,7 +229,7 @@ header {
     font-size: 1.1rem;
     margin-bottom: var(--spacing-xs);
     color: var(--text-primary);
-    font-family: 'Ndot-55', sans-serif;
+    font-family: 'Ndot-55', sans-serif; /* Reverted back to Ndot-55 */
 }
 
 /* Info Tables */
@@ -240,25 +247,29 @@ header {
     color: var(--text-secondary);
     font-weight: 500;
     font-size: 0.9rem;
-    font-family: 'NType82', var(--font-mono);
+    /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
+    font-family: 'NType82 Mono', monospace;
     white-space: nowrap;
 }
 
 .info-table td {
     padding: var(--spacing-xs) var(--spacing-sm);
     color: var(--text-primary);
-    font-family: 'NType82', var(--font-mono);
+    /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
+    font-family: 'NType82 Mono', monospace;
     font-size: 0.9rem;
     white-space: nowrap;
+    font-family: 'NType82 Mono', monospace; /* Ensure font */
+}
+
+/* Explicitly set font for calculated data in right column panels */
+#right-column-info .panel .info-table td {
+    font-family: 'NType82 Mono', monospace; /* Ensure font */
 }
 
 /* Orbital Elements Panel */
 #orbital-elements-panel {
     margin-bottom: var(--spacing-xs);
-}
-
-#orbital-elements-panel .info-table td {
-    font-family: 'NType82', var(--font-mono);
 }
 
 /* Pass Predictions Container */
@@ -270,11 +281,18 @@ header {
 }
 
 .pass-predictions-container .panel {
-    max-width: 1200px;
+    max-width: 900px;
     margin: 0 auto;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.pass-predictions-container .panel h2 {
+    /* Keep Ndot-55 */
+    text-align: center; /* Ensure heading text is centered */
+    width: 100%; /* Ensure heading takes full width for centering */
 }
 
 /* Location Input Form */
@@ -283,6 +301,7 @@ header {
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
     align-items: flex-end;
+    justify-content: center; /* Center input groups within the form */
 }
 
 .input-group {
@@ -294,18 +313,21 @@ header {
 
 .input-group label {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var (--text-secondary);
     font-weight: 500;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 .input-group input {
     padding: var(--spacing-sm) var(--spacing-md);
-    border: 1px solid var(--border-color);
+    border: 1px solid #000000; /* Changed default border to black */
     border-radius: var(--radius-sm);
     background-color: var(--bg-primary);
-    color: var(--text-primary);
+    color: var (--text-primary);
     font-size: 1rem;
     width: 100%;
+    max-width: 150px; /* Reduced max width for lat/lon inputs */
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 .input-group input:focus {
@@ -316,27 +338,37 @@ header {
 
 /* Predict Button */
 .predict-button {
-    background-color: #2ecc71;
-    color: white;
+    background: rgba(80,200,120,0.7); /* Less contrasty green for dark mode, matches plot dot */
+    color: #fff;
     border: none;
-    border-radius: var(--radius-sm);
-    padding: var(--spacing-sm) var(--spacing-lg);
-    font-size: 1rem;
-    font-weight: 500;
+    border-radius: 6px;
+    font-family: 'NType82 Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 10px 24px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    transition: background-color var(--transition-fast);
-    height: 38px;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+body[data-theme='light'] .predict-button {
+    background: rgb(117, 184, 240) !important;
+    color: #111 !important;
 }
 
 .predict-button:hover {
-    background-color: #27ae60;
+    filter: brightness(1.04);
+    box-shadow: 0 4px 16px rgba(179,198,224,0.18);
 }
 
-.predict-button i {
-    font-size: 1.1rem;
+body[data-theme='light'] .predict-button {
+    background: rgba(34,139,34,0.7); /* Same as light mode plot dot */
+    color: #fff;
+}
+
+.predict-button:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 4px 16px rgba(80,200,120,0.18);
 }
 
 /* Pass Results */
@@ -350,6 +382,7 @@ header {
 /* Increase font size for pass results table data */
 .pass-results .info-table td {
     font-size: 1.1rem; /* Increased from 0.9rem */
+    font-family: 'NType82 Mono', monospace; /* Ensure font */
 }
 
 /* Style for Geostationary Status Message */
@@ -359,12 +392,14 @@ header {
     margin-bottom: 0.5rem; /* Space below the message */
     text-align: center;
     font-size: 1rem;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 /* Style for 'Below Horizon' or similar status messages */
 .status-not-visible {
     color: #e74c3c !important; /* Red color for emphasis - Added !important for debugging */
     font-style: italic; 
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 /* Styles for Plotly Container */
@@ -398,6 +433,7 @@ header {
     border-radius: var(--radius-sm);
     background-color: var(--bg-primary);
     color: var(--text-primary);
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 #map-controls label {
@@ -406,6 +442,7 @@ header {
     gap: var(--spacing-sm);
     color: var(--text-primary);
     font-size: 0.9rem;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 /* Back Button */
@@ -520,6 +557,7 @@ header {
     text-align: center;
     max-width: 400px;
     width: calc(100% - 4rem);
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 .loading-spinner {
@@ -572,6 +610,7 @@ header {
     text-align: center;
     min-width: 300px;
     max-width: 80%;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 #error-message {
@@ -621,12 +660,14 @@ header {
 .satellite-popup h4 {
     margin: 0 0 var(--spacing-sm);
     color: var(--text-primary);
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 .satellite-popup p {
     margin: var(--spacing-xs) 0;
     color: var(--text-secondary);
     font-size: 0.9rem;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 /* Orbit and Track Lines */
@@ -675,6 +716,7 @@ header {
 .message-text {
     color: var(--text-primary);
     font-size: 1rem;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
 }
 
 /* Loading Spinner */
@@ -734,6 +776,13 @@ header {
 }
 
 @font-face {
+    font-family: 'NType82 Mono'; /* Added specific declaration for Mono */
+    src: url('../src/NType82Mono-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
     font-family: 'Ndot-55';
     src: url('../src/Ndot-55.otf') format('opentype');
     font-weight: normal;
@@ -743,7 +792,8 @@ header {
 /* Table Styles */
 .satelliteTable th,
 .satelliteTable td {
-    font-family: 'NType82', var(--font-mono);
+    /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
+    font-family: 'NType82 Mono', monospace;
     font-size: 1.21rem;
 }
 
@@ -761,56 +811,67 @@ header {
     margin-top: var(--spacing-xl);
 }
 
+/* Footer Layout: Full width, grid for perfect center alignment */
 .footer-content {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-xl);
-    font-family: 'Lettera', var(--font-mono);
-    font-size: 1.01rem;
+    width: 100%;
+    padding: 0 2rem;
+    font-family: 'IBM Plex Mono', 'Fira Code', monospace;
+    min-height: 70px;
+    box-sizing: border-box;
 }
-
 .version {
-    font-family: 'Lettera', var(--font-mono);
-    min-width: 200px;
-    font-size: 1.01rem;
+    justify-self: start;
+    text-align: left;
 }
-
-.credits {
+.credits-center {
+    justify-self: center;
     text-align: center;
-    flex-grow: 1;
-    font-family: 'Lettera', var(--font-mono);
-    font-size: 1.01rem;
-}
-
-.credits a {
-    color: var(--accent-color);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-    font-family: 'Lettera', var(--font-mono);
-    font-size: 1.01rem;
-}
-
-.credits a:hover {
-    color: var(--text-primary);
-    text-decoration: underline;
-}
-
-.india-flag {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: var(--spacing-sm);
-    min-width: 300px;
-    font-family: 'Lettera', var(--font-mono);
-    font-size: 1.01rem;
 }
-
+.india-flag {
+    justify-self: end;
+    text-align: right;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5em;
+}
 .india-flag img {
-    width: 50px;
+    height: 32px;
+    width: auto;
+    vertical-align: middle;
     box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+}
+@media (max-width: 900px) {
+    .footer-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 0.5rem;
+        min-height: unset;
+        max-width: 100vw;
+        width: 100%;
+    }
+    .version, .india-flag {
+        min-width: unset;
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    .credits-center {
+        min-width: unset;
+        width: 100%;
+        margin: 0.5em 0;
+    }
+    .credits-main, .attribution {
+        white-space: normal;
+    }
 }
 
 /* Dark mode adjustments for footer */
@@ -824,11 +885,11 @@ header {
 }
 
 #pageBody[data-theme="dark"] .credits a {
-    color: var(--accent-color);
+    color: rgba(80,200,120,0.7) !important; /* Match the green used for button and plotly dot in dark mode */
 }
 
 #pageBody[data-theme="dark"] .credits a:hover {
-    color: var(--text-primary);
+    color: var (--text-primary);
 }
 
 /* Dark mode adjustments for pass predictions */
@@ -873,5 +934,48 @@ header {
 
     .india-flag {
         justify-content: center;
+    }
+}
+
+/* Center the predict passes button */
+.predict-button-container {
+    display: flex; /* Use flexbox */
+    justify-content: center; /* Center button horizontally */
+    margin-top: 1rem; /* Add some space above the button */
+}
+
+/* Footer hyperlink color for light mode (bluish) */
+body[data-theme='light'] .footer-content a {
+    color: rgb(117, 184, 240) !important;
+}
+
+/* Footer hyperlink color for dark mode (green) */
+body[data-theme='dark'] .footer-content a {
+    color: rgba(80,200,120,0.7) !important; /* Match the green used for button and plotly dot in dark mode */
+}
+
+/* Center footer elements and add horizontal padding */
+.footer-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 2.5rem;
+    text-align: center;
+    padding: 0 1.5rem;
+}
+
+.footer-content > * {
+    margin: 0 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0 0.5rem;
+    }
+    .footer-content > * {
+        margin: 0.5rem 0;
     }
 }

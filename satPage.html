@@ -147,16 +147,19 @@
                     at your location</h2>
                 <div class="location-input-form">
                     <div class="input-group">
-                        <label for="observerLat">Latitude:</label>
-                        <input type="number" id="observerLat" step="0.0001" placeholder="e.g., 36.9613">
+                        <label for="observerLat">Latitude (°N):</label>
+                        <input type="number" id="observerLat" name="observerLat" step="any" required placeholder="(-90 to 90)">
+                        <span class="input-hint" style="display:none;font-family:'NType82Mono-Regular',monospace;">Valid range: -90 to 90</span>
                     </div>
                     <div class="input-group">
-                        <label for="observerLon">Longitude:</label>
-                        <input type="number" id="observerLon" step="0.0001" placeholder="e.g., -122.0308">
+                        <label for="observerLon">Longitude (°E):</label>
+                        <input type="number" id="observerLon" name="observerLon" step="any" required placeholder="(-180 to 180)">
+                        <span class="input-hint" style="display:none;font-family:'NType82Mono-Regular',monospace;">Valid range: -180 to 180</span>
                     </div>
-                    <button id="predictPassesBtn" class="predict-button">
-                        <i class="fas fa-satellite"></i> Predict
-                    </button>
+                </div>
+                <!-- New centered div for the predict button - MOVED OUTSIDE location-input-form -->
+                <div class="predict-button-container">
+                    <button id="predictPassesBtn" class="predict-button">Predict Passes</button>
                 </div>
                 <!-- New div for validation errors -->
                 <div id="location-validation-error" class="error-message" style="display: none; color: red; margin-top: 10px;"></div>
@@ -216,18 +219,17 @@
     <footer id="pageFooter">
         <div class="footer-content">
             <div class="version">Version: 2.1 (Beta)</div>
-            <div class="credits">
-                <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu
-                    Tank</a> & <a href="https://github.com/carbform"
-                    style="text-decoration-line: underline;">Carbform</a>
+            <div class="credits-center">
+                <div class="credits-main">
+                    <a href="https://pbtank.github.io/Tank_Priyansu/">Priyansu Tank</a> &amp; <a href="https://github.com/carbform">Carbform</a>
+                </div>
                 <div class="attribution">
                     Using data from <a href="https://celestrak.org/">Celestrak</a>
                 </div>
             </div>
             <div class="india-flag">
-                <img src="src\images\india.png"
-                    style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">
-                Proud to be Indian.
+                <img src="src/images/india.png" alt="India flag">
+                <span>Proud to be Indian.</span>
             </div>
         </div>
     </footer>
