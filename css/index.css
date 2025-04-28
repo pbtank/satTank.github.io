@@ -35,6 +35,28 @@
 	/* Transitions */
 	--transition-fast: 0.2s ease;
 	--transition-normal: 0.3s ease;
+    --background-color: #ffffff;
+    --text-color: #333333;
+    --secondary-text-color: #666666;
+    --accent-color: #007bff;
+    --table-header-bg: #f2f2f2;
+    --table-border-color: #dddddd;
+    --table-row-hover-bg: #e9e9e9;
+    --link-color: #0056b3;
+    --button-bg: #007bff;
+    --button-text: #ffffff;
+    --button-hover-bg: #0056b3;
+    --input-border-color: #ced4da;
+    --input-bg-color: #ffffff;
+    --input-text-color: #495057;
+    --card-bg: #f8f9fa;
+    --card-border: #dee2e6;
+    --navbar-bg: #e9ecef;
+    --navbar-text: #343a40;
+    --success-bg-color: #d4edda;
+    --success-text-color: #155724;
+    --success-border-color: #c3e6cb;
+    --success-icon-color: #28a745;
 }
 
 /* Dark Theme Colors */
@@ -46,6 +68,28 @@
 	--accent-color: #4a9eff;
 	--border-color: #404040;
 	--hover-color: #333333;
+    --background-color: #22272e;
+    --text-color: #cdd9e5;
+    --secondary-text-color: #8892b0;
+    --accent-color: #58a6ff;
+    --table-header-bg: #2d333b;
+    --table-border-color: #444c56;
+    --table-row-hover-bg: #373e47;
+    --link-color: #79c0ff;
+    --button-bg: #388bfd;
+    --button-text: #ffffff;
+    --button-hover-bg: #58a6ff;
+    --input-border-color: #444c56;
+    --input-bg-color: #2d333b;
+    --input-text-color: #cdd9e5;
+    --card-bg: #2d333b;
+    --card-border: #444c56;
+    --navbar-bg: #1c2128;
+    --navbar-text: #cdd9e5;
+    --success-bg-color: #112d19; /* Darker green background */
+    --success-text-color: #6bc181; /* Lighter green text */
+    --success-border-color: #1e4a2a;
+    --success-icon-color: #3fb95a; /* Brighter green icon */
     /* --- DEBUGGING --- */
     background-color: red !important; /* Override body background for testing */
 }
@@ -219,7 +263,7 @@ body {
 
 .satelliteTable th {
 	background-color: var(--bg-secondary);
-	color: var(--text-primary);
+	color: var (--text-primary);
 	font-weight: 600;
 	padding: var(--spacing-md);
 	text-align: left;
@@ -671,29 +715,6 @@ th, td {
     border-radius: 3px;
 }
 
-#categoryDropdown {
-	/* width: 300px; */ /* Example: Set a fixed width if needed */
-	/* display: inline-block; */ /* Adjust display if necessary */
-}
-
-#tle-form {
-	display: none;
-	max-width: 600px;
-	margin: 15px auto;
-	padding: 20px;
-	border: 1px solid #ccc;
-	background-color: #f9f9f9;
-	border-radius: 5px;
-}
-
-/* Ensure text inputs within the form take full width */
-#tle-form .form-group input[type="text"] {
-    width: 100%; /* Make input fields take the full width of their container */
-    box-sizing: border-box; /* Include padding and border in the element's total width */
-    /* Optionally adjust font size if placeholder is still cut off */
-    /* font-size: 0.9rem; */
-}
-
 #satelliteTableContainer {
 	padding: 0.5rem;
 	margin: 0.5rem auto;
@@ -807,7 +828,7 @@ th, td {
 #pageBody[data-theme="dark"] .dataTables_length select,
 #pageBody[data-theme="dark"] .dataTables_filter input {
     background-color: var(--bg-secondary);
-    color: var(--text-primary);
+    color: var (--text-primary);
     border-color: var(--border-color);
 }
 
@@ -886,11 +907,6 @@ table.dataTable tbody tr.even td:first-child {
 #pageBody[data-theme="dark"] #utc-clock {
 	background-color: #333;
 	color: #a6d8ff;
-}
-
-#pageBody[data-theme="dark"] #addTleButtonContainer button,
-#pageBody[data-theme="dark"] #sortingControlsContainer button {
-    /* Style buttons if needed */
 }
 
 #pageBody[data-theme="dark"] #tle-form {
@@ -998,10 +1014,6 @@ table.dataTable tbody tr.even td:first-child {
 }
 
 /* Flexbox styles for header controls */
-header {
-    /* Remove direct flex properties if they conflict */
-}
-
 #header-controls-container {
     display: flex;
     justify-content: center;
@@ -1099,10 +1111,6 @@ header {
 
 /* Add new button-based styles (similar to satpage.css) */
 .theme-switch-wrapper {
-    /* position: absolute; */ /* Removed */
-    /* top: 10px; */       /* Removed */
-    /* right: 10px; */      /* Removed */
-    /* z-index: 1000; */    /* Removed */
     /* Add some margin if needed for spacing */
     /* margin-left: auto; */ /* Optionally push to the right */
 }
@@ -1494,7 +1502,7 @@ label {
     padding: 0.25rem 0.75rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
+    border-radius: var (--radius-sm);
     color: var(--text-primary);
     font-size: 1.21rem;
     font-family: 'Lettera', var(--font-mono);
@@ -1524,6 +1532,107 @@ label {
     background-color: var(--bg-primary);
     border-color: var(--border-color);
     color: var(--text-primary);
+}
+
+/* --- Message Overlays (Loading, Error, Success) --- */
+.message-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* Ensure it's above other content */
+}
+
+.message-content {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    max-width: 90%;
+    width: 650px; /* Increased width */
+}
+
+/* Spinner for Loading */
+.spinner {
+    border: 4px solid var(--secondary-text-color); /* Light grey */
+    border-top: 4px solid var(--accent-color); /* Blue */
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Icons for Error/Success */
+.message-content i {
+    font-size: 1.5em;
+	display: flex;
+}
+
+/* Error Specific Styles */
+#error-message .message-content i.fa-exclamation-circle {
+    color: #dc3545; /* Bootstrap danger red */
+}
+
+/* Success Specific Styles */
+.success-overlay .success-content {
+    background-color: var(--success-bg-color, #d4edda); /* Light green background */
+    color: var(--success-text-color, #155724); /* Dark green text */
+    border: 1px solid var(--success-border-color, #c3e6cb);
+}
+
+.success-overlay .success-content i.fa-check-circle {
+    color: var(--success-icon-color, #28a745); /* Bootstrap success green */
+}
+
+.success-overlay .message-text-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.success-overlay .message-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.success-overlay .message-details {
+    font-size: 1.1em;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Close Button */
+.close-message {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    color: inherit; /* Inherit color from parent (error or success) */
+    padding: 5px;
+    line-height: 1;
+    margin-left: auto; /* Push to the right */
+    align-self: flex-start; /* Align to the top */
+}
+
+.close-message:hover {
+    opacity: 0.7;
 }
 
 

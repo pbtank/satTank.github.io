@@ -84,15 +84,23 @@ function displaySatelliteTable(satellites) {
   table.id = 'satTable';
   let thead = table.createTHead();
   let headerRow = thead.insertRow();
-  // Add Launch Year header back
-  let headers = ['Name', 'NORAD ID', 'Status', 'Launch Year'];
-  headers.forEach((headerText, index) => { // Add index
+
+  // Determine current category
+  const selectedCategory = document.getElementById('categorySelect')?.value || 'NOAA';
+  const isCustomCategory = selectedCategory === 'Custom';
+
+  // Adjust headers based on category
+  let headers = ['Name', 'NORAD ID', 'Status'];
+  // Use empty string for header when custom, otherwise 'Launch Year'
+  headers.push(isCustomCategory ? '' : 'Launch Year');
+
+  headers.forEach((headerText, index) => {
     let header = document.createElement('th');
     header.textContent = headerText;
-    // Add data attribute for sorting if needed, or rely on DataTables index
     header.setAttribute('data-column-index', index);
     headerRow.appendChild(header);
   });
+
   let tbody = table.createTBody();
   satellites.forEach(sat => {
     let row = tbody.insertRow();
@@ -116,11 +124,33 @@ function displaySatelliteTable(satellites) {
         trackingCell.classList.add('inactive-satellite');
     }
 
-    // Launch Year
-    row.insertCell().textContent = sat.LAUNCH_YEAR || 'N/A';
+    // Launch Year or Edit Link Cell
+    let lastCell = row.insertCell();
+    if (isCustomCategory) {
+        // Add Edit link for Custom category
+        let editLink = document.createElement('a');
+        editLink.href = '#'; // Prevent page jump
+        editLink.textContent = 'Edit';
+        editLink.classList.add('edit-custom-sat'); // Add class for event delegation
+        editLink.setAttribute('data-id', noradId); // Store NORAD ID
+        lastCell.appendChild(editLink);
+    } else {
+        // Display Launch Year for other categories
+        lastCell.textContent = sat.LAUNCH_YEAR || 'N/A';
+    }
   });
 
   tableContainer.appendChild(table);
+
+  // Add event listener for edit links (using delegation)
+  tbody.addEventListener('click', function(event) {
+      if (event.target.classList.contains('edit-custom-sat')) {
+          event.preventDefault(); // Prevent default link behavior
+          const satIdToEdit = event.target.getAttribute('data-id');
+          console.log("Edit clicked for NORAD ID:", satIdToEdit);
+          populateTleFormForEdit(satIdToEdit);
+      }
+  });
 
   // Initialize DataTables
   try {
@@ -139,12 +169,14 @@ function displaySatelliteTable(satellites) {
                 { type: 'string', targets: 0 }, // Name
                 { type: 'num', targets: 1 },    // NORAD ID
                 { orderable: false, targets: 2 }, // Tracking link/status
-                { type: 'num', targets: 3 }     // Launch Year
+                // Make the last column (Launch Year or Edit) not orderable
+                { orderable: false, targets: 3 } 
             ],
-            order: [[0, 'asc']],
+            order: [[0, 'asc']], // Default sort by Name
             initComplete: function() {
+                // ... (existing initComplete logic for filtering) ...
                 // Remove existing filter logic first if it exists to avoid duplicates
-                $.fn.dataTable.ext.search.pop(); 
+                $.fn.dataTable.ext.search.pop();
 
                 // Add the corrected custom filtering function
                 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
@@ -157,14 +189,14 @@ function displaySatelliteTable(satellites) {
                     // If checkbox is checked, filter based on activeSatelliteIds
                     const noradIdString = data[1]; // Get NORAD ID string from column 1 data
                     const noradId = parseInt(noradIdString, 10);
-                    
+
                     if (isNaN(noradId)) {
                         // console.warn(`Row ${dataIndex}: Could not parse NORAD ID: ${noradIdString}`);
                         return false; // Hide rows where ID cannot be parsed
                     }
 
                     // Check if the ID is in the globally loaded Set
-                    return activeSatelliteIds.has(noradId); 
+                    return activeSatelliteIds.has(noradId);
                 });
 
                 // Ensure change handler is attached only once
@@ -172,22 +204,20 @@ function displaySatelliteTable(satellites) {
                     console.log("Checkbox changed, redrawing table...");
                     dataTable.draw(); // Redraw table to apply the filter
                 });
-
-                 // Initial draw to apply filter if checkbox is checked on load
-                 // dataTable.draw(); 
             }
         });
         console.log("DataTables initialized.");
 
         // Function to apply sorting based on dropdowns
         const applySorting = () => {
-            const columnIndex = parseInt($('#sortColumn').val()); // Ensure value is correct index (0, 1, 3)
-            const sortOrder = $('#sortOrder').val(); // 'asc' or 'desc'
+            const columnIndex = parseInt($('#sortColumn').val());
+            const sortOrder = $('#sortOrder').val();
             console.log(`Applying sorting by column index: ${columnIndex}, order: ${sortOrder}`);
             if (dataTable && columnIndex !== null && sortOrder) {
                 // Check if the column index is valid and sortable
-                if (columnIndex === 2) { // Don't sort by Tracking column
-                     console.warn("Sorting by 'Tracking' column is disabled.");
+                // Disable sorting for Status (2) and Edit (3 when custom)
+                if (columnIndex === 2 || (isCustomCategory && columnIndex === 3)) {
+                     console.warn(`Sorting by column index ${columnIndex} is disabled for this category.`);
                      return;
                 }
                 dataTable.order([columnIndex, sortOrder]).draw();
@@ -200,12 +230,22 @@ function displaySatelliteTable(satellites) {
         // Add change listeners to dropdowns for auto-sorting
         $('#sortColumn, #sortOrder').off('change').on('change', applySorting);
 
-        // Initial sort based on dropdown defaults after table is drawn
-        // Ensure dropdowns have correct initial values corresponding to Launch Year
-        // Example: Set dropdowns to sort by Launch Year descending initially
-        // $('#sortColumn').val('3'); // Assuming Launch Year is index 3
-        // $('#sortOrder').val('desc');
-        // applySorting(); // Apply initial sort
+        // Adjust sort options based on category
+        const sortColumnSelect = document.getElementById('sortColumn');
+        if (sortColumnSelect) {
+            const launchYearOption = sortColumnSelect.querySelector('option[value="3"]');
+            if (launchYearOption) {
+                launchYearOption.disabled = isCustomCategory; // Disable Launch Year sort for Custom
+                // Update text content based on category, use placeholder if custom
+                launchYearOption.textContent = isCustomCategory ? '-' : 'Launch Year';
+                // If Launch Year was selected and now disabled, reset to Name
+                if (isCustomCategory && sortColumnSelect.value === '3') {
+                    sortColumnSelect.value = '0';
+                }
+            }
+        }
+        // Apply initial sort (might need adjustment if default changes)
+        applySorting();
 
     } else {
         console.error("jQuery or DataTables not loaded.");
@@ -234,11 +274,56 @@ const categoryData = {};
 // --- Custom TLE Functions ---
 
 // Function to toggle TLE form visibility
-function toggleTleForm() {
+function toggleTleForm(show = null) { // Allow forcing show/hide
     const form = document.getElementById("tle-form");
-    form.classList.toggle('visible');
     const btn = document.getElementById("add-tle-btn");
-    btn.innerText = form.classList.contains('visible') ? "Hide Form" : "Add Custom TLE";
+    const isVisible = form.classList.contains('visible');
+
+    if (show === true || (show === null && !isVisible)) {
+        form.classList.add('visible');
+        form.style.display = 'block'; // Ensure it's visible
+        btn.innerText = "Hide Form";
+    } else if (show === false || (show === null && isVisible)) {
+        form.classList.remove('visible');
+        form.style.display = 'none'; // Ensure it's hidden
+        btn.innerText = "Add Custom TLE";
+        // Clear editing state when hiding
+        document.getElementById('editingSatId').value = '';
+        document.getElementById('customSatName').value = '';
+        document.getElementById('customTleLine1').value = '';
+        document.getElementById('customTleLine2').value = '';
+    }
+}
+
+// NEW Function to populate the TLE form for editing
+function populateTleFormForEdit(noradId) {
+    const satIdNum = parseInt(noradId, 10);
+    if (isNaN(satIdNum)) {
+        console.error("Invalid NORAD ID provided for editing:", noradId);
+        return;
+    }
+
+    // Find the satellite in the custom data
+    const customSats = categoryData['Custom'] || [];
+    const satToEdit = customSats.find(sat => parseInt(sat.NORAD_CAT_ID || sat.id, 10) === satIdNum);
+
+    if (!satToEdit) {
+        console.error("Satellite with NORAD ID", satIdNum, "not found in custom data.");
+        alert("Error: Could not find the satellite data to edit.");
+        return;
+    }
+
+    // Populate the form fields
+    document.getElementById('editingSatId').value = satIdNum;
+    document.getElementById('customSatName').value = satToEdit.OBJECT_NAME || satToEdit.name || '';
+    document.getElementById('customTleLine1').value = satToEdit.TLE_LINE1 || '';
+    document.getElementById('customTleLine2').value = satToEdit.TLE_LINE2 || '';
+
+    // Show the form
+    toggleTleForm(true); // Force the form to be visible
+
+    // Scroll to the form for better UX
+    document.getElementById('tle-form').scrollIntoView({ behavior: 'smooth' });
 }
 
 // Function to get custom satellites from localStorage - Ensure it always returns an array
@@ -257,24 +342,17 @@ function getCustomSatellitesFromStorage() {
     }
 }
 
-// Function to handle form submission and save custom satellite
+// Function to handle form submission and save/update custom satellite
 async function handleFormSubmission() {
     try {
-        // console.log('Starting handleFormSubmission...');
-        
         // Get form elements
         const nameInput = document.getElementById('customSatName');
         const tle1Input = document.getElementById('customTleLine1');
         const tle2Input = document.getElementById('customTleLine2');
+        const editingIdInput = document.getElementById('editingSatId');
 
-        // console.log('Form elements:', {
-        //     nameInput: nameInput ? 'found' : 'not found',
-        //     tle1Input: tle1Input ? 'found' : 'not found',
-        //     tle2Input: tle2Input ? 'found' : 'not found'
-        // });
-
-        if (!nameInput || !tle1Input || !tle2Input) {
-            console.error('Missing form elements:', { nameInput, tle1Input, tle2Input });
+        if (!nameInput || !tle1Input || !tle2Input || !editingIdInput) {
+            console.error('Missing form elements');
             alert("Error: Form elements not found. Please refresh the page and try again.");
             return;
         }
@@ -283,57 +361,69 @@ async function handleFormSubmission() {
         const name = nameInput.value.trim();
         const tle1 = tle1Input.value.trim();
         const tle2 = tle2Input.value.trim();
-
-        // Log the trimmed values right before the check
-        // console.log('Trimmed values for validation:', {
-        //     name: `"${name}"`,
-        //     tle1: `"${tle1}"`,
-        //     tle2: `"${tle2}"`
-        // });
+        const editingId = editingIdInput.value.trim(); // Get the ID being edited, if any
 
         if (!name || !tle1 || !tle2) {
             alert("Please fill in all fields.");
             return;
         }
 
-        // First validate the TLE format
-        // console.log('Validating TLE...');
+        // Validate the TLE format
         if (!validateTLE(tle1, tle2)) {
             alert("Invalid TLE format. Please check the TLE data and try again.");
             return;
         }
 
         // Parse the TLE data
-        // console.log('Parsing TLE...');
         const satelliteData = parseTLE(name, tle1, tle2);
         if (!satelliteData) {
             alert("Failed to parse TLE data. Please check the format and try again.");
             return;
         }
 
-        // console.log('Parsed satellite data:', satelliteData);
+        // Check if the NORAD ID from the new TLE matches the one being edited (if any)
+        const newNoradIdStr = satelliteData.NORAD_CAT_ID; // Keep as string from parseTLE
+        const editingIdNum = parseInt(editingId, 10);
+        const newNoradIdNum = parseInt(newNoradIdStr, 10);
+
+        // Compare numerically. Only throw error if editing AND the numbers don't match.
+        if (editingId && !isNaN(editingIdNum) && !isNaN(newNoradIdNum) && newNoradIdNum !== editingIdNum) {
+            alert("Error: Cannot change the NORAD ID of an existing satellite during edit. Save as a new satellite instead.");
+            return;
+        }
 
         // Save to localStorage using the customSat.js function
+        // saveCustomSatellite should handle both add and update based on NORAD ID
         if (!window.saveCustomSatellite(satelliteData)) {
             alert("Failed to save satellite data. Please try again.");
             return;
         }
 
-        // Update in-memory data for the 'Custom' category
-        categoryData['Custom'] = getCustomSatellitesFromStorage();
+        // Clear form, hide it, and clear editing state
+        toggleTleForm(false); // Force hide and clear form/editing state
 
-        // Clear form and hide
-        nameInput.value = '';
-        tle1Input.value = '';
-        tle2Input.value = '';
-        toggleTleForm();
+        // Reload the 'Custom' category data and refresh the table
+        await loadAndDisplaySatellites('Custom');
+        // Ensure the dropdown is set to 'Custom'
+        const categorySelect = document.getElementById('categorySelect');
+        if (categorySelect) categorySelect.value = 'Custom';
 
-        // Redirect to satPage.html with the new satellite's data
-        window.location.href = `satPage.html?ID=${encodeURIComponent(satelliteData.NORAD_CAT_ID)}&name=${encodeURIComponent(name)}`;
+        // alert(`Satellite '${name}' ${editingId ? 'updated' : 'added'} successfully!`);
+        // Show styled success message instead of alert
+        const successTitle = `Satellite '${escapeHTML(name)}' ${editingId ? 'updated' : 'added'} successfully!`;
+        const successDetails = `
+
+            - To track it, click 'Active (Track it!)'. <br>
+            - To modify its TLE later, click 'Edit'.
+        `;
+        showSuccessMessage(successTitle, successDetails);
+
 
     } catch (error) {
         console.error("Error saving satellite:", error);
-        alert(`Error saving satellite: ${error.message}`);
+        // Use showError for consistency, passing the error message
+        showError(`Error saving satellite: ${error.message}`);
+        // alert(`Error saving satellite: ${error.message}`); // Keep alert as fallback? Or rely on showError
     }
 }
 
@@ -519,9 +609,10 @@ async function loadAndDisplaySatellites(category) {
             // Ensure custom data is up-to-date from localStorage if category is 'Custom'
             if (currentCategory === 'Custom') {
                  categoryData['Custom'] = getCustomSatellitesFromStorage();
-                 // Ensure LAUNCH_YEAR is set for custom sats
+                 // Ensure LAUNCH_YEAR is set for custom sats (or null)
                  categoryData['Custom'].forEach(sat => {
-                    if (!sat.LAUNCH_YEAR) sat.LAUNCH_YEAR = getEpochYearFromTLE(sat.TLE_LINE1);
+                    // We don't need LAUNCH_YEAR for custom display, but ensure FILE is set
+                    // if (!sat.LAUNCH_YEAR) sat.LAUNCH_YEAR = getEpochYearFromTLE(sat.TLE_LINE1);
                     sat.FILE = 'custom'; // Ensure FILE property is set
                  });
             }
@@ -531,6 +622,7 @@ async function loadAndDisplaySatellites(category) {
         // Store the currently displayed satellites globally
         window.currentSatellites = satellitesToDisplay;
 
+        // Pass currentCategory to displaySatelliteTable
         displaySatelliteTable(satellitesToDisplay); // This function initializes/updates DataTable
         hideLoading();
     } catch (error) {
@@ -696,4 +788,47 @@ function showError(message) {
     hideLoading();
     
     document.body.appendChild(errorElement);
+}
+
+// NEW Success Message Function
+function showSuccessMessage(title, detailsHtml) {
+    const successElement = document.createElement('div');
+    successElement.id = 'success-message';
+    // Use similar classes for potential styling, add a specific success class
+    successElement.className = 'message-overlay success-overlay'; 
+    successElement.setAttribute('role', 'alert');
+    successElement.setAttribute('aria-live', 'polite'); // Polite for success messages
+
+    successElement.innerHTML = `
+        <div class="message-content success-content" style="font-family: 'Lettera', var(--font-mono);">
+            <i class="fas fa-check-circle"></i> <!-- Success icon -->
+            <div class="message-text-container">
+                <strong class="message-title">${escapeHTML(title)}</strong>
+                <p class="message-details">${detailsHtml}</p> <!-- Allow HTML for links/formatting -->
+            </div>
+            <button class="close-message" aria-label="Close success message" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+    // Remove any existing success message
+    const existingSuccess = document.getElementById('success-message');
+    if (existingSuccess) {
+        existingSuccess.remove();
+    }
+
+    // Remove error/loading messages if present
+    hideLoading();
+    const existingError = document.getElementById('error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    document.body.appendChild(successElement);
+
+    // Optional: Auto-hide after a few seconds
+    // setTimeout(() => {
+    //     if (successElement) successElement.remove();
+    // }, 7000); // Hide after 7 seconds
 }

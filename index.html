@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satellite Tracking</title>
+    <link rel="icon" href="src\images\logo_light.png" type="image/x-icon">
+    <title>SatTank</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -40,10 +41,8 @@
             <div class="subheading">CATALOGUES | TRACKING</div>
         </div>
     </header>
-
     <!-- Category Select Container - Moved outside controls group -->
     <div id="categorySelectContainer" class="category-select-container">
-        <label for="categorySelect">Select Category:</label>
         <select id="categorySelect" class="form-control-sm">
             <option value="all">All Satellites</option>
             <option value="Active">Active</option>
@@ -84,6 +83,7 @@
     <!-- Hidden TLE Form -->
     <div id="tle-form" class="tle-form-container" style="display: none;">
         <h5>Add Custom Satellite TLE</h5>
+        <input type="hidden" id="editingSatId"> <!-- Hidden field to store ID when editing -->
         <div class="form-group">
             <label for="customSatName">Satellite Name (24 characters max):</label>
             <input type="text" id="customSatName" class="form-control" placeholder="NOAA 14" maxlength="24">
@@ -178,9 +178,28 @@
 
         function toggleTleForm() {
             var form = document.getElementById("tle-form");
-            form.style.display = form.style.display === "none" ? "block" : "none";
             var btn = document.getElementById("add-tle-btn");
-            btn.innerText = form.style.display === "none" ? "Add Custom TLE" : "Hide Form";
+            const isVisible = form.style.display === "block";
+
+            if (!isVisible) {
+                // Show the form
+                form.style.display = "block";
+                // Change button to red background with black icon
+                btn.innerHTML = '<i class="fas fa-times" style="color: black;"></i>';
+                btn.style.backgroundColor = 'rgb(256,256, 256)';
+                btn.style.borderColor = 'red'; // Match border color
+                btn.classList.remove('btn-primary'); // Remove default blue class
+                btn.classList.add('btn-danger'); // Add danger class for consistency (optional)
+            } else {
+                // Hide the form
+                form.style.display = "none";
+                // Change button back to default text and style
+                btn.innerHTML = "Add Custom TLE";
+                btn.style.backgroundColor = ''; // Reset background color
+                btn.style.borderColor = ''; // Reset border color
+                btn.classList.remove('btn-danger'); // Remove danger class
+                btn.classList.add('btn-primary'); // Add back default blue class
+            }
         }
     </script>
 </body>
