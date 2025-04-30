@@ -101,6 +101,7 @@ body {
 	color: var(--text-primary);
 	line-height: 1.6;
 	transition: background-color var(--transition-normal), color var(--transition-normal);
+    padding-bottom: 5rem; /* Keep padding to prevent overlap with footer */
 }
 
 /* Header Styles */
@@ -386,62 +387,121 @@ body {
 /* Footer Styles */
 #pageFooter {
 	width: 100%;
-	padding: var(--spacing-lg) 0;
+	padding: var(--spacing-sm) 0; /* Reduced vertical padding */
 	background-color: var(--bg-primary);
 	border-top: 1px solid var(--border-color);
-	margin-top: var(--spacing-xl);
+	/* Make the entire footer fixed */
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	z-index: 1000;
+    /* Initial state: hidden */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(100%);
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
 }
 
+/* Class to make footer visible */
+#pageFooter.footer-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Footer Layout: Use Grid for alignment */
 .footer-content {
-	display: flex;
-	justify-content: space-between;
+	display: grid; /* Use grid */
+	grid-template-columns: 1fr auto 1fr; /* Left, Center (auto width), Right */
 	align-items: center;
-	max-width: 1200px;
+	width: 100%;
+	/* max-width: 1200px; */ /* Remove max-width */
 	margin: 0 auto;
-	padding: 0 var(--spacing-xl);
+	padding: 0 var(--spacing-xl); /* Horizontal padding */
 	font-family: 'Lettera', var(--font-mono);
 	font-size: 1.01rem;
+    box-sizing: border-box;
+    /* Remove previous flex styles */
+	/* display: flex; */
+	/* justify-content: space-between; */
 }
 
 .version {
 	font-family: 'Lettera', var(--font-mono);
-	min-width: 200px;
-	font-size: 1.01rem;
+	font-size: 0.9rem; /* Match satpage */
+    color: var(--text-secondary);
+    /* Align to the start of the grid area */
+    justify-self: start;
+    text-align: left;
+    /* Remove min-width and old flex alignment */
+    /* min-width: 150px; */
 }
 
 .credits {
+    /* Align to the center of the grid area */
+    justify-self: center;
 	text-align: center;
-	flex-grow: 1;
+    color: var(--text-secondary); /* Match color */
+    font-size: 0.9rem; /* Match font size */
+    /* Remove flex-grow */
+	/* flex-grow: 1; */
 	font-family: 'Lettera', var(--font-mono);
-	font-size: 1.01rem;
+	/* font-size: 1.01rem; */ /* Use 0.9rem */
 }
 
 .credits a {
-	color: var(--accent-color);
-	text-decoration: none;
-	transition: color var(--transition-fast);
+	/* ...existing code... */
 	font-family: 'Lettera', var(--font-mono);
-	font-size: 1.01rem;
+	font-size: 0.9rem; /* Match font size */
 }
 
-.credits a:hover {
-	color: var(--text-primary);
-	text-decoration: underline;
-}
+/* ...existing code... */
 
 .india-flag {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: var(--spacing-sm);
-	min-width: 300px;
-	font-family: 'Lettera', var(--font-mono);
-	font-size: 1.01rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5em; /* Match satpage */
+    font-family: 'Lettera', var(--font-mono);
+    font-size: 0.9rem; /* Match satpage */
+    color: var(--text-secondary);
+    /* Align to the end of the grid area */
+    justify-self: end;
+    text-align: right;
+    /* Remove min-width and old flex alignment */
+    /* justify-content: flex-end; */
+    /* min-width: 150px; */
 }
 
 .india-flag img {
-	width: 50px;
-	box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+	height: 24px; /* Match satpage */
+	width: auto;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Match satpage */
+    /* box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19); */
+}
+
+/* Dark mode adjustments for footer */
+#pageBody[data-theme="dark"] #pageFooter {
+	background-color: var(--bg-primary);
+	border-color: var(--border-color);
+}
+
+#pageBody[data-theme="dark"] .footer-content {
+	/* color: var(--text-primary); */ /* Color is set on individual elements */
+}
+
+/* Apply text-secondary color in dark mode too */
+#pageBody[data-theme="dark"] .version,
+#pageBody[data-theme="dark"] .credits,
+#pageBody[data-theme="dark"] .india-flag {
+    color: var(--text-secondary);
+}
+
+#pageBody[data-theme="dark"] .credits a {
+	color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] .credits a:hover {
+	color: var(--text-primary);
 }
 
 /* Dark mode adjustments for footer */
@@ -539,6 +599,27 @@ body {
 	#pageFooter {
 		padding: var(--spacing-md);
 	}
+    .footer-content {
+        /* Stack elements vertically on small screens */
+        grid-template-columns: 1fr; /* Single column */
+        justify-items: center; /* Center items horizontally */
+        gap: var(--spacing-xs); /* Add small gap */
+        padding: 0 var(--spacing-md);
+        text-align: center;
+    }
+    .version, .credits, .india-flag {
+        /* Reset grid alignment */
+        justify-self: center;
+        text-align: center;
+    }
+    .india-flag {
+        /* Ensure flag stays centered with text */
+        justify-content: center;
+    }
+    body {
+        /* May need more padding on small screens if footer wraps */
+        padding-bottom: 7rem; 
+    }
 }
 
 /* Loading and Error States */
@@ -1242,8 +1323,8 @@ table.dataTable tbody tr td.inactive-satellite {
 
 /* Attribution Styles */
 .attribution {
-    margin-top: var(--spacing-sm);
-    font-size: 1.01rem;
+    margin-top: var(--spacing-xs); /* Reduced margin */
+    font-size: 0.9rem; /* Match font size */
     color: var(--text-secondary);
     font-family: 'Lettera', var(--font-mono);
 }
@@ -1253,12 +1334,7 @@ table.dataTable tbody tr td.inactive-satellite {
     text-decoration: none;
     transition: color var(--transition-fast);
     font-family: 'Lettera', var(--font-mono);
-    font-size: 1.21rem;
-}
-
-.attribution a:hover {
-    color: var(--text-primary);
-    text-decoration: underline;
+    font-size: 0.9rem; /* Match font size */
 }
 
 /* Dark Mode Adjustments */
@@ -1590,7 +1666,7 @@ label {
 /* Success Specific Styles */
 .success-overlay .success-content {
     background-color: var(--success-bg-color, #d4edda); /* Light green background */
-    color: var(--success-text-color, #155724); /* Dark green text */
+    color: var (--success-text-color, #155724); /* Dark green text */
     border: 1px solid var(--success-border-color, #c3e6cb);
 }
 

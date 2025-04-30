@@ -159,7 +159,7 @@
                 </div>
                 <!-- New centered div for the predict button - MOVED OUTSIDE location-input-form -->
                 <div class="predict-button-container">
-                    <button id="predictPassesBtn" class="predict-button">Predict Passes</button>
+                    <button id="predictPassesBtn" class="predict-button">Predict </button>
                 </div>
                 <!-- New div for validation errors -->
                 <div id="location-validation-error" class="error-message" style="display: none; color: red; margin-top: 10px;"></div>
@@ -177,6 +177,8 @@
                         <tr>
                             <th style="font-size: 1.2rem;"> Next Pass at </th>
                             <td id="nextPassTime" class="next-pass-highlight">-</td>
+                            <!-- Add the new span for countdown/status -->
+                            <td><span id="pass-countdown-status"></span></td>
                         </tr>
                         <tr>
                             <th style="font-size: 1.2rem;">Max Elevation</th>

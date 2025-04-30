@@ -12,6 +12,8 @@ let footprintCircle;
 let observerMarker = null; // To hold the observer's location marker
 // let currentTileLayer; // Removed, replaced by currentMapLayer
 let currentMapLayer; // Renamed for clarity and consistency
+let passCountdownIntervalId = null; // Interval ID for the countdown timer
+let currentPassDetails = null; // Store details of the currently displayed pass
 
 // --- Favicon Paths ---
 const defaultFaviconHref = 'favicon.ico'; // Assuming default is in root
@@ -754,10 +756,94 @@ function calculateGroundTrackPoints() {
     return segments;
 }
 
+// --- NEW Countdown Timer Functionality ---
+
+// Function to start or update the countdown timer
+function startOrUpdateCountdown(startTime, endTime) {
+    // Clear any existing interval
+    if (passCountdownIntervalId) {
+        clearInterval(passCountdownIntervalId);
+        passCountdownIntervalId = null;
+    }
+
+    const countdownElement = document.getElementById('pass-countdown-status');
+    if (!countdownElement) return;
+
+    // Store pass times for the interval function
+    currentPassDetails = { startTime, endTime };
+
+    // Function to update the display
+    const updateDisplay = () => {
+        if (!currentPassDetails) {
+            if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
+            countdownElement.textContent = '';
+            countdownElement.className = ''; // Clear classes
+            return;
+        }
+
+        const now = new Date();
+        const start = currentPassDetails.startTime;
+        const end = currentPassDetails.endTime;
+
+        if (now < start) {
+            // Pass is in the future - show countdown
+            const diffSeconds = Math.round((start - now) / 1000);
+            if (diffSeconds <= 0) {
+                // Time is very close or slightly passed, switch to 'in view'
+                countdownElement.textContent = '(Satellite is in view...)'; // Added brackets
+                countdownElement.className = 'pass-in-view';
+                // Keep interval running to switch when pass ends
+            } else {
+                const hours = Math.floor(diffSeconds / 3600);
+                const minutes = Math.floor((diffSeconds % 3600) / 60);
+                const seconds = diffSeconds % 60;
+                // Changed format to H h M m S s
+                countdownElement.textContent = `(in ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s)`; 
+                countdownElement.className = 'countdown-timer';
+            }
+        } else if (now >= start && now <= end) {
+            // Pass is currently happening
+            countdownElement.textContent = '(Satellite is in view...)'; // Added brackets
+            countdownElement.className = 'pass-in-view';
+            // Keep interval running to clear after pass ends
+        } else {
+            // Pass has ended
+            countdownElement.textContent = '';
+            countdownElement.className = ''; // Clear classes
+            currentPassDetails = null; // Clear stored details
+            if (passCountdownIntervalId) clearInterval(passCountdownIntervalId); // Stop the interval
+            passCountdownIntervalId = null;
+        }
+    };
+
+    // Run immediately and then set interval
+    updateDisplay();
+    passCountdownIntervalId = setInterval(updateDisplay, 1000);
+}
+
+// Function to stop and clear the countdown timer display
+function stopAndClearCountdown() {
+    if (passCountdownIntervalId) {
+        clearInterval(passCountdownIntervalId);
+        passCountdownIntervalId = null;
+    }
+    currentPassDetails = null;
+    const countdownElement = document.getElementById('pass-countdown-status');
+    if (countdownElement) {
+        countdownElement.textContent = '';
+        countdownElement.className = ''; // Clear classes
+    }
+}
+
+// --- End Countdown Timer Functionality ---
+
 // Update the updatePassPredictions function to handle async operations
 async function updatePassPredictions() {
     // Reset favicon to default at the start of prediction
     // setFavicon(defaultFaviconHref); 
+
+    // --- Stop any existing countdown --- 
+    stopAndClearCountdown();
 
     // Ensure the main satellite object is available
     if (!satellite || !satellite.OBJECT_NAME) {
@@ -1033,6 +1119,10 @@ async function updatePassPredictions() {
                     document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
                     document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
                     document.getElementById('passDirection').innerHTML = nextPass.direction;
+
+                    // --- Start the countdown timer --- 
+                    startOrUpdateCountdown(nextPass.startTime, nextPass.endTime);
+
                  } else {
                     // Show the 'no pass' message and hide the details table
                     if (passDetailsTable) passDetailsTable.style.display = 'none'; // Hide table
@@ -1042,9 +1132,21 @@ async function updatePassPredictions() {
                     }
 
                     clearPolarPlotly('polarPlot'); // Clear plot if no pass
+                    // Ensure countdown is cleared if no pass
+                    stopAndClearCountdown();
                  }
                  passResultsDiv.style.display = 'block';
              }
+        }
+
+        // --- Scroll into view AFTER results are potentially displayed --- 
+        // Check if either the results table or the plot is visible
+        if (passResultsDiv && passResultsDiv.style.display === 'block') {
+            // Scroll the main container for pass predictions into view
+            const passContainer = document.querySelector('.pass-predictions-container');
+            if (passContainer) {
+                passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
     } catch (error) {
@@ -1059,6 +1161,16 @@ async function updatePassPredictions() {
             passResultsDiv.style.display = 'none';
         }
         clearPolarPlotly('polarPlot'); // Clear plot and observer marker on error
+        // Ensure countdown is cleared on error
+        stopAndClearCountdown();
+
+        // Optionally scroll even on error if the error message is shown in the results area
+        if (locationErrorDiv && locationErrorDiv.style.display === 'block') {
+            const passContainer = document.querySelector('.pass-predictions-container');
+            if (passContainer) {
+                passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
     } finally {
         // Restore button state
         predictButton.disabled = false;
@@ -1241,3 +1353,25 @@ function clearPolarPlotly(plotDivId) {
     }
     
 }
+
+// Function to handle footer visibility on scroll
+function handleFooterVisibility() {
+    const footer = document.getElementById('pageFooter');
+    if (!footer) return; // Exit if footer doesn't exist
+    const scrollThreshold = 100; // Show footer after scrolling 100px
+
+    if (window.scrollY > scrollThreshold) {
+        footer.classList.add('footer-visible');
+    } else {
+        footer.classList.remove('footer-visible');
+    }
+}
+
+// Add scroll event listener
+window.addEventListener('scroll', handleFooterVisibility);
+
+// Initial check in case the page loads already scrolled
+// Call it after a short delay to ensure layout is stable
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(handleFooterVisibility, 100); 
+});

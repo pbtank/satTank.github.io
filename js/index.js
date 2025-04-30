@@ -832,3 +832,21 @@ function showSuccessMessage(title, detailsHtml) {
     //     if (successElement) successElement.remove();
     // }, 7000); // Hide after 7 seconds
 }
+
+// Function to handle footer visibility on scroll
+function handleFooterVisibility() {
+    const footer = document.getElementById('pageFooter');
+    const scrollThreshold = 100; // Show footer after scrolling 100px
+
+    if (window.scrollY > scrollThreshold) {
+        footer.classList.add('footer-visible');
+    } else {
+        footer.classList.remove('footer-visible');
+    }
+}
+
+// Add scroll event listener
+window.addEventListener('scroll', handleFooterVisibility);
+
+// Initial check in case the page loads already scrolled
+handleFooterVisibility();
