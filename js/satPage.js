@@ -90,14 +90,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             showFootprintCheckbox.addEventListener('change', function() { toggleFootprintDisplay(this.checked); });
         }
 
-        // Map type listener - Now only updates map if in light mode
+        // Map type listener - Now updates map regardless of theme
         const mapTypeSelect = document.getElementById('map-type');
         if (mapTypeSelect) {
              mapTypeSelect.addEventListener('change', function() {
                  const currentTheme = document.body.getAttribute('data-theme');
-                 if (currentTheme === 'light') {
-                     updateMapTileLayer(currentTheme); // Update based on selection in light mode
-                 }
+                 // Removed the theme check, always update the layer
+                 updateMapTileLayer(currentTheme);
              });
              // Initial map type selection based on theme is handled by setTheme call below
         }
@@ -156,16 +155,12 @@ function setTheme(theme) {
         // mapTypeSelect.disabled = (theme === 'dark');
 
         // Set dropdown value to reflect current map state
-        if (theme === 'dark') {
-            // If you want the dropdown to show 'dark' when dark mode is active:
-            // mapTypeSelect.value = 'dark'; // Or leave it as is
-        } else {
-            // In light mode, ensure the dropdown reflects the actual tile layer being shown.
-            // This might require reading the current layer's URL or storing the last light mode selection.
-            // For simplicity, we'll just ensure it's not stuck on 'dark'.
-            if (mapTypeSelect.value === 'dark') {
-                 mapTypeSelect.value = 'standard'; // Default back to standard if it was dark
-            }
+        // No need to set to 'dark' anymore.
+        // If switching to light mode, ensure the dropdown reflects the actual tile layer being shown.
+        // This might require reading the current layer's URL or storing the last light mode selection.
+        // For simplicity, we'll just ensure it's not stuck on an invalid value if 'dark' was somehow selected before.
+        if (theme === 'light' && mapTypeSelect.value === 'dark') {
+             mapTypeSelect.value = 'standard'; // Default back to standard if it was dark
         }
     }
 
@@ -197,31 +192,53 @@ function updateMapTileLayer(theme) {
 
         let tileUrl;
         let tileOptions = {
-            maxZoom: 13,
-            subdomains: ['a', 'b', 'c']
+            maxZoom: 13, // Default maxZoom
+            // Default subdomains removed, will be set per layer if needed
         };
 
+        // Determine tile layer based on theme AND selection
         if (theme === 'dark') {
-            tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-            tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
-            tileOptions.subdomains = 'abcd';
-        } else {
+            // In dark mode, allow selection but default to dark tiles for 'standard'
             switch (selectedMapType) {
                 case 'satellite':
                     tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
                     tileOptions.attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
                     tileOptions.maxZoom = 17;
-                    delete tileOptions.subdomains;
+                    // No subdomains needed for Esri
                     break;
                 case 'terrain':
                     tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
                     tileOptions.attribution = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)';
                     tileOptions.maxZoom = 15;
+                    tileOptions.subdomains = ['a', 'b', 'c']; // Add subdomains for OpenTopoMap
+                    break;
+                case 'standard':
+                default: // Default to CartoDB dark tiles in dark mode if standard is selected
+                    tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+                    tileOptions.subdomains = 'abcd'; // CartoDB uses 'abcd'
+                    break;
+            }
+        } else {
+            // Light mode: Use selected map type as before
+            switch (selectedMapType) {
+                case 'satellite':
+                    tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+                    tileOptions.attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+                    tileOptions.maxZoom = 17;
+                    // No subdomains needed for Esri
+                    break;
+                case 'terrain':
+                    tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+                    tileOptions.attribution = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)';
+                    tileOptions.maxZoom = 15;
+                    tileOptions.subdomains = ['a', 'b', 'c']; // Add subdomains for OpenTopoMap
                     break;
                 case 'standard':
                 default:
                     tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
                     tileOptions.attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+                    tileOptions.subdomains = ['a', 'b', 'c']; // Standard OSM uses 'abc'
                     break;
             }
         }
