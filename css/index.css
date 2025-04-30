@@ -5,6 +5,14 @@
 	box-sizing: border-box;
 }
 
+/* Font Declarations */
+@font-face {
+    font-family: 'IBM Plex Mono'; /* Define the font family name */
+    src: url('../src/IBMPlexMono-Regular.ttf') format('truetype'); /* Correct path and format */
+    font-weight: normal;
+    font-style: normal;
+}
+
 /* Custom Properties */
 :root {
 	/* Light Theme Colors */
@@ -17,8 +25,7 @@
 	--hover-color: #f0f0f0;
 	
 	/* Typography */
-	--font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+	--font-primary: 'IBM Plex Mono', monospace; /* Changed to IBM Plex Mono */
 	
 	/* Spacing */
 	--spacing-xs: 0.25rem;
@@ -92,11 +99,13 @@
     --success-icon-color: #3fb95a; /* Brighter green icon */
     /* --- DEBUGGING --- */
     background-color: red !important; /* Override body background for testing */
+    /* Typography */
+    --font-primary: 'IBM Plex Mono', monospace; /* Changed to IBM Plex Mono */
 }
 
 /* Base Styles */
 body {
-	font-family: var(--font-primary);
+	font-family: var(--font-primary); /* Uses IBM Plex Mono from root */
 	background-color: var(--bg-primary);
 	color: var(--text-primary);
 	line-height: 1.6;
@@ -262,6 +271,15 @@ body {
 	margin: var(--spacing-lg) 0;
 }
 
+.satelliteTable th,
+.satelliteTable td {
+    font-family: var(--font-primary); /* Ensure table uses the primary font */
+	padding: var(--spacing-md);
+	border-bottom: 1px solid var(--border-color);
+	color: var(--text-primary);
+	font-size: 1.21rem;
+}
+
 .satelliteTable th {
 	background-color: var(--bg-secondary);
 	color: var (--text-primary);
@@ -269,15 +287,6 @@ body {
 	padding: var(--spacing-md);
 	text-align: left;
 	border-bottom: 2px solid var(--border-color);
-	font-family: 'Lettera', var(--font-mono);
-	font-size: 1.21rem;
-}
-
-.satelliteTable td {
-	padding: var(--spacing-md);
-	border-bottom: 1px solid var(--border-color);
-	color: var(--text-primary);
-	font-family: 'Lettera', var(--font-mono);
 	font-size: 1.21rem;
 }
 
@@ -300,40 +309,25 @@ body {
 	display: block;
 }
 
-.tle-form-container h5 {
+.tle-form-container h5,
+.tle-form-container .form-group label,
+.tle-form-container .form-group input[type="text"],
+.tle-form-container .form-text,
+.tle-form-container .btn {
+    font-family: var(--font-primary); /* Ensure TLE form uses the primary font */
 	margin-bottom: var(--spacing-lg);
 	color: var(--text-primary);
 	font-size: 1.25rem;
-	font-family: 'Lettera', var(--font-mono);
 }
 
 .tle-form-container .form-group {
 	margin-bottom: var(--spacing-md);
 }
 
-.tle-form-container .form-group label {
-	display: block;
-	margin-bottom: var(--spacing-xs);
-	color: var(--text-primary);
-	font-weight: 500;
-	font-family: 'Lettera', var(--font-mono);
-}
-
-.tle-form-container .form-group input[type="text"] {
-	width: 100%;
-	padding: var(--spacing-sm);
-	background-color: var(--bg-primary);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
-	color: var(--text-primary);
-	font-family: 'Lettera', var(--font-mono);
-}
-
 .tle-form-container .form-text {
 	color: var(--text-secondary);
 	font-size: 0.875rem;
 	margin-top: var(--spacing-xs);
-	font-family: 'Lettera', var(--font-mono);
 }
 
 /* Dark mode specific styles for TLE form */
@@ -355,7 +349,6 @@ body {
 /* Button styles for TLE form */
 .tle-form-container .btn {
 	margin-right: var(--spacing-sm);
-	font-family: 'Lettera', var(--font-mono);
 }
 
 /* Cancel button styles */
@@ -389,6 +382,7 @@ body {
 	width: 100%;
 	padding: var(--spacing-sm) 0; /* Reduced vertical padding */
 	background-color: var(--bg-primary);
+	background-color: var(--bg-primary);
 	border-top: 1px solid var(--border-color);
 	/* Make the entire footer fixed */
 	position: fixed;
@@ -418,7 +412,7 @@ body {
 	/* max-width: 1200px; */ /* Remove max-width */
 	margin: 0 auto;
 	padding: 0 var(--spacing-xl); /* Horizontal padding */
-	font-family: 'Lettera', var(--font-mono);
+	font-family: var(--font-primary);
 	font-size: 1.01rem;
     box-sizing: border-box;
     /* Remove previous flex styles */
@@ -427,7 +421,7 @@ body {
 }
 
 .version {
-	font-family: 'Lettera', var(--font-mono);
+	font-family: var(--font-primary);
 	font-size: 0.9rem; /* Match satpage */
     color: var(--text-secondary);
     /* Align to the start of the grid area */
@@ -445,23 +439,20 @@ body {
     font-size: 0.9rem; /* Match font size */
     /* Remove flex-grow */
 	/* flex-grow: 1; */
-	font-family: 'Lettera', var(--font-mono);
+	font-family: var(--font-primary);
 	/* font-size: 1.01rem; */ /* Use 0.9rem */
 }
 
 .credits a {
-	/* ...existing code... */
-	font-family: 'Lettera', var(--font-mono);
+	font-family: var(--font-primary);
 	font-size: 0.9rem; /* Match font size */
 }
-
-/* ...existing code... */
 
 .india-flag {
     display: flex;
     align-items: center;
     gap: 0.5em; /* Match satpage */
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
     font-size: 0.9rem; /* Match satpage */
     color: var(--text-secondary);
     /* Align to the end of the grid area */
@@ -625,7 +616,7 @@ body {
 /* Loading and Error States */
 .loading-message, .error-message {
 	padding: var(--spacing-md);
-	border-radius: var(--radius-sm);
+	border-radius: var (--radius-sm);
 	margin: var(--spacing-md) 0;
 	text-align: center;
 }
@@ -1310,7 +1301,7 @@ table.dataTable tbody tr td.inactive-satellite {
     padding: var(--spacing-sm) var(--spacing-md);
     background-color: var(--bg-secondary);
     border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
+    font-family: var(--font-primary);
     font-size: 1rem;
     color: var(--accent-color);
     border: 1px solid var(--border-color);
@@ -1326,14 +1317,14 @@ table.dataTable tbody tr td.inactive-satellite {
     margin-top: var(--spacing-xs); /* Reduced margin */
     font-size: 0.9rem; /* Match font size */
     color: var(--text-secondary);
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
 }
 
 .attribution a {
     color: var(--accent-color);
     text-decoration: none;
     transition: color var(--transition-fast);
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
     font-size: 0.9rem; /* Match font size */
 }
 
@@ -1388,32 +1379,6 @@ table.dataTable tbody tr td.inactive-satellite {
     display: block;
 }
 
-@font-face {
-    font-family: 'Lettera';
-    src: url('src/NType82-Regular.otf') ;
-    font-weight: normal;
-    font-style: normal;
-}
-
-.ibm-plex-mono-regular {
-	font-family: "IBM Plex Mono", monospace;
-	font-weight: 400;
-	font-style: normal;
-  }
-
-.ibm-plex-mono-light {
-	font-family: "IBM Plex Mono", monospace;
-	font-weight: 300;
-	font-style: normal;
-  }
-
-/* Apply Lettera font to table text */
-.satelliteTable th,
-.satelliteTable td {
-    /* font-family: 'Lettera', var(--font-mono); */
-	font-family: "IBM Plex Mono", monospace;
-}
-
 /* Active Satellites Checkbox Container */
 .active-satellites-filter {
     display: inline-flex;
@@ -1463,12 +1428,12 @@ table.dataTable tbody tr td.inactive-satellite {
     margin: 0;
 }
 
-/* Apply Lettera font to all labels */
+/* Apply NType82 font to all labels */
 label {
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
 }
 
-/* Ensure all form control labels use Lettera font */
+/* Ensure all form control labels use NType82 font */
 .form-control-sm,
 .form-control,
 #sortColumn,
@@ -1476,14 +1441,14 @@ label {
 #categorySelect,
 .dataTables_length label,
 .dataTables_filter label {
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
 }
 
 /* Table Controls Styling */
 .controls-group label,
 .controls-group select,
 .active-satellites-filter label {
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
     font-size: 1.21rem;
     color: var(--text-primary);
 }
@@ -1565,7 +1530,7 @@ label {
 }
 
 .category-select-container label {
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
     font-size: 1.21rem;
     color: var(--text-primary);
     font-weight: 500;
@@ -1581,7 +1546,7 @@ label {
     border-radius: var (--radius-sm);
     color: var(--text-primary);
     font-size: 1.21rem;
-    font-family: 'Lettera', var(--font-mono);
+    font-family: var(--font-primary);
     text-align: center;
     text-align-last: center; /* For Firefox */
     -webkit-appearance: none; /* For Safari */
@@ -1606,7 +1571,7 @@ label {
 /* Dark mode adjustments */
 #pageBody[data-theme="dark"] .category-select-container select {
     background-color: var(--bg-primary);
-    border-color: var(--border-color);
+    border-color: var (--border-color);
     color: var(--text-primary);
 }
 

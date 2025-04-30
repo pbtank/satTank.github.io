@@ -187,7 +187,7 @@ header {
     padding: var(--spacing-xs);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: var (--spacing-xs);
     overflow: visible;
 }
 
@@ -771,14 +771,14 @@ body[data-theme='light'] .predict-button {
 /* Font Declarations */
 @font-face {
     font-family: 'NType82';
-    src: url('../src/NType82Mono-Regular.otf') format('opentype');
+    src: url('../src/NType82-Regular.otf') format('opentype'); /* Corrected path */
     font-weight: normal;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'NType82 Mono'; /* Added specific declaration for Mono */
-    src: url('../src/NType82Mono-Regular.otf') format('opentype');
+    src: url('../src/NType82Mono-Regular.otf') format('opentype'); /* Corrected path */
     font-weight: normal;
     font-style: normal;
 }
