@@ -129,8 +129,8 @@ function isGeostationary(satellite) {
     const eccentricity = satellite.ECCENTRICITY; // Unitless
 
     // Typical values (approximate)
-    const GEO_MEAN_MOTION_MIN = 0.99; // Slightly less than 1 rev/solar day
-    const GEO_MEAN_MOTION_MAX = 1.01; // Slightly more than 1 rev/solar day
+    const GEO_MEAN_MOTION_MIN = 0.985; // Slightly less than 1 rev/solar day (Adjusted from 0.99)
+    const GEO_MEAN_MOTION_MAX = 1.015; // Slightly more than 1 rev/solar day (Adjusted from 1.01)
     const MAX_INCLINATION_DEG = 5.0;  // Allow for slightly inclined geosynchronous orbits
     const MAX_ECCENTRICITY = 0.01;    // Should be very close to circular
 

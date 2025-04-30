@@ -968,7 +968,6 @@ async function updatePassPredictions() {
 
         // --- Check if Geostationary ---
         if (window.isGeostationary(satellite)) {
-            // ... (rest of the geostationary logic remains the same) ...
              console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
             predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles';
 
@@ -1051,14 +1050,18 @@ async function updatePassPredictions() {
                 nextPassLabel.textContent = ' Current Azimuth';
                 maxElevationLabel.textContent = 'Current Elevation';
 
+                // Clear potentially conflicting classes first
+                geoStatusMessage.classList.remove('status-not-visible');
+                nextPassCell.classList.remove('status-not-visible');
+
                 if (lookAngles && lookAngles.elevation >= 0) {
                     nextPassCell.textContent = `${lookAngles.azimuth.toFixed(1)}°`;
                     maxElevationCell.textContent = `${lookAngles.elevation.toFixed(1)}°`;
-                    nextPassCell.classList.remove('status-not-visible');
                     nextPassRow.style.display = '';
                     maxElevationRow.style.display = '';
-                    // Set GEO visible message
+                    // Set GEO/GSO visible message and apply the correct class
                     geoStatusMessage.textContent = 'Satellite is in view currently...';
+                    geoStatusMessage.className = 'geosync-status'; // Apply the new class
                 } else if (lookAngles) { // Calculated but below horizon
                     nextPassCell.textContent = 'Below Horizon (not visible from the location)';
                     nextPassCell.classList.add('status-not-visible');
@@ -1066,36 +1069,36 @@ async function updatePassPredictions() {
                     nextPassLabel.textContent = '';
                     maxElevationRow.style.display = 'none';
                     geoStatusMessage.textContent = ''; // Clear message
+                    geoStatusMessage.className = ''; // Clear class
                 } else { // Error during calculation
                     nextPassCell.textContent = 'Error calculating';
-                    nextPassCell.classList.remove('status-not-visible');
                     nextPassRow.style.display = '';
                     maxElevationRow.style.display = 'none';
                     geoStatusMessage.textContent = ''; // Clear message
+                    geoStatusMessage.className = ''; // Clear class
                 }
                 passResultsDiv.style.display = 'block';
-                // Call visualization ONLY if GEO satellite is visible
+
+                // Call visualization ONLY if GEO/GSO satellite is visible
                 if (lookAngles && lookAngles.elevation >= 0) {
                     drawPolarPlotly('polarPlot', [lookAngles], true);
                 } else {
                     clearPolarPlotly('polarPlot'); // Clear if not visible or error
                 }
             } else {
-                 console.error("Pass prediction table elements not found for GEO display.");
+                 console.error("Pass prediction table elements not found for GEO/GSO display.");
                  clearPolarPlotly('polarPlot'); // Clear plot if elements missing
             }
-            // Ensure canvas is NOT displayed if logic above didn't call draw (e.g., error finding elements)
-            // This check might be redundant now with clearPolarPlotly calls
-            // if (!(passResultsDiv && nextPassRow && maxElevationRow)) {
-            //     clearPolarPlotly('polarPlot'); // Clear plotly plot
-            // }
 
         } else {
-            // --- Not Geostationary: Perform Pass Prediction ---
-            console.log(`Satellite ${satellite.OBJECT_NAME} is not geostationary. Predicting passes...`);
+            // --- Not Geostationary/Geosynchronous: Perform Pass Prediction ---
+             console.log(`Satellite ${satellite.OBJECT_NAME} is not geostationary/geosynchronous. Predicting passes...`);
             predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting Passes...';
-            // Clear GEO status message for non-GEO cases
-            if (geoStatusMessage) geoStatusMessage.textContent = '';
+            // Clear GEO/GSO status message and class for non-GEO/GSO cases
+            if (geoStatusMessage) {
+                geoStatusMessage.textContent = '';
+                geoStatusMessage.className = ''; // Clear class
+            }
 
              // Restore original labels and row visibility
              if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';

@@ -245,7 +245,7 @@ header {
 .info-table th {
     text-align: left;
     padding: var(--spacing-xs) var(--spacing-sm);
-    color: var(--text-secondary);
+    color: var (--text-secondary);
     font-weight: 500;
     font-size: 0.9rem;
     /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
@@ -254,7 +254,7 @@ header {
 }
 
 .info-table td {
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-xs) var (--spacing-sm);
     color: var(--text-primary);
     /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
     font-family: 'NType82 Mono', monospace;
@@ -388,6 +388,16 @@ body[data-theme='light'] .predict-button {
 
 /* Style for Geostationary Status Message */
 .geo-status {
+    color: #2ecc71; /* Green color for visibility */
+    font-weight: bold;
+    margin-bottom: 0.5rem; /* Space below the message */
+    text-align: center;
+    font-size: 1rem;
+    font-family: 'NType82 Mono', monospace; /* Set font family */
+}
+
+/* Style for Geosynchronous Status Message (same as Geostationary) */
+.geosync-status {
     color: #2ecc71; /* Green color for visibility */
     font-weight: bold;
     margin-bottom: 0.5rem; /* Space below the message */
@@ -1084,3 +1094,25 @@ body[data-theme='light'] .countdown-timer {
 body[data-theme='light'] .pass-in-view {
     color: rgb(117, 184, 240); /* Bluish color, matching button/plot dot */
 }
+
+/* Style for location validation error */
+#location-validation-error {
+    color: #e74c3c; /* Red color for errors */
+    font-family: 'NType82 Mono', monospace; /* Set font family */
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: var(--spacing-sm);
+    display: none; /* Hidden by default */
+}
+
+/* Style for no pass message */
+#no-pass-message {
+    color: var(--text-secondary);
+    font-family: 'NType82 Mono', monospace; /* Set font family */
+    font-size: 1rem;
+    text-align: center;
+    margin-top: var(--spacing-md);
+    display: none; /* Hidden by default */
+}
+
+/* Countdown Timer / In View Status */
