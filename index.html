@@ -57,27 +57,9 @@
         </select>
     </div>
 
-    <!-- Controls Container - Moved outside header -->
-    <div id="header-controls-container">
-        <div class="controls-group">
-            <div class="sort-group">
-                <label for="sortColumn">Sort by:</label>
-                <select id="sortColumn" class="form-control-sm">
-                    <option value="0">Name</option>
-                    <option value="3">Launch Year</option>
-                </select>
-                <label for="sortOrder">Order:</label>
-                <select id="sortOrder" class="form-control-sm">
-                    <option value="asc">Ascending</option>
-                    <option value="desc">Descending</option>
-                </select>
-            </div>
-            <div class="active-satellites-filter">
-                <input type="checkbox" id="showActiveOnly" />
-                <label for="showActiveOnly">Active</label>
-            </div>
-            <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
-        </div>
+    <!-- Add TLE Button Container (Moved and Centered) -->
+    <div class="add-tle-button-container">
+        <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
     </div>
 
     <!-- Hidden TLE Form -->
@@ -104,8 +86,17 @@
         <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
     </div>
 
+    <!-- Active Filter (Moved Here - BEFORE table container) -->
+    <div class="active-satellites-filter-container">
+         <div class="active-satellites-filter">
+             <input type="checkbox" id="showActiveOnly" />
+             <label for="showActiveOnly">Active Only</label>
+         </div>
+    </div>
+
+    <!-- Satellite Table Container -->
     <div id="satelliteTableContainer">
-        <!-- Table will be generated here -->
+        <!-- Table will be generated here by JS -->
     </div>
 
     <footer id="pageFooter">

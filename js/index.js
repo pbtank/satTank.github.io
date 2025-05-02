@@ -147,7 +147,7 @@ function displaySatelliteTable(satellites) {
       if (event.target.classList.contains('edit-custom-sat')) {
           event.preventDefault(); // Prevent default link behavior
           const satIdToEdit = event.target.getAttribute('data-id');
-          console.log("Edit clicked for NORAD ID:", satIdToEdit);
+        //   console.log("Edit clicked for NORAD ID:", satIdToEdit);
           populateTleFormForEdit(satIdToEdit);
       }
   });
@@ -169,19 +169,23 @@ function displaySatelliteTable(satellites) {
                 { type: 'string', targets: 0 }, // Name
                 { type: 'num', targets: 1 },    // NORAD ID
                 { orderable: false, targets: 2 }, // Tracking link/status
-                // Make the last column (Launch Year or Edit) not orderable
-                { orderable: false, targets: 3 } 
+                // Re-enable sorting for the last column (Launch Year or Edit)
+                // Treat as number for sorting Launch Year; 'Edit' links will be handled by DataTable
+                { orderable: true, type: 'num', targets: 3 } 
             ],
             order: [[0, 'asc']], // Default sort by Name
             initComplete: function() {
-                // ... (existing initComplete logic for filtering) ...
+                // Find the checkbox within its new container
+                const $checkboxContainer = $('.active-satellites-filter-container');
+                const $checkbox = $checkboxContainer.find('#showActiveOnly');
+
                 // Remove existing filter logic first if it exists to avoid duplicates
                 $.fn.dataTable.ext.search.pop();
 
                 // Add the corrected custom filtering function
                 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
                     // Check if the filter should be active
-                    const showActiveOnly = $('#showActiveOnly').is(':checked');
+                    const showActiveOnly = $checkbox.is(':checked'); // Use the found checkbox
                     if (!showActiveOnly) {
                         return true; // Show all rows if checkbox is not checked
                     }
@@ -199,8 +203,8 @@ function displaySatelliteTable(satellites) {
                     return activeSatelliteIds.has(noradId);
                 });
 
-                // Ensure change handler is attached only once
-                $('#showActiveOnly').off('change').on('change', function() {
+                // Ensure change handler is attached only once to the correct checkbox
+                $checkbox.off('change').on('change', function() {
                     console.log("Checkbox changed, redrawing table...");
                     dataTable.draw(); // Redraw table to apply the filter
                 });
@@ -208,44 +212,23 @@ function displaySatelliteTable(satellites) {
         });
         console.log("DataTables initialized.");
 
-        // Function to apply sorting based on dropdowns
-        const applySorting = () => {
-            const columnIndex = parseInt($('#sortColumn').val());
-            const sortOrder = $('#sortOrder').val();
-            console.log(`Applying sorting by column index: ${columnIndex}, order: ${sortOrder}`);
-            if (dataTable && columnIndex !== null && sortOrder) {
-                // Check if the column index is valid and sortable
-                // Disable sorting for Status (2) and Edit (3 when custom)
-                if (columnIndex === 2 || (isCustomCategory && columnIndex === 3)) {
-                     console.warn(`Sorting by column index ${columnIndex} is disabled for this category.`);
-                     return;
-                }
-                dataTable.order([columnIndex, sortOrder]).draw();
-                console.log("Table sorted and redrawn.");
-            } else {
-                console.error("DataTable instance not found or invalid sort parameters.");
-            }
-        };
+        // REMOVED applySorting function and related event listeners
 
-        // Add change listeners to dropdowns for auto-sorting
-        $('#sortColumn, #sortOrder').off('change').on('change', applySorting);
-
-        // Adjust sort options based on category
-        const sortColumnSelect = document.getElementById('sortColumn');
-        if (sortColumnSelect) {
-            const launchYearOption = sortColumnSelect.querySelector('option[value="3"]');
-            if (launchYearOption) {
-                launchYearOption.disabled = isCustomCategory; // Disable Launch Year sort for Custom
-                // Update text content based on category, use placeholder if custom
-                launchYearOption.textContent = isCustomCategory ? '-' : 'Launch Year';
-                // If Launch Year was selected and now disabled, reset to Name
-                if (isCustomCategory && sortColumnSelect.value === '3') {
-                    sortColumnSelect.value = '0';
-                }
-            }
-        }
-        // Apply initial sort (might need adjustment if default changes)
-        applySorting();
+        // Adjust sort options based on category - THIS LOGIC IS NO LONGER NEEDED
+        // const sortColumnSelect = document.getElementById('sortColumn');
+        // if (sortColumnSelect) {
+        //     const launchYearOption = sortColumnSelect.querySelector('option[value="3"]');
+        //     if (launchYearOption) {
+        //         launchYearOption.disabled = isCustomCategory; // Disable Launch Year sort for Custom
+        //         // Update text content based on category, use placeholder if custom
+        //         launchYearOption.textContent = isCustomCategory ? '-' : 'Launch Year';
+        //         // If Launch Year was selected and now disabled, reset to Name
+        //         if (isCustomCategory && sortColumnSelect.value === '3') {
+        //             sortColumnSelect.value = '0';
+        //         }
+        //     }
+        // }
+        // REMOVED Apply initial sort call
 
     } else {
         console.error("jQuery or DataTables not loaded.");
@@ -554,7 +537,7 @@ function populateCategoryDropdown(categories) {
 
     categories.forEach(category => {
         // Set NOAA as the default selected option
-        const selected = category === 'NOAA' ? ' selected' : '';
+        const selected = category === 'Weather' ? ' selected' : '';
         dropdownHTML += `<option value="${category}"${selected}>${category}</option>`;
     });
 
@@ -667,18 +650,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Load Categories and Initial Data ---
     try {
-        showLoading('Initializing categories...');
+        showLoading('Loading...');
         await loadActiveSatelliteIds(); // Load active IDs first
         await preloadAllCategories(); // Load data for all categories into categoryData
-        console.log("All category data preloaded.");
+        // console.log("All category data preloaded.");
 
         const categories = Object.keys(categoryMap); // Get categories from the map
         populateCategoryDropdown(categories);
-        console.log("Category dropdown populated, default should be NOAA.");
+        // console.log("Category dropdown populated, default should be NOAA.");
 
         // Explicitly load and display the default category (NOAA) initially
-        await loadAndDisplaySatellites('NOAA');
-        console.log("Initial satellite data loaded for NOAA.");
+        await loadAndDisplaySatellites('Weather');
+        // console.log("Initial satellite data loaded for NOAA.");
 
         // Setup sorting controls listener (assuming this function exists)
         if (typeof setupSortingControls === 'function') {

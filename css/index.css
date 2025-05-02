@@ -143,6 +143,90 @@ body {
 	border-bottom: none; /* Remove bottom border */
 }
 
+/* Header Controls Container - REMOVED as elements are repositioned */
+/* #header-controls-container { ... } */
+/* .controls-group { ... } */
+
+/* Category Select Container Styles */
+.category-select-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem auto 0.5rem auto; /* Margin top and bottom */
+    padding: 0.5rem;
+    max-width: 1200px;
+}
+
+/* ... existing category select styles ... */
+
+/* Add TLE Button Container Styles */
+.add-tle-button-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem; /* Space below the button */
+}
+
+#add-tle-btn {
+    /* Adjust styles if needed, e.g., width */
+    padding: 0.5rem 1.5rem; /* Example padding */
+    font-size: 1rem;
+}
+
+/* Active Satellites Checkbox Container (Inside Table Container) */
+.active-satellites-filter-container {
+    display: flex;
+    justify-content: flex-end; /* Align checkbox to the right */
+    padding-right: 10px; /* Add some padding from the edge */
+    margin-bottom: 0.5rem; /* Space above the table/search bar */
+    max-width: 1000px; /* Match table container max-width */
+    margin-left: auto; /* Align container to the right */
+    margin-right: auto;
+}
+
+.active-satellites-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem; /* Reduced gap */
+    /* margin-left: 0; */ /* Removed left margin */
+}
+
+.active-satellites-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px; /* Slightly smaller */
+    height: 16px;
+    margin: 0;
+}
+
+.active-satellites-filter label {
+    cursor: pointer;
+    font-size: 1rem; /* Adjust font size */
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Adjust DataTables filter alignment if needed */
+.dataTables_wrapper .dataTables_filter {
+    text-align: right; /* Keep search on the right */
+    /* Add margin if needed to prevent overlap with checkbox */
+    margin-top: 0; 
+}
+
+/* Ensure checkbox and search bar align reasonably */
+#satelliteTableContainer {
+    position: relative; /* Needed if absolute positioning were used, but flexbox is better */
+}
+
+/* Adjustments for dark mode */
+#pageBody[data-theme="dark"] .active-satellites-filter label {
+    color: var(--text-primary);
+}
+
+/* ... rest of the CSS ... */
+
 /* Header Controls Container */
 #header-controls-container {
 	max-width: 1200px;
@@ -474,10 +558,6 @@ body {
 #pageBody[data-theme="dark"] #pageFooter {
 	background-color: var(--bg-primary);
 	border-color: var(--border-color);
-}
-
-#pageBody[data-theme="dark"] .footer-content {
-	/* color: var(--text-primary); */ /* Color is set on individual elements */
 }
 
 /* Apply text-secondary color in dark mode too */
@@ -1472,7 +1552,7 @@ label {
     padding: 0.25rem 0.75rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
+    border-radius: var (--radius-sm);
     color: var(--text-primary);
     min-width: 150px;
     font-size: 1.1rem;
