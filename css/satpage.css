@@ -182,7 +182,7 @@ header {
 /* Right Column Info Panel */
 #right-column-info {
     width: var(--panel-width);
-    background-color: var(--bg-primary);
+    background-color: var(--bg-primary); /* Changed from --bg-secondary */
     border-left: 1px solid var(--border-color);
     padding: var(--spacing-xs);
     display: flex;
@@ -215,7 +215,7 @@ header {
 
 /* Panel Styles */
 .panel {
-    background-color: var(--bg-secondary);
+    background-color: var(--bg-primary); /* Changed from --bg-secondary */
     border-radius: var(--radius-md);
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-xs);
@@ -277,7 +277,7 @@ header {
 .pass-predictions-container {
     width: 100%;
     padding: var(--spacing-md);
-    background-color: var(--bg-primary);
+    background-color: var(--bg-primary); /* Already primary, ensure it stays */
     border-top: 1px solid var(--border-color);
 }
 

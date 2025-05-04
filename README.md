@@ -2,6 +2,14 @@
 
 A minimalistic web application to track satellites in real-time, visualize their orbits, ground tracks, and footprints on an interactive map, and predict passes over a specific location.
 
+## Features
+
+*   **Real-time Satellite Tracking:** View the current position of numerous satellites on an interactive world map.
+*   **Orbit Visualization:** Display satellite orbits, ground tracks, and sensor footprints.
+*   **Pass Prediction:** Calculate and visualize upcoming satellite passes for any observer location using polar plots.
+*   **Data Filtering & Sorting:** Easily find satellites by category or sort the main list.
+*   **Custom TLE Input:** Add and track satellites using custom Two-Line Element sets.
+
 ## Usage
 
 This application is hosted on GitHub Pages. You can access it directly via the repository's GitHub Pages link:
@@ -20,16 +28,14 @@ This application is hosted on GitHub Pages. You can access it directly via the r
 
 This project utilizes several excellent open-source libraries and data sources:
 
-*   **Satellite Data:** Two-Line Element (TLE) sets primarily sourced from [Celestrak](https://celestrak.org/). Maintained by Dr. T.S. Kelso.
+*   **Satellite Data:** Two-Line Element (TLE) sets primarily sourced from [Celestrak](https://celestrak.org/), maintained by Dr. T.S. Kelso.
 *   **Core Calculation Library:** [satellite.js](https://github.com/shashwatak/satellite-js) for orbital propagation and coordinate transformations.
 *   **Mapping Library:** [Leaflet](https://leafletjs.com/) for interactive maps.
-    *   **Map Tiles:**
-        *   [OpenStreetMap](https://www.openstreetmap.org/copyright)
-        *   [CARTO](https://carto.com/attributions) (Dark map)
-        *   [Esri](https://www.esri.com/en-us/home) (Satellite imagery) - Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community
-        *   [OpenTopoMap](https://opentopomap.org/) (Terrain map, CC-BY-SA)
-*   **Charting Library:** [Plotly.js](https://plotly.com/javascript/) for creating the polar plot pass visualizations.
-*   **Icons:** [Font Awesome](https://fontawesome.com/) for icons used throughout the interface.
+    *   **Map Tiles:** OpenStreetMap, CARTO (Dark), Esri (Satellite), OpenTopoMap.
+*   **Charting Library:** [Plotly.js](https://plotly.com/javascript/) for polar plot pass visualizations.
+*   **Table Library:** [DataTables](https://datatables.net/) for interactive satellite list tables.
+*   **Icons:** [Font Awesome](https://fontawesome.com/) for UI icons.
+*   **Fonts:** IBM Plex Mono, NType82, Ndot-55.
 
 ## Development
 
@@ -38,4 +44,4 @@ Developed by:
 *   [Priyansu Tank](https://pbtank.github.io/Tank_Priyansu/)
 *   [Carbform](https://github.com/carbform)
 
-Version: 2.1 (Beta) 
+Version: 2.1 (Beta)

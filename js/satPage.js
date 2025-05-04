@@ -1147,7 +1147,7 @@ async function updatePassPredictions() {
                     // Show the 'no pass' message and hide the details table
                     if (passDetailsTable) passDetailsTable.style.display = 'none'; // Hide table
                     if (noPassMessageDiv) {
-                         noPassMessageDiv.textContent = 'No passes for the location in the next 24 hours!';
+                         noPassMessageDiv.textContent = 'No pass for the location in the next 24 hours!';
                          noPassMessageDiv.style.display = 'block'; // Show message div
                     }
 

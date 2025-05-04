@@ -531,17 +531,21 @@ function populateCategoryDropdown(categories) {
     const dropdownContainer = document.getElementById('categorySelectContainer');
     if (!dropdownContainer) return; // Guard clause
 
-    let dropdownHTML = '<select id="categorySelect" class="form-control-sm">';
+    // Start with the heading
+    let dropdownHTML = '<h5>Select Satellite Category</h5>'; 
+    // Add the select element
+    dropdownHTML += '<select id="categorySelect" class="form-control-sm">';
     // Add 'All' option first, not selected by default
     dropdownHTML += '<option value="all">All Satellites</option>';
 
     categories.forEach(category => {
-        // Set NOAA as the default selected option
+        // Set Weather as the default selected option
         const selected = category === 'Weather' ? ' selected' : '';
         dropdownHTML += `<option value="${category}"${selected}>${category}</option>`;
     });
 
     dropdownHTML += '</select>';
+    // Now set the innerHTML including the heading and the select
     dropdownContainer.innerHTML = dropdownHTML;
 
     // Add event listener to the dropdown

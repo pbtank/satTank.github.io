@@ -150,12 +150,21 @@ body {
 /* Category Select Container Styles */
 .category-select-container {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    margin: 1rem auto 0.5rem auto; /* Margin top and bottom */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
+    gap: 0.5rem; /* Adjust gap between heading and dropdown */
+    margin: 1rem auto 0.5rem auto; /* Keep centering the container */
     padding: 0.5rem;
     max-width: 1200px;
+    ;
+}
+
+/* Style the heading within the container */
+.category-select-container h5 {
+    font-size: 16px; /* Set font size for the heading */
+    margin-bottom: 0; /* Remove default heading margin if needed */
+    color: var(--text-secondary);
+    font-family: 'IBM Plex Mono', monospace; /* Optional: Adjust color if needed */
 }
 
 /* ... existing category select styles ... */
@@ -1634,9 +1643,9 @@ label {
     appearance: none; /* Standard */
 }
 
-/* Add a custom dropdown arrow */
+/* Add a custom dropdown arrow - Default (Light Mode - Black Arrow) */
 .category-select-container select {
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     background-size: 1em;
@@ -1653,6 +1662,8 @@ label {
     background-color: var(--bg-primary);
     border-color: var (--border-color);
     color: var(--text-primary);
+    /* Override arrow for dark mode (White Arrow) */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
 /* --- Message Overlays (Loading, Error, Success) --- */
