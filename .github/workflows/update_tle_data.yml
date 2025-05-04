@@ -1,6 +1,9 @@
 # .github/workflows/update_tle_data.yml
 name: Update TLE Data Weekly
 
+permissions:
+  contents: write
+
 on:
   schedule:
     # Runs every Sunday at 00:00 UTC
