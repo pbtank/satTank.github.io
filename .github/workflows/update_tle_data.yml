@@ -1,0 +1,45 @@
+# .github/workflows/update_tle_data.yml
+name: Update TLE Data Weekly
+
+on:
+  schedule:
+    # Runs every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Use a recent Python 3 version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests # Explicitly install requests if not in requirements.txt
+
+      - name: Run update script
+        run: python update_data.py
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Check for changes
+        id: git-check
+        run: echo "::set-output name=changes::$(git status --porcelain data/)"
+
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes != ''
+        run: |
+          git add data/active.json data/stations.json data/weather.json data/noaa.json data/goes.json data/resource.json data/amateur.json data/starlink.json
+          git commit -m "Automated TLE data update"
+          git push
