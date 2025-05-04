@@ -1,180 +1,198 @@
 <!DOCTYPE html>
-<html lang="">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>satTank</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
-        <script src="library/jquery-3.6.0.min.js"></script>
-        <script src="index.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/jquery.fancytable/dist/fancyTable.min.js"></script>
-    </head>
-    <body style="background-color: #D5F7F3">
-        <header>
-            <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
-                <tr>
-                    <td>
-                        <h1 style="font-weight: normal; margin-bottom: 0px">satTank</h1>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="vertical-align: middle; color: gray">CATALOGUES | TRACKING</td>
-                </tr>
-                <tr>
-                    <td>
-                        <hr>
-                    </td>
-                </tr>
-            </table>
-        </header>
-        <table border="0" style="margin: auto; font-family: sans-serif; text-align: center; width: 1000px">
-            <tr>
-                <td id="left-pad" rowspan="10" style="vertical-align: top;width: 100px;">
-                    <table style="margin: auto;">
-                        <tr>
-                            <td>Current time(UTC)</td>
-                        </tr>
-                        <tr>
-                            <td id="UTC">--:--:--</td>
-                        </tr>
-                    </table>
-                </td>
-                <td>
-                    <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 600px">
-                        <tr>
-                            <td>
-                                Search: <a id="search"></a><!-- <input id="satSearch" type="input" placeholder="Type name of satellite you wanna search!" style="width: 60%"> -->
-                            </td>
-                            <td style="width: 30%">
-                                Input type: 
-                                <select id="inputType" onchange="makeTable()">
-                                    <option value="-1">--</option>
-                                    <option value="0">Satellite ID</option>
-                                    <option value="1">Name</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                Result per page: 
-                                <select id="resPerPage" onchange="makeTable()">
-                                    <option>10</option>
-                                    <option>20</option>
-                                    <option>50</option>
-                                    <option>100</option>
-                                </select>
-                            </td>
-                            <td style="width: 60%">
-                                <a>
-                                    Sort by:
-                                    <select id="sortType" onchange="makeTable()">
-                                        <option value="0">Satellite ID</option>
-                                        <option value="1">Name</option>
-                                    </select>
-                                </a>
-                                <a>
-                                    Sort Order:
-                                    <select id="sortOrder" onchange="makeTable()">
-                                        <option value="asc">Ascending</option>
-                                        <option value="desc">Descending</option>
-                                    </select>
-                                </a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <table id="table" border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
-                                    <thead style="font-weight: bold;background-color: rgb(0, 255, 0);">
-                                        <tr id="th">
-                                            <td id="ID" onclick="sortTable(0)">Satellite IDs</td>
-                                            <td id="name" onclick="sortTable(1)">Name</td>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="satTable"></tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                <td id="right-pad" rowspan="10" style="width: 100px;"></td>
-            </tr>
-        </table>
-        <footer>
-            <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 1000px">
-                <tr>
-                    <td>
-                        <hr>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table border="0" style="margin-left: auto;margin-right: auto; font-family: sans-serif; text-align: center; width: 100%">
-                            <tr>
-                                <td style="width: 200px; font-family: monospace;">Version: 2.0</td>
-                                <td>Created by: <a href="https://pbtank.github.io/Tank_Priyansu/" style="text-decoration-line: underline;">Priyansu Tank</a></td>
-                                <td style="width: 200px;"><img src="src\images\india.png" style="width: 50px; box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);">  Proud to be Indian...</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </footer>
-        <style type="text/css">
-            #table {
-            /*border: 1px solid black;*/
-            /*border-spacing: 0px;*/
-            border-collapse: collapse;
-            }
-            #satTable td, #satTable tr{
-            border: 1px solid black;
-            }
-            #table thead td {
-            border: 1px solid black;
-            padding: 3px;
-            }
-            #table tbody td {
-            padding: 3px;
-            }
-            #table tfoot tr {
-            height: 50px;
-            /*background: green;*/
-            }
-            .btn-light {
-            padding: 5px;
-            margin: auto;
-            border: 1px solid black;
-            font-weight: bold;
-            }
-            .btn-light:hover {
-            background-color: lightblue;
-            }
-            .btn-light:active {
-            background-color: blue;
-            color: white;
-            }
-            .btn-active {
-            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19); 
-            background-color: lightblue;
-            }
-        </style>
-        <script type="text/javascript">
-            $(document).ready(function () {
-            	$('#table tbody').delegate("tr", "click", function() {
-            		var ID=$(this).children('td:first').text();
-            		var name=$(this).children('td:nth-child(2)').text();
-            		window.location.href="satPage.html?ID="+ID+"&"+"name="+name;
-            	});
-            
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="src\images\logo_light.png" type="image/x-icon">
+    <title>SatTank</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body id="pageBody" data-theme="light">
+    <!-- Absolutely Positioned Elements -->
+    <!-- UTC Clock Container Removed -->
+    <div id="dark-mode-toggle-container" style="position: absolute; top: 10px; right: 10px;">
+        <!-- Removed old darkModeToggle button -->
+    </div>
+
+    <!-- Dark Mode Toggle Switch Moved Back Here -->
+    <div class="theme-switch-wrapper">
+        <button id="theme-toggle" class="icon-button" title="Toggle Theme">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
+    <header id="pageHeader">
+        <div class="header-content">
+            <div class="utc-clock">
+                UTC: <span id="utc-time"></span>
+            </div>
+            <div class="logo-container">
+                <img src="src\images\logo_light.png" alt="satTank Logo" class="header-logo light-logo">
+                <img src="src\images\logo_dark.png" alt="satTank Logo" class="header-logo dark-logo">
+            </div>
+            <div class="header-divider"></div>
+            <div class="subheading">CATALOGUES | TRACKING</div>
+        </div>
+    </header>
+    <!-- Category Select Container - Moved outside controls group -->
+    <div id="categorySelectContainer" class="category-select-container">
+        
+        <select id="categorySelect" class="form-control-sm">
+            <option value="all">All Satellites</option>
+            <option value="Active">Active</option>
+            <option value="Stations">Stations</option>
+            <option value="Weather">Weather</option>
+            <option value="NOAA" selected>NOAA</option>
+            <option value="GOES">GOES</option>
+            <option value="Resource">Resource</option>
+            <option value="Amateur">Amateur</option>
+            <option value="Starlink">Starlink</option>
+            <option value="Custom">Custom</option>
+        </select>
+    </div>
+
+    <!-- Add TLE Button Container (Moved and Centered) -->
+    <div class="add-tle-button-container">
+        <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
+    </div>
+
+    <!-- Hidden TLE Form -->
+    <div id="tle-form" class="tle-form-container" style="display: none;">
+        <h5>Add Custom Satellite TLE</h5>
+        <input type="hidden" id="editingSatId"> <!-- Hidden field to store ID when editing -->
+        <div class="form-group">
+            <label for="customSatName">Satellite Name (24 characters max):</label>
+            <input type="text" id="customSatName" class="form-control" placeholder="NOAA 14" maxlength="24">
+        </div>
+        <div class="form-group">
+            <label for="customTleLine1">TLE Line 1 (69 characters):</label>
+            <input type="text" id="customTleLine1" class="form-control"
+                placeholder="1 23455U 94089A   97320.90946019  .00000140  00000-0  10191-3 0  2621" maxlength="69">
+            <small class="form-text text-muted">Format: 1 NNNNNU NNNNNAAA NNNNN.NNNNNNNN +.NNNNNNNN +NNNNN-N +NNNNN-N N NNNNN</small>
+        </div>
+        <div class="form-group">
+            <label for="customTleLine2">TLE Line 2 (69 characters):</label>
+            <input type="text" id="customTleLine2" class="form-control"
+                placeholder="2 23455  99.0090 272.6745 0008546 223.1686 136.8816 14.11711747148495" maxlength="69">
+            <small class="form-text text-muted">Format: 2 NNNNN NNN.NNNN NNN.NNNN NNNNNNN NNN.NNNN NNN.NNNN NN.NNNNNNNNNNNNNN</small>
+        </div>
+        <button id="save-tle-btn" class="btn btn-success">Save Satellite</button>
+        <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
+    </div>
+
+    <!-- Active Filter (Moved Here - BEFORE table container) -->
+    <div class="active-satellites-filter-container">
+         <div class="active-satellites-filter">
+             <input type="checkbox" id="showActiveOnly" />
+             <label for="showActiveOnly">Active Only</label>
+         </div>
+    </div>
+
+    <!-- Satellite Table Container -->
+    <div id="satelliteTableContainer">
+        <!-- Table will be generated here by JS -->
+    </div>
+
+    <footer id="pageFooter">
+        <div class="footer-content">
+            <div class="version">Version: 2.1 (Beta)</div>
+            <div class="credits">
+                <a href="https://pbtank.github.io/Tank_Priyansu/"
+                    style="text-decoration-line: underline;">Priyansu Tank</a> & <a
+                    href="https://carbform.github.io" style="text-decoration-line: underline;">Carbform</a>
+                <div class="attribution">
+                    Using data from <a href="https://celestrak.org/" style="font-size: 15px;">Celestrak</a>
+                </div>
+            </div>
+            <div class="india-flag">
+                <img src="src/images/india.png" alt="India flag">
+                <span>Proud to be Indian.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"
+        integrity="sha256-lpQbyCSrPqrv7IZbdk1u4zJ3Ft/DUAIfZElc0Zi25Kw=" crossorigin="anonymous"></script>
+
+    <!-- Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+
+    <!-- Satellite.js -->
+    <script src="https://unpkg.com/satellite.js@6.0.0/dist/satellite.js"></script>
+
+    <!-- Custom Scripts -->
+    <script src="js/customSat.js"></script>
+    <script src="js/index.js"></script>
+
+    <script>
+
+        // UTC Clock Update Function
+        function updateUTCClock() {
+            const now = new Date();
+            const utcTimeString = now.toUTCString().split(' ')[4]; // Gets HH:MM:SS
+            document.getElementById('utc-time').textContent = utcTimeString;
+        }
+
+        // Update clock immediately and then every second
+        updateUTCClock();
+        setInterval(updateUTCClock, 1000);
+
+        // Document ready function for table initialization
+        $(document).ready(function () {
+            $('#table tbody').delegate("tr", "click", function () {
+                var ID = encodeURIComponent($(this).children('td:first').text());
+                var name = encodeURIComponent($(this).children('td:nth-child(2)').text());
+                window.location.href = "satPage.html?ID=" + ID + "&name=" + name;
             });
-            
-            
-            setInterval(function x() {
-            d = new Date();
-            var hr = d.getUTCHours().toString();
-            var min = d.getUTCMinutes().toString();
-            var sec = d.getUTCSeconds().toString();
-            document.getElementById("UTC").innerHTML = (hr + ':' + min + ':' + sec);
-            return x;
-            }(), 1000);
-        </script>
-    </body>
+
+            // Setup TLE form button listeners
+            const addTleBtn = document.getElementById('add-tle-btn');
+
+            if (addTleBtn) {
+                addTleBtn.addEventListener('click', toggleTleForm);
+            }
+        });
+
+        function toggleTleForm() {
+            var form = document.getElementById("tle-form");
+            var btn = document.getElementById("add-tle-btn");
+            const isVisible = form.style.display === "block";
+
+            if (!isVisible) {
+                // Show the form
+                form.style.display = "block";
+                // Change button to red background with black icon
+                btn.innerHTML = '<i class="fas fa-times" style="color: black;"></i>';
+                btn.style.backgroundColor = 'rgb(256,256, 256)';
+                btn.style.borderColor = 'red'; // Match border color
+                btn.classList.remove('btn-primary'); // Remove default blue class
+                btn.classList.add('btn-danger'); // Add danger class for consistency (optional)
+            } else {
+                // Hide the form
+                form.style.display = "none";
+                // Change button back to default text and style
+                btn.innerHTML = "Add Custom TLE";
+                btn.style.backgroundColor = ''; // Reset background color
+                btn.style.borderColor = ''; // Reset border color
+                btn.classList.remove('btn-danger'); // Remove danger class
+                btn.classList.add('btn-primary'); // Add back default blue class
+            }
+        }
+    </script>
+</body>
+
+</html>

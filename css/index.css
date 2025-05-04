@@ -1,0 +1,1770 @@
+/* Modern Reset */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+/* Font Declarations */
+@font-face {
+    font-family: 'IBM Plex Mono'; /* Define the font family name */
+    src: url('../src/IBMPlexMono-Regular.ttf') format('truetype'); /* Correct path and format */
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Custom Properties */
+:root {
+	/* Light Theme Colors */
+	--bg-primary: #ffffff;
+	--bg-secondary: #f8f9fa;
+	--text-primary: #2c3e50;
+	--text-secondary: #7f8c8d;
+	--accent-color: #3498db;
+	--border-color: #e0e0e0;
+	--hover-color: #f0f0f0;
+	
+	/* Typography */
+	--font-primary: 'IBM Plex Mono', monospace; /* Changed to IBM Plex Mono */
+	
+	/* Spacing */
+	--spacing-xs: 0.25rem;
+	--spacing-sm: 0.5rem;
+	--spacing-md: 1rem;
+	--spacing-lg: 1.5rem;
+	--spacing-xl: 2rem;
+	
+	/* Border Radius */
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	
+	/* Transitions */
+	--transition-fast: 0.2s ease;
+	--transition-normal: 0.3s ease;
+    --background-color: #ffffff;
+    --text-color: #333333;
+    --secondary-text-color: #666666;
+    --accent-color: #007bff;
+    --table-header-bg: #f2f2f2;
+    --table-border-color: #dddddd;
+    --table-row-hover-bg: #e9e9e9;
+    --link-color: #0056b3;
+    --button-bg: #007bff;
+    --button-text: #ffffff;
+    --button-hover-bg: #0056b3;
+    --input-border-color: #ced4da;
+    --input-bg-color: #ffffff;
+    --input-text-color: #495057;
+    --card-bg: #f8f9fa;
+    --card-border: #dee2e6;
+    --navbar-bg: #e9ecef;
+    --navbar-text: #343a40;
+    --success-bg-color: #d4edda;
+    --success-text-color: #155724;
+    --success-border-color: #c3e6cb;
+    --success-icon-color: #28a745;
+}
+
+/* Dark Theme Colors */
+[data-theme="dark"] {
+	--bg-primary: #000000;
+	--bg-secondary: #000000;
+	--text-primary: #f5f5f5;
+	--text-secondary: #b0b0b0;
+	--accent-color: #4a9eff;
+	--border-color: #404040;
+	--hover-color: #333333;
+    --background-color: #22272e;
+    --text-color: #cdd9e5;
+    --secondary-text-color: #8892b0;
+    --accent-color: #58a6ff;
+    --table-header-bg: #2d333b;
+    --table-border-color: #444c56;
+    --table-row-hover-bg: #373e47;
+    --link-color: #79c0ff;
+    --button-bg: #388bfd;
+    --button-text: #ffffff;
+    --button-hover-bg: #58a6ff;
+    --input-border-color: #444c56;
+    --input-bg-color: #2d333b;
+    --input-text-color: #cdd9e5;
+    --card-bg: #2d333b;
+    --card-border: #444c56;
+    --navbar-bg: #1c2128;
+    --navbar-text: #cdd9e5;
+    --success-bg-color: #112d19; /* Darker green background */
+    --success-text-color: #6bc181; /* Lighter green text */
+    --success-border-color: #1e4a2a;
+    --success-icon-color: #3fb95a; /* Brighter green icon */
+    /* --- DEBUGGING --- */
+    background-color: red !important; /* Override body background for testing */
+    /* Typography */
+    --font-primary: 'IBM Plex Mono', monospace; /* Changed to IBM Plex Mono */
+}
+
+/* Base Styles */
+body {
+	font-family: var(--font-primary); /* Uses IBM Plex Mono from root */
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+	line-height: 1.6;
+	transition: background-color var(--transition-normal), color var(--transition-normal);
+    padding-bottom: 5rem; /* Keep padding to prevent overlap with footer */
+}
+
+/* Header Styles */
+#pageHeader {
+	width: 100%;
+	padding: var(--spacing-sm) 0;
+	background-color: var(--bg-primary);
+	margin-bottom: 0;
+}
+
+.header-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 var(--spacing-xl);
+}
+
+.header-divider {
+	display: none; /* Hide the divider */
+}
+
+.subheading {
+	color: var(--text-secondary);
+	font-size: 1.1rem;
+	letter-spacing: 1px;
+	padding: var(--spacing-xs) 0;
+	margin-bottom: 0;
+	border-bottom: none; /* Remove bottom border */
+}
+
+/* Header Controls Container - REMOVED as elements are repositioned */
+/* #header-controls-container { ... } */
+/* .controls-group { ... } */
+
+/* Category Select Container Styles */
+.category-select-container {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
+    gap: 0.5rem; /* Adjust gap between heading and dropdown */
+    margin: 1rem auto 0.5rem auto; /* Keep centering the container */
+    padding: 0.5rem;
+    max-width: 1200px;
+    ;
+}
+
+/* Style the heading within the container */
+.category-select-container h5 {
+    font-size: 16px; /* Set font size for the heading */
+    margin-bottom: 0; /* Remove default heading margin if needed */
+    color: var(--text-secondary);
+    font-family: 'IBM Plex Mono', monospace; /* Optional: Adjust color if needed */
+}
+
+/* ... existing category select styles ... */
+
+/* Add TLE Button Container Styles */
+.add-tle-button-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem; /* Space below the button */
+}
+
+#add-tle-btn {
+    /* Adjust styles if needed, e.g., width */
+    padding: 0.5rem 1.5rem; /* Example padding */
+    font-size: 1rem;
+}
+
+/* Active Satellites Checkbox Container (Inside Table Container) */
+.active-satellites-filter-container {
+    display: flex;
+    justify-content: flex-end; /* Align checkbox to the right */
+    padding-right: 10px; /* Add some padding from the edge */
+    margin-bottom: 0.5rem; /* Space above the table/search bar */
+    max-width: 1000px; /* Match table container max-width */
+    margin-left: auto; /* Align container to the right */
+    margin-right: auto;
+}
+
+.active-satellites-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem; /* Reduced gap */
+    /* margin-left: 0; */ /* Removed left margin */
+}
+
+.active-satellites-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px; /* Slightly smaller */
+    height: 16px;
+    margin: 0;
+}
+
+.active-satellites-filter label {
+    cursor: pointer;
+    font-size: 1rem; /* Adjust font size */
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Adjust DataTables filter alignment if needed */
+.dataTables_wrapper .dataTables_filter {
+    text-align: right; /* Keep search on the right */
+    /* Add margin if needed to prevent overlap with checkbox */
+    margin-top: 0; 
+}
+
+/* Ensure checkbox and search bar align reasonably */
+#satelliteTableContainer {
+    position: relative; /* Needed if absolute positioning were used, but flexbox is better */
+}
+
+/* Adjustments for dark mode */
+#pageBody[data-theme="dark"] .active-satellites-filter label {
+    color: var(--text-primary);
+}
+
+/* ... rest of the CSS ... */
+
+/* Header Controls Container */
+#header-controls-container {
+	max-width: 1200px;
+	margin: 0.5rem auto;
+	padding: 0.75rem 2rem;
+	/* background-color: var(--bg-secondary); */
+	/* border-radius: var(--radius-md); */
+	box-shadow: none;
+	border: none;
+	border-top: none; /* Remove top border */
+}
+
+.controls-group {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2rem;
+}
+
+.sort-group, .category-group {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.sort-group label, .category-group label {
+	margin: 0;
+	white-space: nowrap;
+	font-weight: 500;
+	color: var(--text-primary);
+}
+
+.form-control-sm {
+	height: 35px;
+	padding: 0.25rem 0.75rem;
+	background-color: var(--bg-primary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	color: var(--text-primary);
+	min-width: 150px;
+	font-size: 1.1rem;
+}
+
+.btn-primary {
+	height: 35px;
+	padding: 0 1.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--accent-color);
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color var(--transition-fast);
+}
+
+.btn-primary:hover {
+	background-color: #2980b9;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] #header-controls-container {
+	background-color: #000000;
+	border: none;
+	box-shadow: none;
+}
+
+#pageBody[data-theme="dark"] #pageHeader {
+	background-color: #000000;
+}
+
+#pageBody[data-theme="dark"] .form-control-sm {
+	background-color: var(--bg-primary);
+	border-color: var(--border-color);
+	color: var(--text-primary);
+}
+
+/* Dropdown Styles */
+.form-control, .form-control-sm {
+	background-color: var(--bg-primary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	padding: var(--spacing-sm) var(--spacing-md);
+	color: var(--text-primary);
+	font-family: var(--font-primary);
+	transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus, .form-control-sm:focus {
+	border-color: var(--accent-color);
+	box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+	outline: none;
+}
+
+/* Button Styles */
+.btn {
+	padding: var(--spacing-sm) var(--spacing-md);
+	border-radius: var(--radius-sm);
+	border: none;
+	font-family: var(--font-primary);
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	display: inline-flex;
+	align-items: center;
+	gap: var(--spacing-xs);
+}
+
+.btn-secondary {
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+	border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+	background-color: var(--hover-color);
+}
+
+/* Table Styles */
+.satelliteTable {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	margin: var(--spacing-lg) 0;
+}
+
+.satelliteTable th,
+.satelliteTable td {
+    font-family: var(--font-primary); /* Ensure table uses the primary font */
+	padding: var(--spacing-md);
+	border-bottom: 1px solid var(--border-color);
+	color: var(--text-primary);
+	font-size: 1.21rem;
+}
+
+.satelliteTable th {
+	background-color: var(--bg-secondary);
+	color: var (--text-primary);
+	font-weight: 600;
+	padding: var(--spacing-md);
+	text-align: left;
+	border-bottom: 2px solid var(--border-color);
+	font-size: 1.21rem;
+}
+
+.satelliteTable tr:hover {
+	background-color: var(--hover-color);
+}
+
+/* TLE Form Styles */
+.tle-form-container {
+	display: none; /* Hidden by default */
+	max-width: 600px;
+	margin: 10px auto;
+	padding: 15px;
+	background-color: var(--bg-primary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-md);
+}
+
+.tle-form-container.visible {
+	display: block;
+}
+
+.tle-form-container h5,
+.tle-form-container .form-group label,
+.tle-form-container .form-group input[type="text"],
+.tle-form-container .form-text,
+.tle-form-container .btn {
+    font-family: var(--font-primary); /* Ensure TLE form uses the primary font */
+	margin-bottom: var(--spacing-lg);
+	color: var(--text-primary);
+	font-size: 1.25rem;
+}
+
+.tle-form-container .form-group {
+	margin-bottom: var(--spacing-md);
+}
+
+.tle-form-container .form-text {
+	color: var(--text-secondary);
+	font-size: 0.875rem;
+	margin-top: var(--spacing-xs);
+}
+
+/* Dark mode specific styles for TLE form */
+#pageBody[data-theme="dark"] .tle-form-container {
+	background-color: #000000;
+	border-color: var(--border-color);
+}
+
+#pageBody[data-theme="dark"] .tle-form-container input[type="text"] {
+	background-color: #000000;
+	border-color: var(--border-color);
+	color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .tle-form-container .form-text {
+	color: var(--text-secondary);
+}
+
+/* Button styles for TLE form */
+.tle-form-container .btn {
+	margin-right: var(--spacing-sm);
+}
+
+/* Cancel button styles */
+.tle-form-container .btn-secondary {
+	background-color: #dc3545;
+	border-color: #dc3545;
+	color: white;
+}
+
+.tle-form-container .btn-secondary:hover {
+	background-color: #c82333;
+	border-color: #bd2130;
+	color: white;
+}
+
+/* Dark mode button styles */
+#pageBody[data-theme="dark"] .tle-form-container .btn-secondary {
+	background-color: #dc3545;
+	border-color: #dc3545;
+	color: white;
+}
+
+#pageBody[data-theme="dark"] .tle-form-container .btn-secondary:hover {
+	background-color: #c82333;
+	border-color: #bd2130;
+	color: white;
+}
+
+/* Footer Styles */
+#pageFooter {
+	width: 100%;
+	padding: var(--spacing-sm) 0; /* Reduced vertical padding */
+	background-color: var(--bg-primary);
+	background-color: var(--bg-primary);
+	border-top: 1px solid var(--border-color);
+	/* Make the entire footer fixed */
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	z-index: 1000;
+    /* Initial state: hidden */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(100%);
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+/* Class to make footer visible */
+#pageFooter.footer-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Footer Layout: Use Grid for alignment */
+.footer-content {
+	display: grid; /* Use grid */
+	grid-template-columns: 1fr auto 1fr; /* Left, Center (auto width), Right */
+	align-items: center;
+	width: 100%;
+	/* max-width: 1200px; */ /* Remove max-width */
+	margin: 0 auto;
+	padding: 0 var(--spacing-xl); /* Horizontal padding */
+	font-family: var(--font-primary);
+	font-size: 1.01rem;
+    box-sizing: border-box;
+    /* Remove previous flex styles */
+	/* display: flex; */
+	/* justify-content: space-between; */
+}
+
+.version {
+	font-family: var(--font-primary);
+	font-size: 0.9rem; /* Match satpage */
+    color: var(--text-secondary);
+    /* Align to the start of the grid area */
+    justify-self: start;
+    text-align: left;
+    /* Remove min-width and old flex alignment */
+    /* min-width: 150px; */
+}
+
+.credits {
+    /* Align to the center of the grid area */
+    justify-self: center;
+	text-align: center;
+    color: var(--text-secondary); /* Match color */
+    font-size: 0.9rem; /* Match font size */
+    /* Remove flex-grow */
+	/* flex-grow: 1; */
+	font-family: var(--font-primary);
+	/* font-size: 1.01rem; */ /* Use 0.9rem */
+}
+
+.credits a {
+	font-family: var(--font-primary);
+	font-size: 0.9rem; /* Match font size */
+}
+
+.india-flag {
+    display: flex;
+    align-items: center;
+    gap: 0.5em; /* Match satpage */
+    font-family: var(--font-primary);
+    font-size: 0.9rem; /* Match satpage */
+    color: var(--text-secondary);
+    /* Align to the end of the grid area */
+    justify-self: end;
+    text-align: right;
+    /* Remove min-width and old flex alignment */
+    /* justify-content: flex-end; */
+    /* min-width: 150px; */
+}
+
+.india-flag img {
+	height: 24px; /* Match satpage */
+	width: auto;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Match satpage */
+    /* box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19); */
+}
+
+/* Dark mode adjustments for footer */
+#pageBody[data-theme="dark"] #pageFooter {
+	background-color: var(--bg-primary);
+	border-color: var(--border-color);
+}
+
+/* Apply text-secondary color in dark mode too */
+#pageBody[data-theme="dark"] .version,
+#pageBody[data-theme="dark"] .credits,
+#pageBody[data-theme="dark"] .india-flag {
+    color: var(--text-secondary);
+}
+
+#pageBody[data-theme="dark"] .credits a {
+	color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] .credits a:hover {
+	color: var(--text-primary);
+}
+
+/* Dark mode adjustments for footer */
+#pageBody[data-theme="dark"] #pageFooter {
+	background-color: var(--bg-primary);
+	border-color: var(--border-color);
+}
+
+#pageBody[data-theme="dark"] .footer-content {
+	color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .credits a {
+	color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] .credits a:hover {
+	color: var(--text-primary);
+}
+
+/* Theme Toggle Styles */
+.theme-switch-wrapper {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 9999;
+}
+
+#theme-toggle.icon-button {
+	background: none;
+	border: none;
+	color: var(--text-primary);
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+#theme-toggle.icon-button:hover {
+	background-color: var(--hover-color);
+}
+
+#theme-toggle i {
+	font-size: 1.2rem;
+	transition: transform var(--transition-fast);
+}
+
+#theme-toggle:hover i {
+	transform: scale(1.1);
+}
+
+/* Dark Theme Specific Styles */
+#pageBody[data-theme="dark"] {
+	--bg-primary: #1a1a1a;
+	--bg-secondary: #1a1a1a;
+	--text-primary: #f5f5f5;
+	--text-secondary: #b0b0b0;
+	--accent-color: #4a9eff;
+	--border-color: #404040;
+	--hover-color: #333333;
+}
+
+/* Light Theme Specific Styles */
+#pageBody[data-theme="light"] {
+	--bg-primary: #ffffff;
+	--bg-secondary: #f8f9fa;
+	--text-primary: #2c3e50;
+	--text-secondary: #7f8c8d;
+	--accent-color: #3498db;
+	--border-color: #e0e0e0;
+	--hover-color: #f0f0f0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	#header-controls-container {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.tle-form-container {
+		margin: var(--spacing-md);
+		padding: var(--spacing-md);
+	}
+	
+	#pageHeader {
+		padding: var(--spacing-md);
+	}
+	
+	#pageFooter {
+		padding: var(--spacing-md);
+	}
+    .footer-content {
+        /* Stack elements vertically on small screens */
+        grid-template-columns: 1fr; /* Single column */
+        justify-items: center; /* Center items horizontally */
+        gap: var(--spacing-xs); /* Add small gap */
+        padding: 0 var(--spacing-md);
+        text-align: center;
+    }
+    .version, .credits, .india-flag {
+        /* Reset grid alignment */
+        justify-self: center;
+        text-align: center;
+    }
+    .india-flag {
+        /* Ensure flag stays centered with text */
+        justify-content: center;
+    }
+    body {
+        /* May need more padding on small screens if footer wraps */
+        padding-bottom: 7rem; 
+    }
+}
+
+/* Loading and Error States */
+.loading-message, .error-message {
+	padding: var(--spacing-md);
+	border-radius: var (--radius-sm);
+	margin: var(--spacing-md) 0;
+	text-align: center;
+}
+
+.loading-message {
+	background-color: rgba(52, 152, 219, 0.1);
+	color: var(--accent-color);
+}
+
+.error-message {
+	background-color: rgba(231, 76, 60, 0.1);
+	color: #e74c3c;
+}
+
+p {
+	font-family: sans-serif;
+	font-size: 24px;
+	padding: 2px;
+	margin: 0;
+}
+
+table.time {
+	position: absolute;
+	border-color: black;
+	text-align: center;
+	right: 0px;
+}
+
+#UTC {
+	color: red;
+	font: bold;
+}
+
+.container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+#mapid {
+	height: 500px;
+	width: 100%;
+	margin: 20px 0;
+}
+
+#canvas-container {
+	width: 100%;
+	margin: 20px 0;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 8px;
+	text-align: left; /* Existing style, will be overridden below */
+	border-bottom: 1px solid #ddd;
+}
+
+/* Center text in the main satellite table cells */
+#satelliteTableContainer table th,
+#satelliteTableContainer table td {
+    text-align: center;
+    vertical-align: middle; /* Optional: vertically center content */
+}
+
+/* Keep header/footer table text centered if they have specific rules */
+#headerTable td, #footerTable td {
+    text-align: center; /* Ensure these remain centered */
+}
+
+#loadingMessage {
+	color: red;
+	font-weight: bold;
+}
+
+.info-panel {
+	background: #f7f7f7;
+	border-radius: 5px;
+	padding: 15px;
+	margin-bottom: 20px;
+	font-family: "IBM Plex Mono", monospace;
+}
+
+#pageHeader,
+#pageFooter {
+	width: 100%;
+	margin: 0 auto;
+	text-align: center;
+	font-family: sans-serif;
+}
+
+#headerTable,
+#footerTable {
+	width: 100%;
+	margin: auto;
+	font-family: sans-serif;
+	text-align: center;
+}
+
+#headerTable h1 {
+	font-weight: normal;
+	margin-bottom: 0px;
+}
+
+#headerTable td[style*="color: gray"] {
+	vertical-align: middle;
+	color: gray !important;
+}
+
+#footerTable td[style*="width: 200px"] {
+	width: 200px !important;
+	font-family: monospace !important;
+}
+
+#footerTable a {
+	text-decoration-line: underline;
+}
+
+#footerTable img {
+	width: 50px;
+	box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+}
+
+#utc-clock-container {
+	text-align: center;
+	margin: 15px 0;
+	font-size: 18px;
+	font-weight: bold;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    padding: 5px; /* Add padding for spacing */
+    background-color: rgba(var(--background-rgb, 255, 255, 255), 0.7); /* Semi-transparent background */
+    border-radius: 3px;
+    z-index: 10; /* Ensure it's above other content if needed */
+}
+
+#utc-clock {
+	color: blue;
+	padding: 2px 5px;
+	background-color: #eee;
+	border-radius: 3px;
+}
+
+#addTleButtonContainer,
+#categoryDropdownContainer,
+#sortingControlsContainer {
+	text-align: center;
+	margin: 15px auto;
+	max-width: 400px; /* Reduced max-width for dropdown container */
+}
+
+#categoryDropdownContainer,
+#sortingControls {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: none;
+}
+
+#categoryDropdownContainer select,
+#sortingControls select {
+    padding: 0.3rem 0.5rem;
+    font-size: 1.1rem;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border-radius: 3px;
+}
+
+#satelliteTableContainer {
+	padding: 0.5rem;
+	margin: 0.5rem auto;
+	max-width: 1000px;
+}
+
+.dataTables_wrapper {
+	margin: 0 auto;
+	padding: 0.5rem;
+	width: 100%;
+	max-width: 1000px;
+}
+
+.dataTables_length,
+.dataTables_filter,
+.dataTables_info,
+.dataTables_paginate {
+    margin: var(--spacing-sm) 0;
+    color: var(--text-primary);
+}
+
+/* Info text (Showing X to Y of Z entries) */
+.dataTables_info {
+    padding-top: 0.85em;
+    float: left;
+    clear: both;
+}
+
+/* Pagination container */
+.dataTables_paginate {
+    float: right;
+    text-align: right;
+    padding-top: 0.25em;
+}
+
+/* Pagination buttons */
+.dataTables_paginate .paginate_button {
+    box-sizing: border-box;
+    display: inline-block;
+    min-width: 1.5em;
+    padding: 0.5em 1em;
+    margin-left: 2px;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-primary);
+    color: var(--text-primary) !important;
+}
+
+.dataTables_paginate .paginate_button:hover {
+    background-color: var(--hover-color);
+}
+
+.dataTables_paginate .paginate_button.current {
+    background-color: var(--accent-color);
+    color: white !important;
+    border-color: var(--accent-color);
+}
+
+.dataTables_paginate .paginate_button.disabled {
+    cursor: default;
+    color: var(--text-secondary) !important;
+    border: 1px solid transparent;
+    background: transparent;
+}
+
+/* Dark mode adjustments for DataTables */
+#pageBody[data-theme="dark"] .dataTables_wrapper {
+    color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .dataTables_info {
+    color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary) !important;
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button:hover {
+    background-color: var(--hover-color);
+    border-color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button.current {
+    background-color: var(--accent-color);
+    color: white !important;
+    border-color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button.disabled {
+    color: var(--text-secondary) !important;
+    border: 1px solid transparent;
+    background: transparent;
+}
+
+/* Length and filter inputs */
+.dataTables_length select,
+.dataTables_filter input {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .dataTables_length select,
+#pageBody[data-theme="dark"] .dataTables_filter input {
+    background-color: var(--bg-secondary);
+    color: var (--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Clear floats */
+.dataTables_wrapper::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Default mode table row styling */
+table.dataTable tbody tr,
+table.dataTable tbody tr.odd,
+table.dataTable tbody tr.even {
+	background-color: transparent !important; /* Let TD rule handle background */
+	color: #333 !important; /* Ensure default text color */
+}
+
+/* Default mode table row/cell styling */
+table.dataTable tbody tr.odd td,
+table.dataTable tbody tr.even td,
+table.dataTable tbody tr.odd td:first-child, /* Target first cell specifically */
+table.dataTable tbody tr.even td:first-child {
+	background-color: white !important; /* Force white background for all cells */
+	color: #333 !important; /* Ensure default text color */
+}
+
+/* Style for inactive satellite text in the table */
+.inactive-satellite {
+    color: rgb(253, 7, 7); /* Make the text grey */
+    font-style: italic; /* Optional: italicize */
+}
+
+/* Optional: Ensure active links are blue if not default */
+#satelliteTableContainer table tbody td a {
+    color: blue; /* Or your preferred link color */
+    text-decoration: bold;
+}
+
+/* Optional: Ensure active links are blue if not default */
+#satelliteTableContainer table tbody td a {
+    color: rgb(38, 0, 255); /* Or your preferred link color */
+    text-decoration: bold
+}
+
+/* --- Dark Mode Styles --- */
+#pageBody[data-theme="dark"] {
+	background-color: black !important; /* Ensure dark background is black */
+	color: #e0e0e0; /* Light text */
+}
+
+#pageBody[data-theme="dark"] #pageHeader,
+#pageBody[data-theme="dark"] #pageFooter {
+	background-color: var(--bg-primary);
+	border-color: var(--border-color);
+}
+
+#pageBody[data-theme="dark"] #headerTable h1,
+#pageBody[data-theme="dark"] #headerTable td,
+#pageBody[data-theme="dark"] #footerTable td {
+	color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] #footerTable a {
+	color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] #footerTable a:hover {
+	color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] #utc-clock-container {
+	color: #e0e0e0;
+}
+
+#pageBody[data-theme="dark"] #utc-clock {
+	background-color: #333;
+	color: #a6d8ff;
+}
+
+#pageBody[data-theme="dark"] #tle-form {
+	background-color: #2a2a2a;
+	border-color: #555;
+}
+
+#pageBody[data-theme="dark"] #categoryDropdownContainer label,
+#pageBody[data-theme="dark"] #sortingControlsContainer label,
+#pageBody[data-theme="dark"] #sortingControls label { /* Added sortingControls label */
+	color: #e0e0e0;
+}
+
+#pageBody[data-theme="dark"] select.form-control-sm,
+#pageBody[data-theme="dark"] input.form-control,
+#pageBody[data-theme="dark"] #categoryDropdownContainer select,
+#pageBody[data-theme="dark"] #sortingControls select { /* Added dropdown/select */
+	background-color: #333;
+	color: #e0e0e0;
+	border-color: #555;
+}
+
+/* Dark Mode for DataTables */
+#pageBody[data-theme="dark"] .dataTables_wrapper {
+	color: #e0e0e0;
+}
+
+#pageBody[data-theme="dark"] table.dataTable thead th {
+	color: #e0e0e0 !important; /* Ensure header text is visible */
+	background-color: #000000; /* Darker header background */
+	border-bottom: 1px solid #000000;
+	text-align: center; /* Ensure centered in dark mode */
+}
+
+#pageBody[data-theme="dark"] table.dataTable tbody tr,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.odd,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.even {
+	background-color: transparent !important; /* Let TD rule handle background */
+	color: white !important; /* Ensure text is white */
+}
+
+/* Dark Mode for DataTables Cells */
+#pageBody[data-theme="dark"] table.dataTable tbody tr.odd td,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.even td,
+#pageBody[data-theme="dark"] table.dataTable tbody tr.odd td:first-child, /* Target first cell specifically */
+#pageBody[data-theme="dark"] table.dataTable tbody tr.even td:first-child {
+	background-color: black !important; /* Force black background for all cells */
+	color: white !important; /* Ensure text is white */
+}
+
+#pageBody[data-theme="dark"] table.dataTable tbody tr:hover td,
+#pageBody[data-theme="dark"] table.dataTable tbody tr:hover td:first-child { /* Target first cell on hover */
+	background-color: #222 !important; /* Slightly lighter black for hover on cells */
+}
+
+#pageBody[data-theme="dark"] table.dataTable tbody td {
+	border-top: 1px solid #444;
+	text-align: center; /* Ensure centered in dark mode */
+    vertical-align: middle; /* Optional: vertically center content */
+}
+
+#pageBody[data-theme="dark"] table.dataTable tbody td a {
+	color: #77b3ff; /* Lighter link color */
+}
+
+#pageBody[data-theme="dark"] .dataTables_length label,
+#pageBody[data-theme="dark"] .dataTables_filter label,
+#pageBody[data-theme="dark"] .dataTables_info {
+	color: #e0e0e0 !important;
+}
+
+#pageBody[data-theme="dark"] .dataTables_length select,
+#pageBody[data-theme="dark"] .dataTables_filter input {
+	background-color: #333;
+	color: #e0e0e0;
+	border: 1px solid #555;
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button {
+	color: #e0e0e0 !important; /* Ensure text is light */
+	background: #333;
+	border: 1px solid #555;
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button.disabled {
+	color: #777 !important;
+	background: #2a2a2a;
+	border-color: #444;
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button:hover {
+	background: #444;
+	border-color: #666;
+}
+
+#pageBody[data-theme="dark"] .dataTables_paginate .paginate_button.current {
+	background: #555;
+	border-color: #777;
+	color: #fff !important;
+}
+
+/* Dark mode adjustment for active links */
+#pageBody[data-theme="dark"] #satelliteTableContainer table tbody td a {
+    color: rgb(0, 255, 85); /* Change link color to red in dark mode */
+}
+
+/* Flexbox styles for header controls */
+#header-controls-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1rem var(--spacing-xl);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#center-controls {
+    display: flex;
+    justify-content: center; /* Center the items within this container */
+    align-items: center;
+    gap: 1.5rem; /* Space between category and sorting */
+    flex-wrap: wrap; /* Allow inner wrapping */
+    flex-grow: 1; /* Allow this section to grow to push left/right apart */
+    min-width: 200px; /* Prevent excessive shrinking */
+}
+
+#categoryDropdownContainer label,
+#sortingControls label {
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+#categoryDropdownContainer select,
+#sortingControls select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.6rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border-radius: 3px;
+}
+
+#right-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Space between buttons */
+}
+
+#dark-mode-toggle-container {
+    padding: 5px;
+    z-index: 10;
+}
+
+/* Adjust button styles if needed */
+#add-tle-btn { /* Removed #darkModeToggle from this rule */
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #header-controls-container {
+        justify-content: center; /* Center everything when stacked */
+    }
+    #center-controls {
+        order: 1; /* Move center controls below clock/add button if wrapped */
+        width: 100%; /* Take full width when wrapped */
+        justify-content: space-around; /* Space out controls when wrapped */
+        margin-top: 0.5rem;
+    }
+    #dark-mode-toggle-container {
+        top: 5px;
+        right: 5px;
+    }
+    #header-controls-container {
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+}
+
+/* --- Dark Mode Toggle Switch Styles --- */
+/* Remove old checkbox-based styles */
+/* .theme-switch-wrapper { ... } */
+/* .theme-switch { ... } */
+/* .theme-switch input { ... } */
+/* .slider { ... } */
+/* .slider:before { ... } */
+/* .theme-switch-wrapper .icon { ... } */
+/* .theme-switch-wrapper .sun { ... } */
+/* .theme-switch-wrapper .moon { ... } */
+/* body.dark-mode .theme-switch-wrapper .sun { ... } */
+/* body.dark-mode .theme-switch-wrapper .moon { ... } */
+/* input:checked + .slider { ... } */
+/* input:focus + .slider { ... } */
+/* input:checked + .slider:before { ... } */
+/* .slider.round { ... } */
+/* .slider.round:before { ... } */
+
+/* Add new button-based styles (similar to satpage.css) */
+.theme-switch-wrapper {
+    /* Add some margin if needed for spacing */
+    /* margin-left: auto; */ /* Optionally push to the right */
+}
+
+/* Style the button used for the toggle */
+#theme-toggle.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-color, #333); /* Use theme variable or default */
+    font-size: 1.3rem; /* Adjust icon size */
+    cursor: pointer;
+    padding: 0.3rem;
+    line-height: 1;
+    /* Add Font Awesome dependency if not already present */
+}
+
+#theme-toggle.icon-button:hover {
+    opacity: 0.8;
+}
+
+/* Ensure icon color changes with theme (using data-theme) */
+body[data-theme="light"] #theme-toggle.icon-button {
+    color: #333; /* Or specific light mode icon color */
+}
+
+#pageBody[data-theme="dark"] #theme-toggle.icon-button {
+    color: #e0e0e0; /* Or specific dark mode icon color */
+}
+
+/* Hide FontAwesome default display styles if they interfere */
+#theme-toggle i {
+    display: inline-block; /* Ensure icon displays correctly */
+    vertical-align: middle;
+}
+
+#pageBody[data-theme="dark"] #categoryDropdownContainer,
+#pageBody[data-theme="dark"] #sortingControls {
+    border-color: #555; /* Darker border for dark mode */
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .header-divider {
+    background-color: var(--border-color);
+}
+
+#pageBody[data-theme="dark"] .subheading {
+    color: var(--text-secondary);
+}
+
+/* Dark mode header adjustments */
+#pageBody[data-theme="dark"] #pageHeader {
+    background-color: #000000;
+}
+
+/* Dropdown and Control Styles */
+#categoryDropdownContainer select,
+#sortingControls select,
+.form-control-sm {
+    color: var(--accent-color);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Dark mode dropdown adjustments */
+#pageBody[data-theme="dark"] #categoryDropdownContainer select,
+#pageBody[data-theme="dark"] #sortingControls select,
+#pageBody[data-theme="dark"] .form-control-sm {
+    background-color: #1a1a1a;
+    color: #4a9eff;
+    border-color: #404040;
+}
+
+/* Dropdown labels */
+#categoryDropdownContainer label,
+#sortingControls label {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Status column styling */
+td.inactive-satellite {
+    color: #ff3333 !important;
+    font-style: italic;
+}
+
+/* Ensure color stays consistent in dark mode */
+#pageBody[data-theme="dark"] td.inactive-satellite {
+    color: #ff3333 !important;
+}
+
+/* Override any DataTables styling that might interfere */
+table.dataTable tbody tr td.inactive-satellite {
+    color: #ff3333 !important;
+}
+
+#pageBody[data-theme="dark"] table.dataTable tbody tr td.inactive-satellite {
+    color: #ff3333 !important;
+}
+
+/* Active status link color */
+#satelliteTableContainer table tbody td a {
+    color: #2962ff;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+#pageBody[data-theme="dark"] #satelliteTableContainer table tbody td a {
+    color: #4a9eff;
+}
+
+/* UTC Clock Styles */
+.utc-clock {
+    position: absolute;
+    top: var(--spacing-md);
+    left: var(--spacing-xl);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#utc-time {
+    font-weight: 600;
+}
+
+/* Attribution Styles */
+.attribution {
+    margin-top: var(--spacing-xs); /* Reduced margin */
+    font-size: 0.9rem; /* Match font size */
+    color: var(--text-secondary);
+    font-family: var(--font-primary);
+}
+
+.attribution a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+    font-family: var(--font-primary);
+    font-size: 0.9rem; /* Match font size */
+}
+
+/* Dark Mode Adjustments */
+#pageBody[data-theme="dark"] .utc-clock {
+    background-color: #1a1a1a;
+    border-color: #404040;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#pageBody[data-theme="dark"] .attribution {
+    color: var(--text-secondary);
+}
+
+#pageBody[data-theme="dark"] .attribution a {
+    color: var(--accent-color);
+}
+
+#pageBody[data-theme="dark"] .attribution a:hover {
+    color: var(--text-primary);
+}
+
+/* Logo Styles */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) 0;
+}
+
+.header-logo {
+    height: 120px;
+    width: 120px;
+    object-fit: contain;
+}
+
+/* Light mode logo */
+.light-logo {
+    display: block;
+}
+
+.dark-logo {
+    display: none;
+}
+
+/* Dark mode logo */
+#pageBody[data-theme="dark"] .light-logo {
+    display: none;
+}
+
+#pageBody[data-theme="dark"] .dark-logo {
+    display: block;
+}
+
+/* Active Satellites Checkbox Container */
+.active-satellites-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: 1.5rem;
+    padding: 0.25rem 0;
+}
+
+.active-satellites-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    position: relative;
+    top: -1px;
+}
+
+.active-satellites-filter label {
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .active-satellites-filter label {
+    color: var(--text-primary);
+}
+
+/* DataTables length and filter container adjustments */
+.dataTables_wrapper .dataTables_length {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Ensure proper alignment for DataTables controls */
+.dataTables_length label,
+.dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+/* Apply NType82 font to all labels */
+label {
+    font-family: var(--font-primary);
+}
+
+/* Ensure all form control labels use NType82 font */
+.form-control-sm,
+.form-control,
+#sortColumn,
+#sortOrder,
+#categorySelect,
+.dataTables_length label,
+.dataTables_filter label {
+    font-family: var(--font-primary);
+}
+
+/* Table Controls Styling */
+.controls-group label,
+.controls-group select,
+.active-satellites-filter label {
+    font-family: var(--font-primary);
+    font-size: 1.21rem;
+    color: var(--text-primary);
+}
+
+.sort-group, 
+#categoryDropdownContainer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sort-group label, 
+#categoryDropdownContainer label {
+    margin: 0;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.form-control-sm {
+    height: 35px;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var (--radius-sm);
+    color: var(--text-primary);
+    min-width: 150px;
+    font-size: 1.1rem;
+}
+
+/* Active Satellites Checkbox Container */
+.active-satellites-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: 1.5rem;
+    padding: 0.25rem 0;
+}
+
+.active-satellites-filter input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    position: relative;
+    top: -1px;
+}
+
+.active-satellites-filter label {
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    user-select: none;
+    margin: 0;
+    line-height: 1;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .controls-group label,
+#pageBody[data-theme="dark"] .form-control-sm,
+#pageBody[data-theme="dark"] .active-satellites-filter label {
+    color: var(--text-primary);
+}
+
+#pageBody[data-theme="dark"] .form-control-sm {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+/* Category Select Container Styles */
+.category-select-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem auto;
+    padding: 0.5rem;
+    max-width: 1200px;
+}
+
+.category-select-container label {
+    font-family: var(--font-primary);
+    font-size: 1.21rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.category-select-container select {
+    min-width: 200px;
+    height: 35px;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var (--radius-sm);
+    color: var(--text-primary);
+    font-size: 1.21rem;
+    font-family: var(--font-primary);
+    text-align: center;
+    text-align-last: center; /* For Firefox */
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    appearance: none; /* Standard */
+}
+
+/* Add a custom dropdown arrow - Default (Light Mode - Black Arrow) */
+.category-select-container select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.5rem; /* Make room for the arrow */
+}
+
+/* Center the text in the dropdown options */
+.category-select-container select option {
+    text-align: center;
+}
+
+/* Dark mode adjustments */
+#pageBody[data-theme="dark"] .category-select-container select {
+    background-color: var(--bg-primary);
+    border-color: var (--border-color);
+    color: var(--text-primary);
+    /* Override arrow for dark mode (White Arrow) */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+/* --- Message Overlays (Loading, Error, Success) --- */
+.message-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* Ensure it's above other content */
+}
+
+.message-content {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    max-width: 90%;
+    width: 650px; /* Increased width */
+}
+
+/* Spinner for Loading */
+.spinner {
+    border: 4px solid var(--secondary-text-color); /* Light grey */
+    border-top: 4px solid var(--accent-color); /* Blue */
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Icons for Error/Success */
+.message-content i {
+    font-size: 1.5em;
+	display: flex;
+}
+
+/* Error Specific Styles */
+#error-message .message-content i.fa-exclamation-circle {
+    color: #dc3545; /* Bootstrap danger red */
+}
+
+/* Success Specific Styles */
+.success-overlay .success-content {
+    background-color: var(--success-bg-color, #d4edda); /* Light green background */
+    color: var (--success-text-color, #155724); /* Dark green text */
+    border: 1px solid var(--success-border-color, #c3e6cb);
+}
+
+.success-overlay .success-content i.fa-check-circle {
+    color: var(--success-icon-color, #28a745); /* Bootstrap success green */
+}
+
+.success-overlay .message-text-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.success-overlay .message-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.success-overlay .message-details {
+    font-size: 1.1em;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Close Button */
+.close-message {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    color: inherit; /* Inherit color from parent (error or success) */
+    padding: 5px;
+    line-height: 1;
+    margin-left: auto; /* Push to the right */
+    align-self: flex-start; /* Align to the top */
+}
+
+.close-message:hover {
+    opacity: 0.7;
+}
+
+
