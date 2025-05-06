@@ -260,16 +260,20 @@ const categoryData = {};
 function toggleTleForm(show = null) { // Allow forcing show/hide
     const form = document.getElementById("tle-form");
     const btn = document.getElementById("add-tle-btn");
-    const isVisible = form.classList.contains('visible');
+    if (!form || !btn) return; // Guard clause if elements are not found
+
+    const isVisible = form.style.display === 'block'; // Check current display state
 
     if (show === true || (show === null && !isVisible)) {
-        form.classList.add('visible');
         form.style.display = 'block'; // Ensure it's visible
-        btn.innerText = "Hide Form";
+        btn.innerHTML = '<i class="fas fa-times"></i> Hide Form'; // Updated text with icon
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger'); // Use a different color to indicate active/cancel state
     } else if (show === false || (show === null && isVisible)) {
-        form.classList.remove('visible');
         form.style.display = 'none'; // Ensure it's hidden
-        btn.innerText = "Add Custom TLE";
+        btn.innerHTML = "Add Custom TLE";
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
         // Clear editing state when hiding
         document.getElementById('editingSatId').value = '';
         document.getElementById('customSatName').value = '';
@@ -619,6 +623,94 @@ async function loadAndDisplaySatellites(category) {
     }
 }
 
+// --- Observer Location Functions ---
+function saveObserverLocation() {
+    const latInput = document.getElementById('observerLat');
+    const lonInput = document.getElementById('observerLon');
+    const statusDiv = document.getElementById('location-save-status');
+    const globalStatusSpan = document.getElementById('location-save-global-status'); // Span for global message
+
+    const lat = parseFloat(latInput.value);
+    const lon = parseFloat(lonInput.value);
+
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+        statusDiv.textContent = 'Invalid latitude. Must be between -90 and 90.';
+        statusDiv.style.color = 'red';
+        return;
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+        statusDiv.textContent = 'Invalid longitude. Must be between -180 and 180.';
+        statusDiv.style.color = 'red';
+        return;
+    }
+
+    localStorage.setItem('observerLat', lat.toString());
+    localStorage.setItem('observerLon', lon.toString());
+
+    // Hide the form first
+    toggleLocationForm(false); 
+
+    // Then display the success message in the global span
+    if (globalStatusSpan) {
+        globalStatusSpan.textContent = `Location saved: Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+        globalStatusSpan.style.color = 'green';
+    }
+    
+    // Clear the form-specific status message as it's now global
+    if (statusDiv) {
+        statusDiv.textContent = ''; 
+    }
+
+    console.log("Observer location saved:", { lat, lon });
+    // Optionally, trigger other updates that depend on the observer location
+}
+
+function loadObserverLocation() {
+    const latInput = document.getElementById('observerLat');
+    const lonInput = document.getElementById('observerLon');
+    const statusDiv = document.getElementById('location-save-status');
+
+    if (!latInput || !lonInput || !statusDiv) {
+        return; // Elements not present, do nothing
+    }
+
+    const savedLat = localStorage.getItem('observerLat');
+    const savedLon = localStorage.getItem('observerLon');
+
+    if (savedLat && savedLon) {
+        latInput.value = parseFloat(savedLat).toFixed(2);
+        lonInput.value = parseFloat(savedLon).toFixed(2);
+        statusDiv.textContent = `Using saved location: Lat ${parseFloat(savedLat).toFixed(2)}°, Lon ${parseFloat(savedLon).toFixed(2)}°`;
+        statusDiv.classList.add('info-message'); // Add a class for info styling
+    } else {
+        statusDiv.textContent = 'Enter your coordinates to save them for pass predictions.';
+        statusDiv.classList.add('info-message');
+    }
+}
+
+// --- End Observer Location Functions ---
+
+// --- Toggle Location Form Function ---
+function toggleLocationForm(show = null) {
+    const form = document.getElementById("observer-location-section");
+    const btn = document.getElementById("toggleLocationFormBtn");
+    const globalStatusSpan = document.getElementById('location-save-global-status'); // Get the global status span
+
+    if (!form || !btn) return;
+
+    const isVisible = form.style.display === 'block';
+
+    if (show === true || (show === null && !isVisible)) {
+        form.style.display = 'block';
+        btn.textContent = "Hide Location Form";
+        if (globalStatusSpan) globalStatusSpan.textContent = ''; // Clear global message when opening form
+    } else if (show === false || (show === null && isVisible)) {
+        form.style.display = 'none';
+        btn.textContent = "Set Observer Location";
+        // Do not clear the global message here, as it might have just been set by saveObserverLocation
+    }
+}
+
 // --- Consolidated Initialization --- //
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM loaded, starting initialization...");
@@ -643,7 +735,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup Add TLE button listeners
     const addTleBtn = document.getElementById('add-tle-btn');
     if (addTleBtn) {
-        addTleBtn.addEventListener('click', toggleTleForm);
+        addTleBtn.addEventListener('click', () => toggleTleForm()); // Pass no args to toggle
     }
 
     // Setup Save TLE button listener
@@ -651,6 +743,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (saveTleBtn) {
         saveTleBtn.addEventListener('click', handleFormSubmission);
     }
+
+    // --- Observer Location Setup ---
+    const saveLocationBtn = document.getElementById('saveLocationBtn');
+    if (saveLocationBtn) {
+        saveLocationBtn.addEventListener('click', saveObserverLocation);
+    }
+    loadObserverLocation(); // Load saved location on page load
+
+    const toggleLocationBtn = document.getElementById('toggleLocationFormBtn');
+    if (toggleLocationBtn) {
+        toggleLocationBtn.addEventListener('click', () => toggleLocationForm());
+    }
+    // --- End Observer Location Setup ---
 
     // --- Load Categories and Initial Data ---
     try {
@@ -671,6 +776,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof setupSortingControls === 'function') {
             setupSortingControls();
         }
+
+        // Ensure the TLE form is hidden by default (toggleTleForm(false) handles this)
+        toggleTleForm(false);
+        // Ensure the Location form is hidden by default
+        toggleLocationForm(false);
 
         hideLoading();
 

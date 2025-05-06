@@ -8,7 +8,7 @@
 /* Font Declarations */
 @font-face {
     font-family: 'IBM Plex Mono'; /* Define the font family name */
-    src: url('../src/IBMPlexMono-Regular.ttf') format('truetype'); /* Correct path and format */
+    src: url('../src/Supply-Light.otf') format('opentype'); /* Correct path and format */
     font-weight: normal;
     font-style: normal;
 }
@@ -119,44 +119,53 @@ body {
 	padding: var(--spacing-sm) 0;
 	background-color: var(--bg-primary);
 	margin-bottom: 0;
+    text-align: center;
+    /* padding: 20px 0; */ /* Adjusted by header-controls-row */
+    background-color: var(--header-bg-color);
+    color: var(--header-text-color);
+    font-family: 'Ndot-55', sans-serif;
+    position: relative; /* For absolute positioning of children if needed */
 }
 
 .header-content {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	max-width: 1200px;
+	max-width: 1200px; /* This can be used by header-controls-row as well */
 	margin: 0 auto;
-	padding: 0 var(--spacing-xl);
+	padding: 0 var(--spacing-xl); /* Horizontal padding for overall header content */
+}
+
+/* New container for the row of controls (category selector and action buttons) */
+.header-controls-row {
+    display: flex;
+    justify-content: space-between; /* Key for left/center/right alignment of its 3 children */
+    align-items: center; /* Vertically align items in the middle */
+    padding: var(--spacing-md) 0; /* Vertical padding, horizontal handled by .header-content or here if preferred */
+    width: 100%; /* Ensure it takes full available width for space-between to work */
+}
+
+/* Individual styling for the observer button wrapper if needed, e.g., for centering its own content */
+.observer-button-wrapper {
+    display: flex;
+    flex-direction: column; /* Stack button and status text vertically */
+    align-items: center; /* Center them horizontally */
+    gap: 5px; /* Optional: space between button and status text */
 }
 
 .header-divider {
 	display: none; /* Hide the divider */
 }
 
-.subheading {
-	color: var(--text-secondary);
-	font-size: 1.1rem;
-	letter-spacing: 1px;
-	padding: var(--spacing-xs) 0;
-	margin-bottom: 0;
-	border-bottom: none; /* Remove bottom border */
-}
-
-/* Header Controls Container - REMOVED as elements are repositioned */
-/* #header-controls-container { ... } */
-/* .controls-group { ... } */
-
-/* Category Select Container Styles */
+/* Category Select Container Styles - Consolidated and Corrected */
 .category-select-container {
     display: flex;
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center items horizontally */
-    gap: 0.5rem; /* Adjust gap between heading and dropdown */
-    margin: 1rem auto 0.5rem auto; /* Keep centering the container */
-    padding: 0.5rem;
-    max-width: 1200px;
-    ;
+    flex-direction: column; 
+    align-items: flex-start; 
+    gap: 0.5rem; 
+    margin: 0; /* IMPORTANT: Ensures no auto margins that interfere with parent flex control */
+    padding: 0.5rem 0; /* Vertical padding, no horizontal padding if parent handles it */
+    flex-grow: 0; /* Do not grow, allow space-between to work */
 }
 
 /* Style the heading within the container */
@@ -166,8 +175,6 @@ body {
     color: var(--text-secondary);
     font-family: 'IBM Plex Mono', monospace; /* Optional: Adjust color if needed */
 }
-
-/* ... existing category select styles ... */
 
 /* Add TLE Button Container Styles */
 .add-tle-button-container {
@@ -181,6 +188,8 @@ body {
     padding: 0.5rem 1.5rem; /* Example padding */
     font-size: 1rem;
 }
+
+/* Ensure buttons themselves have appropriate styling if not already covered by .btn */
 
 /* Active Satellites Checkbox Container (Inside Table Container) */
 .active-satellites-filter-container {
@@ -238,14 +247,7 @@ body {
 
 /* Header Controls Container */
 #header-controls-container {
-	max-width: 1200px;
-	margin: 0.5rem auto;
-	padding: 0.75rem 2rem;
-	/* background-color: var(--bg-secondary); */
-	/* border-radius: var(--radius-md); */
-	box-shadow: none;
-	border: none;
-	border-top: none; /* Remove top border */
+    display: none; /* Hide the old container as its content has been moved */
 }
 
 .controls-group {
@@ -584,30 +586,16 @@ body {
 	color: var(--text-primary);
 }
 
-/* Dark mode adjustments for footer */
-#pageBody[data-theme="dark"] #pageFooter {
-	background-color: var(--bg-primary);
-	border-color: var(--border-color);
-}
-
-#pageBody[data-theme="dark"] .footer-content {
-	color: var(--text-primary);
-}
-
-#pageBody[data-theme="dark"] .credits a {
-	color: var(--accent-color);
-}
-
 #pageBody[data-theme="dark"] .credits a:hover {
 	color: var(--text-primary);
 }
 
 /* Theme Toggle Styles */
 .theme-switch-wrapper {
-	position: absolute;
-	top: 10px;
-	right: 10px;
-	z-index: 9999;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
 }
 
 #theme-toggle.icon-button {
@@ -1176,16 +1164,7 @@ table.dataTable tbody tr.even td:first-child {
 
 /* Flexbox styles for header controls */
 #header-controls-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 1rem var(--spacing-xl);
-    background-color: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none; /* Hide the old container as its content has been moved */
 }
 
 #center-controls {
@@ -1272,8 +1251,13 @@ table.dataTable tbody tr.even td:first-child {
 
 /* Add new button-based styles (similar to satpage.css) */
 .theme-switch-wrapper {
+    /* This class is used as a container for the theme toggle button. */
     /* Add some margin if needed for spacing */
     /* margin-left: auto; */ /* Optionally push to the right */
+    position: absolute; /* Keep its positioning */
+    top: 10px;
+    right: 10px; /* This was previously in a style attribute, moved here for consistency */
+    z-index: 9999; /* Ensure it stays on top */
 }
 
 /* Style the button used for the toggle */
@@ -1765,6 +1749,60 @@ label {
 
 .close-message:hover {
     opacity: 0.7;
+}
+
+/* New container for header controls */
+#header-controls-container {
+    display: none; /* Hide the old container as its content has been moved */
+}
+
+.header-control-item {
+    display: flex;
+    flex-direction: column; /* Stack label and control vertically if needed */
+    align-items: center; /* Center items if stacked */
+}
+
+/* Specific styling for each control item if needed */
+.category-select-container {
+    flex-grow: 0; /* Changed from 1 to prevent taking up all space */
+    align-items: flex-start; /* Align to the start (left) */
+}
+
+.location-button-container {
+    display: flex;
+    flex-direction: row; /* Changed from column to row for horizontal stacking */
+    align-items: center;   /* Vertically aligns items in the center of the row */
+    justify-content: center; /* Horizontally centers the group of items */
+    gap: 20px;             /* Adjusted gap for horizontal spacing */
+    margin: 0; /* Changed from '1rem auto' */
+    padding: var(--spacing-md) var(--spacing-xl); /* Updated padding */
+}
+
+/* Style for the select dropdown and its label */
+.category-select-container h5 {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.category-select-container select {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    font-family: 'NType82Mono-Regular', monospace;
+}
+
+/* Observer Location Form Styling */
+.observer-location-container {
+    background-color: var(--panel-bg-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px auto; /* Centered with some margin */
+    max-width: 600px; /* Max width for the form */
+    border: 1px solid var(--border-color);
 }
 
 

@@ -105,10 +105,30 @@ document.addEventListener('DOMContentLoaded', async function() {
         displaySatelliteInfo(); // Display static info
         startTracking(); // Start dynamic updates
 
-        // Add event listener for predict passes button
-        const predictPassesBtn = document.getElementById('predictPassesBtn');
-        if (predictPassesBtn) {
-            predictPassesBtn.addEventListener('click', updatePassPredictions);
+        // Automatically trigger pass prediction if location is available
+        const savedLat = localStorage.getItem('observerLat');
+        const savedLon = localStorage.getItem('observerLon');
+        const locationStatusMessage = document.getElementById('location-status-message');
+
+        if (savedLat && savedLon) {
+            if (locationStatusMessage) {
+                locationStatusMessage.textContent = `Using saved location: Lat ${parseFloat(savedLat).toFixed(2)}°, Lon ${parseFloat(savedLon).toFixed(2)}°. Predicting passes...`;
+                locationStatusMessage.classList.add('info-message');
+            }
+            // Call updatePassPredictions directly, as the button is gone
+            // We need to pass the lat/lon as the input fields are also gone from this page
+            updatePassPredictions(parseFloat(savedLat), parseFloat(savedLon)); 
+        } else {
+            if (locationStatusMessage) {
+                locationStatusMessage.innerHTML = 'Observer location not set. Please <a href="index.html">go to the main page</a> to set it.';
+                locationStatusMessage.classList.add('error-message');
+            }
+            // Optionally, clear or hide the pass results section if no location is set
+            const passResultsDiv = document.querySelector('.pass-results');
+            if (passResultsDiv) {
+                passResultsDiv.style.display = 'none';
+            }
+            clearPolarPlotly('polarPlot');
         }
 
         // console.log('Satellite data:', satellite);
@@ -166,17 +186,41 @@ function setTheme(theme) {
 
     // --- Trigger Plotly redraw if visible --- 
     const plotDiv = document.getElementById('polarPlot');
-    const predictButton = document.getElementById('predictPassesBtn');
-    const observerLatInput = document.getElementById('observerLat');
-    const observerLonInput = document.getElementById('observerLon');
+    // const predictButton = document.getElementById('predictPassesBtn'); // Removed
+    // const observerLatInput = document.getElementById('observerLat'); // Removed
+    // const observerLonInput = document.getElementById('observerLon'); // Removed
 
-    // Check if plot exists, button exists, and lat/lon have values
-    if (plotDiv && plotDiv.style.display !== 'none' && predictButton && 
-        observerLatInput?.value && observerLonInput?.value) {
-         console.log('Theme changed, triggering redraw of Plotly chart...');
-         // Re-run the prediction logic by simulating a button click
-         // This ensures drawPolarPlotly is called with correct data
-         predictButton.click(); 
+    // Check if plot exists and is currently visible
+    if (plotDiv && plotDiv.style.display !== 'none') {
+        const savedLat = localStorage.getItem('observerLat');
+        const savedLon = localStorage.getItem('observerLon');
+
+        if (savedLat && savedLon) {
+            console.log('Theme changed, triggering redraw of Plotly chart with saved location (no scroll)...');
+            // Re-run pass predictions which will in turn call drawPolarPlotly.
+            // updatePassPredictions handles clearing the old plot and observer marker.
+            // Pass false for shouldScroll to prevent scrolling.
+            updatePassPredictions(parseFloat(savedLat), parseFloat(savedLon), false);
+        } else {
+            // This case implies a plot is visible but location was somehow lost from localStorage,
+            // or the plot was generated without relying on localStorage (which shouldn't happen with current flow).
+            console.warn('Theme changed and plot is visible, but observer location not found in localStorage. Plot may not update its theme correctly.');
+        }
+    }
+
+    // --- Update Observer Marker Icon if it exists --- 
+    if (observerMarker && map && map.hasLayer(observerMarker)) { 
+        const newObserverIconUrl = theme === 'dark' ? 'src/images/observer_pin_dark.png' : 'src/images/observer_pin_light.png';
+        const newObserverIcon = L.icon({
+            iconUrl: newObserverIconUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+        observerMarker.setIcon(newObserverIcon);
+        // console.log(`Observer marker icon updated for ${theme} theme.`);
     }
 }
 
@@ -855,7 +899,9 @@ function stopAndClearCountdown() {
 // --- End Countdown Timer Functionality ---
 
 // Update the updatePassPredictions function to handle async operations
-async function updatePassPredictions() {
+// MODIFIED: Now accepts observerLat and observerLon as parameters
+// MODIFIED: Added shouldScroll parameter (defaults to true)
+async function updatePassPredictions(observerLat, observerLon, shouldScroll = true) {
     // Reset favicon to default at the start of prediction
     // setFavicon(defaultFaviconHref); 
 
@@ -868,11 +914,11 @@ async function updatePassPredictions() {
         return;
     }
 
-    // Use correct input IDs from HTML for observer location
-    const observerLatInput = document.getElementById('observerLat');
-    const observerLonInput = document.getElementById('observerLon');
-    const observerLat = parseFloat(observerLatInput.value);
-    const observerLon = parseFloat(observerLonInput.value);
+    // Observer lat/lon are now passed as arguments
+    // const observerLatInput = document.getElementById('observerLat'); // Removed
+    // const observerLonInput = document.getElementById('observerLon'); // Removed
+    // const observerLat = parseFloat(observerLatInput.value);
+    // const observerLon = parseFloat(observerLonInput.value);
     const locationErrorDiv = document.getElementById('location-validation-error'); // Get the new error div
     const passResultsDiv = document.querySelector('.pass-results'); // Get the results container
 
@@ -889,10 +935,10 @@ async function updatePassPredictions() {
      clearPolarPlotly('polarPlot');
 
 
-    // Basic validation for observer coordinates
+    // Basic validation for observer coordinates (already validated on index.html, but good to have a check)
     let validationError = null;
     if (isNaN(observerLat) || isNaN(observerLon)) {
-        validationError = 'Please enter valid latitude and longitude values.';
+        validationError = 'Invalid latitude or longitude values provided.';
     } else if (observerLat < -90 || observerLat > 90 || observerLon < -180 || observerLon > 180) {
         validationError = 'Latitude must be -90 to 90, Longitude must be -180 to 180.';
     }
@@ -902,18 +948,22 @@ async function updatePassPredictions() {
             locationErrorDiv.textContent = validationError;
             locationErrorDiv.style.display = 'block'; // Show the specific error message
         }
-        // DO NOT call showError here, as it hides the map.
-        // clearPolarPlotly('polarPlot'); // Already called at the start
         return; // Stop execution
     }
 
 
-    // Show loading state for prediction
-    const predictButton = document.getElementById('predictPassesBtn');
-    const originalButtonText = predictButton.innerHTML;
-    predictButton.disabled = true;
-    predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    // const passResults = document.querySelector('.pass-results'); // Already got this
+    // Show loading state for prediction - No button to update, so we might use a general loading indicator or rely on the locationStatusMessage
+    // const predictButton = document.getElementById('predictPassesBtn'); // Removed
+    // const originalButtonText = predictButton.innerHTML;
+    // predictButton.disabled = true;
+    // predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    const locationStatusMessage = document.getElementById('location-status-message');
+    if (locationStatusMessage) {
+        locationStatusMessage.textContent = 'Predicting passes...';
+        locationStatusMessage.classList.remove('error-message');
+        locationStatusMessage.classList.add('info-message');
+    }
+
     const canvas = document.getElementById('pass-visualization-canvas'); // Keep for potential future use?
     // Get table rows and cells for dynamic updates
     const passResultRows = passResultsDiv?.querySelectorAll('table.info-table tr');
@@ -956,7 +1006,7 @@ async function updatePassPredictions() {
 
             observerMarker = L.marker([observerLat, observerLon], { icon: observerIcon })
                               .addTo(map)
-                              .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(4)}°<br>Lon: ${observerLon.toFixed(4)}°`);
+                              .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(2)}°<br>Lon ${observerLon.toFixed(2)}°`);
             // Optionally pan to the marker
             // map.panTo([observerLat, observerLon]);
 
@@ -969,7 +1019,7 @@ async function updatePassPredictions() {
         // --- Check if Geostationary ---
         if (window.isGeostationary(satellite)) {
              console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
-            predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles';
+            // predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles';
 
             // Hide pass-specific rows immediately
             if (durationRow) durationRow.style.display = 'none';
@@ -1070,12 +1120,14 @@ async function updatePassPredictions() {
                     maxElevationRow.style.display = 'none';
                     geoStatusMessage.textContent = ''; // Clear message
                     geoStatusMessage.className = ''; // Clear class
+                    clearPolarPlotly('polarPlot', true); // Keep observer marker
                 } else { // Error during calculation
                     nextPassCell.textContent = 'Error calculating';
                     nextPassRow.style.display = '';
                     maxElevationRow.style.display = 'none';
                     geoStatusMessage.textContent = ''; // Clear message
                     geoStatusMessage.className = ''; // Clear class
+                    clearPolarPlotly('polarPlot', true); // Keep observer marker even on calc error for GEO sat
                 }
                 passResultsDiv.style.display = 'block';
 
@@ -1083,22 +1135,18 @@ async function updatePassPredictions() {
                 if (lookAngles && lookAngles.elevation >= 0) {
                     drawPolarPlotly('polarPlot', [lookAngles], true);
                 } else {
-                    clearPolarPlotly('polarPlot'); // Clear if not visible or error
+                    clearPolarPlotly('polarPlot', true); // Keep observer marker
                 }
             } else {
                  console.error("Pass prediction table elements not found for GEO/GSO display.");
-                 clearPolarPlotly('polarPlot'); // Clear plot if elements missing
+                 clearPolarPlotly('polarPlot', true); // Keep observer marker
             }
 
         } else {
             // --- Not Geostationary/Geosynchronous: Perform Pass Prediction ---
              console.log(`Satellite ${satellite.OBJECT_NAME} is not geostationary/geosynchronous. Predicting passes...`);
-            predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting Passes...';
+            // predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting Passes...'; // Button removed
             // Clear GEO/GSO status message and class for non-GEO/GSO cases
-            if (geoStatusMessage) {
-                geoStatusMessage.textContent = '';
-                geoStatusMessage.className = ''; // Clear class
-            }
 
              // Restore original labels and row visibility
              if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';
@@ -1161,7 +1209,7 @@ async function updatePassPredictions() {
 
         // --- Scroll into view AFTER results are potentially displayed --- 
         // Check if either the results table or the plot is visible
-        if (passResultsDiv && passResultsDiv.style.display === 'block') {
+        if (shouldScroll && passResultsDiv && passResultsDiv.style.display === 'block') {
             // Scroll the main container for pass predictions into view
             const passContainer = document.querySelector('.pass-predictions-container');
             if (passContainer) {
@@ -1185,16 +1233,30 @@ async function updatePassPredictions() {
         stopAndClearCountdown();
 
         // Optionally scroll even on error if the error message is shown in the results area
-        if (locationErrorDiv && locationErrorDiv.style.display === 'block') {
+        if (shouldScroll && locationErrorDiv && locationErrorDiv.style.display === 'block') {
             const passContainer = document.querySelector('.pass-predictions-container');
             if (passContainer) {
                 passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
     } finally {
-        // Restore button state
-        predictButton.disabled = false;
-        predictButton.innerHTML = originalButtonText;
+        // Restore button state - No button to restore
+        // predictButton.disabled = false;
+        // predictButton.innerHTML = originalButtonText;
+
+        // Update location status message after prediction attempt
+        const finalLocationStatusMessage = document.getElementById('location-status-message');
+        if (finalLocationStatusMessage) {
+            const savedLat = localStorage.getItem('observerLat');
+            const savedLon = localStorage.getItem('observerLon');
+            if (savedLat && savedLon) {
+                 finalLocationStatusMessage.textContent = `Pass predictions for: Lat ${parseFloat(savedLat).toFixed(2)}°, Lon ${parseFloat(savedLon).toFixed(2)}°.`;
+            } else {
+                // This case should ideally not be hit if logic is correct, but as a fallback:
+                finalLocationStatusMessage.innerHTML = 'Observer location not set. Please <a href="index.html">go to the main page</a> to set it.';
+                finalLocationStatusMessage.classList.add('error-message');
+            }
+        }
     }
 }
 
@@ -1360,14 +1422,14 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
 }
 
 // Function to clear/hide the Plotly plot
-function clearPolarPlotly(plotDivId) {
+function clearPolarPlotly(plotDivId, keepObserverMarker = false) {
      const plotDiv = document.getElementById(plotDivId);
     if (plotDiv) {
         Plotly.purge(plotDivId); // Remove the plot instance
         plotDiv.style.display = 'none'; // Hide the container
     }
-    // --- Also remove observer marker ---
-    if (observerMarker) {
+    // --- Conditionally remove observer marker ---
+    if (!keepObserverMarker && observerMarker) {
         map.removeLayer(observerMarker);
         observerMarker = null;
     }

@@ -145,24 +145,14 @@
             <div class="panel">
                 <h2 style="font-size: 1.475rem; text-align: center; font-family: 'Ntype82';">Next pass 
                     at your location</h2>
-                <div class="location-input-form">
-                    <div class="input-group">
-                        <label for="observerLat">Latitude (°N):</label>
-                        <input type="number" id="observerLat" name="observerLat" step="any" required placeholder="(-90 to 90)">
-                        <span class="input-hint" style="display:none;font-family:'NType82Mono-Regular',monospace;">Valid range: -90 to 90</span>
-                    </div>
-                    <div class="input-group">
-                        <label for="observerLon">Longitude (°E):</label>
-                        <input type="number" id="observerLon" name="observerLon" step="any" required placeholder="(-180 to 180)">
-                        <span class="input-hint" style="display:none;font-family:'NType82Mono-Regular',monospace;">Valid range: -180 to 180</span>
-                    </div>
-                </div>
-                <!-- New centered div for the predict button - MOVED OUTSIDE location-input-form -->
-                <div class="predict-button-container">
-                    <button id="predictPassesBtn" class="predict-button">Predict </button>
-                </div>
-                <!-- New div for validation errors -->
-                <div id="location-validation-error" class="error-message" style="display: none; color: red; margin-top: 10px;"></div>
+                <!-- Location input form and predict button are REMOVED from here -->
+                
+                <!-- Location status message (to show if location is loaded or needs to be set) -->
+                <div id="location-status-message" style="text-align: center; margin-bottom: 10px; font-family: 'NType82Mono-Regular', monospace;"></div>
+
+                <!-- Div for validation errors from satPage.js if needed -->
+                <div id="location-validation-error" class="error-message" style="display: none; color: red; margin-top: 10px; font-family: 'NType82Mono-Regular', monospace;"></div>
+                
                 <div class="pass-results" style="display: none;">
                     <!-- Added placeholder for GEO status message -->
                     <div id="geo-status-message" class="geo-status"></div>
