@@ -637,14 +637,6 @@ function calculateGroundSpeed(velocity, altitude) {
     return velocity * (EARTH_RADIUS_KM / (EARTH_RADIUS_KM + altitude));
 }
 
-// Removed isInDaylight function
-
-// Removed calculateSunPosition function
-
-// Removed getDayOfYear function
-
-// Removed latLngToCartesian function
-
 // Helper function to get object type description
 function getObjectType(typeCode) {
     const types = {
@@ -859,7 +851,7 @@ function startOrUpdateCountdown(startTime, endTime) {
                 const minutes = Math.floor((diffSeconds % 3600) / 60);
                 const seconds = diffSeconds % 60;
                 // Changed format to H h M m S s
-                countdownElement.textContent = `(in ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s)`; 
+                countdownElement.textContent = ` ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
                 countdownElement.className = 'countdown-timer';
             }
         } else if (now >= start && now <= end) {
@@ -1142,15 +1134,16 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
 
              // Restore original labels and row visibility
              if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';
-             if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation';
+            //  if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation'; // Commented out
              // Restore labels for duration/direction if needed (assuming they exist)
-             const durationLabel = durationRow?.querySelector('th');
-             const directionLabel = directionRow?.querySelector('th');
-             if(durationLabel) durationLabel.textContent = 'Duration';
-             if(directionLabel) directionLabel.textContent = 'Direction';
-             // Ensure rows are visible again
-             if (durationRow) durationRow.style.display = '';
-             if (directionRow) directionRow.style.display = '';
+            //  const durationLabel = durationRow?.querySelector('th'); // Commented out
+            //  const directionLabel = directionRow?.querySelector('th'); // Commented out
+            //  if(durationLabel) durationLabel.textContent = 'Duration'; // Commented out
+            //  if(directionLabel) directionLabel.textContent = 'Direction'; // Commented out
+             
+             // Ensure rows are visible again - this logic is problematic with dynamic rows, rely on parent display
+            //  if (durationRow) durationRow.style.display = ''; // Commented out
+            //  if (directionRow) directionRow.style.display = ''; // Commented out
 
 
              // Get references to the message div and details table
@@ -1199,16 +1192,6 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
              }
         }
 
-        // --- Scroll into view AFTER results are potentially displayed --- 
-        // Check if either the results table or the plot is visible
-        if (shouldScroll && passResultsDiv && passResultsDiv.style.display === 'block') {
-            // Scroll the main container for pass predictions into view
-            const passContainer = document.querySelector('.pass-predictions-container');
-            if (passContainer) {
-                passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
     } catch (error) {
         console.error('[updatePassPredictions] Error:', error);
         // Use the specific location error div for calculation errors too
@@ -1223,14 +1206,6 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
         clearPolarPlotly('polarPlot'); // Clear plot and observer marker on error
         // Ensure countdown is cleared on error
         stopAndClearCountdown();
-
-        // Optionally scroll even on error if the error message is shown in the results area
-        if (shouldScroll && locationErrorDiv && locationErrorDiv.style.display === 'block') {
-            const passContainer = document.querySelector('.pass-predictions-container');
-            if (passContainer) {
-                passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
     } finally {
         // Restore button state - No button to restore
         // predictButton.disabled = false;

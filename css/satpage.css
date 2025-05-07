@@ -12,10 +12,10 @@
     --bg-secondary: #f8f9fa;
     --text-primary: #2c3e50;
     --text-secondary: #7f8c8d;
-    --accent-color: #3498db;
+    --accent-color: #234fe0;
     --border-color: #e0e0e0;
     --hover-color: #f0f0f0;
-    --accent-color-path: #3498db;
+    --accent-color-path: #234fe0;
     
     /* Layout Dimensions */
     --header-height: 60px;
@@ -388,6 +388,16 @@ body[data-theme='light'] .js-plotly-plot .scatter .lines {
 .pass-results .info-table td {
     font-size: 1.1rem; /* Increased from 0.9rem */
     font-family: 'NType82 Mono', monospace; /* Ensure font */
+}
+
+/* Add spacing for specific rows in pass details table */
+.countdown-row th,
+.countdown-row td {
+    padding-bottom: 0.6em; /* Add some space below the countdown row */
+}
+
+.countdown-value-cell {
+    vertical-align: middle;
 }
 
 /* Style for Geostationary Status Message */

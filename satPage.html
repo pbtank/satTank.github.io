@@ -148,7 +148,7 @@
                 <!-- Location input form and predict button are REMOVED from here -->
                 
                 <!-- Location status message (to show if location is loaded or needs to be set) -->
-                <div id="location-status-message" style="text-align: center; margin-bottom: 10px; font-family: 'NType82Mono-Regular', monospace;"></div>
+                <div id="location-status-message" style="text-align: center; margin-bottom: 10px; font-family: 'NType82 Mono', monospace;"></div>
 
                 <!-- Div for validation errors from satPage.js if needed -->
                 <div id="location-validation-error" class="error-message" style="display: none; color: red; margin-top: 10px; font-family: 'NType82Mono-Regular', monospace;"></div>
@@ -164,11 +164,13 @@
 
                     <!-- Table for displaying pass details (hidden if no passes) -->
                     <table id="pass-details-table" class="info-table">
-                        <tr>
+                        <tr class="next-pass-row">
                             <th style="font-size: 1.2rem;"> Next Pass at </th>
                             <td id="nextPassTime" class="next-pass-highlight">-</td>
-                            <!-- Add the new span for countdown/status -->
-                            <td><span id="pass-countdown-status"></span></td>
+                        </tr>
+                        <tr class="countdown-row">
+                            <th style="font-size: 1.2rem;">Next pass in:</th>
+                            <td class="countdown-value-cell"><span id="pass-countdown-status"></span></td>
                         </tr>
                         <tr>
                             <th style="font-size: 1.2rem;">Max Elevation</th>
@@ -215,9 +217,9 @@
                 <div class="credits-main">
                     <a href="https://pbtank.github.io/Tank_Priyansu/">Priyansu Tank</a> &amp; <a href="https://carbform.github.io">Carbform</a>
                 </div>
-                <div class="attribution">
+                <!-- <div class="attribution">
                     Using data from <a href="https://celestrak.org/">Celestrak</a>
-                </div>
+                </div> -->
             </div>
             <div class="india-flag">
                 <img src="src/images/india.png" alt="India flag">
