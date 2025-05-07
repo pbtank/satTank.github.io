@@ -914,11 +914,6 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
         return;
     }
 
-    // Observer lat/lon are now passed as arguments
-    // const observerLatInput = document.getElementById('observerLat'); // Removed
-    // const observerLonInput = document.getElementById('observerLon'); // Removed
-    // const observerLat = parseFloat(observerLatInput.value);
-    // const observerLon = parseFloat(observerLonInput.value);
     const locationErrorDiv = document.getElementById('location-validation-error'); // Get the new error div
     const passResultsDiv = document.querySelector('.pass-results'); // Get the results container
 
@@ -931,9 +926,35 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
     if (passResultsDiv) {
         passResultsDiv.style.display = 'none';
     }
-     // Clear the plot and remove the observer marker at the start
-     clearPolarPlotly('polarPlot');
+    // Clear the plot but DO NOT remove the observer marker
+    clearPolarPlotly('polarPlot', true);
 
+    // --- Always add/update the observer marker ---
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const lightModeIconUrl = 'src/images/observer_pin_light.png';
+    const darkModeIconUrl = 'src/images/observer_pin_dark.png';
+    const observerIconUrl = currentTheme === 'dark' ? darkModeIconUrl : lightModeIconUrl;
+    try {
+        const observerIcon = L.icon({
+            iconUrl: observerIconUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+        if (observerMarker) {
+            observerMarker.setLatLng([observerLat, observerLon]);
+            observerMarker.setIcon(observerIcon);
+        } else {
+            observerMarker = L.marker([observerLat, observerLon], { icon: observerIcon })
+                .addTo(map)
+                .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(2)}°<br>Lon ${observerLon.toFixed(2)}°`);
+        }
+    } catch (iconError) {
+        console.warn(`Could not create observer marker icon (using ${observerIconUrl}): ${iconError}. Marker not added.`);
+        observerMarker = null;
+    }
 
     // Basic validation for observer coordinates (already validated on index.html, but good to have a check)
     let validationError = null;
@@ -950,7 +971,6 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
         }
         return; // Stop execution
     }
-
 
     // Show loading state for prediction - No button to update, so we might use a general loading indicator or rely on the locationStatusMessage
     // const predictButton = document.getElementById('predictPassesBtn'); // Removed
@@ -988,34 +1008,6 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
     if (canvas) canvas.style.display = 'none';
 
     try {
-        // --- Add Observer Marker to Map ---
-        const currentTheme = document.body.getAttribute('data-theme') || 'light';
-        const lightModeIconUrl = 'src/images/observer_pin_light.png';
-        const darkModeIconUrl = 'src/images/observer_pin_dark.png';
-        const observerIconUrl = currentTheme === 'dark' ? darkModeIconUrl : lightModeIconUrl;
-
-        try {
-            const observerIcon = L.icon({
-                iconUrl: observerIconUrl,
-                iconSize: [25, 41], // Standard marker size
-                iconAnchor: [12, 41], // Point of the icon
-                popupAnchor: [1, -34], // Popup location relative to anchor
-                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                shadowSize: [41, 41]
-            });
-
-            observerMarker = L.marker([observerLat, observerLon], { icon: observerIcon })
-                              .addTo(map)
-                              .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(2)}°<br>Lon ${observerLon.toFixed(2)}°`);
-            // Optionally pan to the marker
-            // map.panTo([observerLat, observerLon]);
-
-        } catch (iconError) {
-             console.warn(`Could not create observer marker icon (using ${observerIconUrl}): ${iconError}. Marker not added.`);
-             observerMarker = null;
-        }
-        // --- End Add Observer Marker to Map ---
-
         // --- Check if Geostationary ---
         if (window.isGeostationary(satellite)) {
              console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);

@@ -37,29 +37,19 @@
                 <img src="src\images\logo_light.png" alt="satTank Logo" class="header-logo light-logo">
                 <img src="src\images\logo_dark.png" alt="satTank Logo" class="header-logo dark-logo">
             </div>
+            
             <div class="subheading">CATALOGUES | TRACKING</div>
-
-            <!-- New Structure for Header Controls -->
-           
-            <!-- End New Structure for Header Controls -->
         </div>
     </header>
-    <div class="header-controls-row">
-        <!-- Category Select Container (Left Aligned) -->
-        <div id="categorySelectContainer" class="category-select-container">
-            <!-- JS will populate this. Expecting <h5>Select Satellite Category</h5> and the dropdown -->
-        </div>
-
-        <!-- Observer Button Wrapper (Center Aligned) -->
-        <div class="observer-button-wrapper">
-            <button id="toggleLocationFormBtn" class="btn btn-primary">Set Observer Location</button>
-            <span id="location-save-global-status" style="color: green; font-family: 'NType82Mono-Regular', monospace;"></span>
-        </div>
-
-        <!-- Add TLE Button (Right Aligned) -->
+    <!-- Unified controls bar below header -->
+    <div class="controls-bar">
+        <button id="toggleLocationFormBtn" class="btn btn-primary">Set Location</button>
         <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
+        <div class="category-select-container">
+            <select id="categorySelect" class="form-control-sm"></select>
+        </div>
+        <button id="activeSatellitesBtn" class="active-satellites-filter-btn">Active Only</button>
     </div>
-    <!-- The old .location-button-container that previously held these controls is removed. -->
     <!-- Observer Location Input Section (Hidden by default) -->
     <div id="observer-location-section" class="observer-location-container panel" style="display: none;">
         <h5>Set Your Location</h5>
@@ -103,14 +93,6 @@
         </div>
         <button id="save-tle-btn" class="btn btn-success">Save Satellite</button>
         <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
-    </div>
-
-    <!-- Active Filter (Moved Here - BEFORE table container) -->
-    <div class="active-satellites-filter-container">
-         <div class="active-satellites-filter">
-             <input type="checkbox" id="showActiveOnly" />
-             <label for="showActiveOnly">Active Only</label>
-         </div>
     </div>
 
     <!-- Satellite Table Container -->

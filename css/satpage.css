@@ -12,10 +12,10 @@
     --bg-secondary: #f8f9fa;
     --text-primary: #2c3e50;
     --text-secondary: #7f8c8d;
-    --accent-color: #051df5;
+    --accent-color: #3498db;
     --border-color: #e0e0e0;
     --hover-color: #f0f0f0;
-    --accent-color-path: #051df5;
+    --accent-color-path: #3498db;
     
     /* Layout Dimensions */
     --header-height: 60px;
@@ -353,8 +353,8 @@ header {
 }
 
 body[data-theme='light'] .predict-button {
-    background: rgb(117, 184, 240) !important;
-    color: #111 !important;
+    background: #3498db !important;
+    color: #fff !important;
 }
 
 .predict-button:hover {
@@ -362,14 +362,18 @@ body[data-theme='light'] .predict-button {
     box-shadow: 0 4px 16px rgba(179,198,224,0.18);
 }
 
-body[data-theme='light'] .predict-button {
-    background: rgba(34,139,34,0.7); /* Same as light mode plot dot */
-    color: #fff;
+body[data-theme='light'] .countdown-timer,
+body[data-theme='light'] .pass-in-view {
+    color: #3498db !important;
 }
 
-.predict-button:hover {
-    filter: brightness(1.08);
-    box-shadow: 0 4px 16px rgba(80,200,120,0.18);
+/* Plotly plot dot and lines (SVG/CSS override for light mode) */
+body[data-theme='light'] .js-plotly-plot .scatter .points path {
+    fill: #3498db !important;
+    stroke: #3498db !important;
+}
+body[data-theme='light'] .js-plotly-plot .scatter .lines {
+    stroke: #3498db !important;
 }
 
 /* Pass Results */
@@ -1024,75 +1028,12 @@ body[data-theme='dark'] .footer-content a {
 
 /* Override countdown color for light mode to be blue */
 body[data-theme='light'] .countdown-timer {
-    color: rgb(117, 184, 240); /* Bluish color */
+    color: #3498db !important;
 }
 
 /* Override 'in view' color for light mode to be blue */
 body[data-theme='light'] .pass-in-view {
-    color: rgb(117, 184, 240); /* Bluish color, matching button/plot dot */
-}
-
-/* REMOVE conflicting flexbox rules below */
-/* .footer-content { */
-/*    display: flex; */
-/*    flex-direction: row; */
-/*    justify-content: center; */
-/*    align-items: center; */
-/*    gap: 2.5rem; */
-/*    text-align: center; */
-/*    padding: 0 1.5rem; */
-/* } */
-
-/* .footer-content > * { */
-/*    margin: 0 0.5rem; */
-/* } */
-
-/* Keep the responsive rule for stacking, but ensure it doesn't re-introduce flex */
-@media (max-width: 768px) {
-    .footer-content {
-        /* Ensure grid stacking is used */
-        grid-template-columns: 1fr; /* Single column */
-        justify-items: center; /* Center items horizontally */
-        gap: var(--spacing-xs); /* Add small gap */
-        padding: 0 var(--spacing-md);
-        text-align: center;
-        /* Remove flex rules if they exist here */
-        /* flex-direction: column; */
-        /* gap: 1rem; */
-        /* padding: 0 0.5rem; */
-    }
-    /* Remove margin override if not needed with grid */
-    /* .footer-content > * { */
-    /*    margin: 0.5rem 0; */
-    /* } */
-}
-
-/* Countdown Timer / In View Status */
-#pass-countdown-status {
-    font-family: 'NType82 Mono', monospace;
-    font-size: 1.1rem; /* Match table data size */
-    padding-left: 1em; /* Add some space from the time */
-}
-
-/* Style for the countdown timer (future pass) */
-.countdown-timer {
-    color: var(--accent-color); /* Blue in light, green in dark by default */
-}
-
-/* Style for the 'in view' status (current pass) */
-.pass-in-view {
-    /* Default color (used in dark mode) */
-    color: rgba(80, 200, 120, 0.9); /* Match dark mode green */
-}
-
-/* Override countdown color for light mode to be blue */
-body[data-theme='light'] .countdown-timer {
-    color: rgb(117, 184, 240); /* Bluish color */
-}
-
-/* Override 'in view' color for light mode to be blue */
-body[data-theme='light'] .pass-in-view {
-    color: rgb(117, 184, 240); /* Bluish color, matching button/plot dot */
+    color: #3498db !important;
 }
 
 /* Style for location validation error */

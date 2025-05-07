@@ -169,33 +169,29 @@ function displaySatelliteTable(satellites) {
                 { type: 'string', targets: 0 }, // Name
                 { type: 'num', targets: 1 },    // NORAD ID
                 { orderable: false, targets: 2 }, // Tracking link/status
-                // Re-enable sorting for the last column (Launch Year or Edit)
-                // Treat as number for sorting Launch Year; 'Edit' links will be handled by DataTable
-                { orderable: true, type: 'num', targets: 3 } 
+                { orderable: true, type: 'num', targets: 3 }
             ],
             order: [[0, 'asc']], // Default sort by Name
             initComplete: function() {
-                // Find the checkbox within its new container
-                const $checkboxContainer = $('.active-satellites-filter-container');
-                const $checkbox = $checkboxContainer.find('#showActiveOnly');
+                // Find the new Active Only button
+                const $activeBtn = $('#activeSatellitesBtn');
 
                 // Remove existing filter logic first if it exists to avoid duplicates
                 $.fn.dataTable.ext.search.pop();
 
-                // Add the corrected custom filtering function
+                // Add the custom filtering function for active satellites
                 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
                     // Check if the filter should be active
-                    const showActiveOnly = $checkbox.is(':checked'); // Use the found checkbox
+                    const showActiveOnly = $activeBtn.hasClass('active');
                     if (!showActiveOnly) {
-                        return true; // Show all rows if checkbox is not checked
+                        return true; // Show all rows if filter is not active
                     }
 
-                    // If checkbox is checked, filter based on activeSatelliteIds
+                    // If filter is active, filter based on activeSatelliteIds
                     const noradIdString = data[1]; // Get NORAD ID string from column 1 data
                     const noradId = parseInt(noradIdString, 10);
 
                     if (isNaN(noradId)) {
-                        // console.warn(`Row ${dataIndex}: Could not parse NORAD ID: ${noradIdString}`);
                         return false; // Hide rows where ID cannot be parsed
                     }
 
@@ -203,9 +199,9 @@ function displaySatelliteTable(satellites) {
                     return activeSatelliteIds.has(noradId);
                 });
 
-                // Ensure change handler is attached only once to the correct checkbox
-                $checkbox.off('change').on('change', function() {
-                    console.log("Checkbox changed, redrawing table...");
+                // Attach click handler to toggle the filter
+                $activeBtn.off('click').on('click', function() {
+                    $(this).toggleClass('active');
                     dataTable.draw(); // Redraw table to apply the filter
                 });
             }
@@ -266,7 +262,7 @@ function toggleTleForm(show = null) { // Allow forcing show/hide
 
     if (show === true || (show === null && !isVisible)) {
         form.style.display = 'block'; // Ensure it's visible
-        btn.innerHTML = '<i class="fas fa-times"></i> Hide Form'; // Updated text with icon
+        btn.innerHTML = '<i class="fas fa-times"></i>';
         btn.classList.remove('btn-primary');
         btn.classList.add('btn-danger'); // Use a different color to indicate active/cancel state
     } else if (show === false || (show === null && isVisible)) {
@@ -532,34 +528,31 @@ function getEpochYearFromTLE(tleLine1) {
 
 // Function to populate the category dropdown
 function populateCategoryDropdown(categories) {
-    const dropdownContainer = document.getElementById('categorySelectContainer');
-    if (!dropdownContainer) return; // Guard clause
+    const categorySelect = document.getElementById('categorySelect');
+    if (!categorySelect) return; // Guard clause
 
-    // Start with the heading
-    let dropdownHTML = '<h5>Select Satellite Category</h5>'; 
-    // Add the select element
-    dropdownHTML += '<select id="categorySelect" class="form-control-sm">';
+    // Clear any existing options
+    categorySelect.innerHTML = '';
     // Add 'All' option first, not selected by default
-    dropdownHTML += '<option value="all">All Satellites</option>';
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All Satellites';
+    categorySelect.appendChild(allOption);
 
     categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
         // Set Weather as the default selected option
-        const selected = category === 'Weather' ? ' selected' : '';
-        dropdownHTML += `<option value="${category}"${selected}>${category}</option>`;
+        if (category === 'Weather') option.selected = true;
+        categorySelect.appendChild(option);
     });
 
-    dropdownHTML += '</select>';
-    // Now set the innerHTML including the heading and the select
-    dropdownContainer.innerHTML = dropdownHTML;
-
     // Add event listener to the dropdown
-    const categorySelect = document.getElementById('categorySelect');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-            const selectedCategory = this.value;
-            loadAndDisplaySatellites(selectedCategory);
-        });
-    }
+    categorySelect.addEventListener('change', function() {
+        const selectedCategory = this.value;
+        loadAndDisplaySatellites(selectedCategory);
+    });
 }
 
 // Function to load satellite data for all categories (used for filtering 'All')
@@ -650,6 +643,12 @@ function saveObserverLocation() {
     // Hide the form first
     toggleLocationForm(false); 
 
+    // Then display the success message with saved values
+    showSuccessMessage(
+        'Check the next pass for any satellite !',
+        `Your location has been saved:<br>Lat <b>${lat.toFixed(2)}°</b>, Lon <b>${lon.toFixed(2)}°</b>`
+    );
+
     // Then display the success message in the global span
     if (globalStatusSpan) {
         globalStatusSpan.textContent = `Location saved: Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
@@ -702,11 +701,15 @@ function toggleLocationForm(show = null) {
 
     if (show === true || (show === null && !isVisible)) {
         form.style.display = 'block';
-        btn.textContent = "Hide Location Form";
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
         if (globalStatusSpan) globalStatusSpan.textContent = ''; // Clear global message when opening form
     } else if (show === false || (show === null && isVisible)) {
         form.style.display = 'none';
-        btn.textContent = "Set Observer Location";
+        btn.innerHTML = "Set Location";
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
         // Do not clear the global message here, as it might have just been set by saveObserverLocation
     }
 }
