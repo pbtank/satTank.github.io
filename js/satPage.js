@@ -14,6 +14,7 @@ let observerMarker = null; // To hold the observer's location marker
 let currentMapLayer; // Renamed for clarity and consistency
 let passCountdownIntervalId = null; // Interval ID for the countdown timer
 let currentPassDetails = null; // Store details of the currently displayed pass
+let dynamicPlotUpdateIntervalId = null; // Interval ID for updating the live satellite marker on the plot
 
 // --- Favicon Paths ---
 const defaultFaviconHref = 'favicon.ico'; // Assuming default is in root
@@ -812,7 +813,7 @@ function calculateGroundTrackPoints() {
 // --- NEW Countdown Timer Functionality ---
 
 // Function to start or update the countdown timer
-function startOrUpdateCountdown(startTime, endTime) {
+function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) {
     // Clear any existing interval
     if (passCountdownIntervalId) {
         clearInterval(passCountdownIntervalId);
@@ -823,14 +824,42 @@ function startOrUpdateCountdown(startTime, endTime) {
     if (!countdownElement) return;
 
     // Store pass times for the interval function
-    currentPassDetails = { startTime, endTime };
+    currentPassDetails = { startTime, endTime, direction, originalLookAnglePoints: lookAnglePoints };
 
     // Function to update the display
     const updateDisplay = () => {
+        // Get references to table rows and relevant TH/TD elements
+        const nextPassAtRow = document.querySelector('#pass-details-table .next-pass-row');
+        const countdownRow = document.querySelector('#pass-details-table .countdown-row');
+        const countdownRowTh = countdownRow ? countdownRow.querySelector('th') : null;
+        
+        // For other rows, find by TD ID then get parent TR
+        const maxElevationTd = document.getElementById('maxElevation');
+        const durationTd = document.getElementById('passDuration');
+        const directionTd = document.getElementById('passDirection');
+        const inViewStatusRow = document.getElementById('in-view-status-row');
+        const inViewStatusText = document.getElementById('in-view-status-text');
+
+        const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
+        const durationRow = durationTd ? durationTd.closest('tr') : null;
+        const directionRow = directionTd ? directionTd.closest('tr') : null;
+
         if (!currentPassDetails) {
             if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
+            if (dynamicPlotUpdateIntervalId) { // Clear dynamic plot interval
+                clearInterval(dynamicPlotUpdateIntervalId);
+                dynamicPlotUpdateIntervalId = null;
+            }
             countdownElement.textContent = '';
             countdownElement.className = ''; // Clear classes
+            // Hide all rows if no current pass details (e.g. pass ended, or initial state before prediction)
+            if(nextPassAtRow) nextPassAtRow.style.display = 'none';
+            if(countdownRow) countdownRow.style.display = 'none';
+            if(maxElevationRow) maxElevationRow.style.display = 'none';
+            if(durationRow) durationRow.style.display = 'none';
+            if(directionRow) directionRow.style.display = 'none';
+            if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
+            if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
             return;
         }
 
@@ -839,33 +868,157 @@ function startOrUpdateCountdown(startTime, endTime) {
         const end = currentPassDetails.endTime;
 
         if (now < start) {
-            // Pass is in the future - show countdown
+            // Pass is in the future - show countdown TO THE START
+            if(nextPassAtRow) nextPassAtRow.style.display = ''; // Show
+            if(countdownRow) countdownRow.style.display = '';    // Show
+            if(countdownRowTh) countdownRowTh.textContent = 'Next pass in';
+            if(maxElevationRow) maxElevationRow.style.display = ''; // Show
+            if(durationRow) durationRow.style.display = '';       // Show
+            if(directionRow) directionRow.style.display = '';     // Show
+            if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
+            if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
+
             const diffSeconds = Math.round((start - now) / 1000);
-            if (diffSeconds <= 0) {
-                // Time is very close or slightly passed, switch to 'in view'
-                countdownElement.textContent = '(Satellite is in view...)'; // Added brackets
+            if (diffSeconds <= 0) { // Should ideally not happen if logic is tight, but handles edge case
+                countdownElement.textContent = '(Starting now...)';
                 countdownElement.className = 'pass-in-view';
-                // Keep interval running to switch when pass ends
             } else {
                 const hours = Math.floor(diffSeconds / 3600);
                 const minutes = Math.floor((diffSeconds % 3600) / 60);
                 const seconds = diffSeconds % 60;
-                // Changed format to H h M m S s
                 countdownElement.textContent = ` ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
                 countdownElement.className = 'countdown-timer';
             }
+            if (dynamicPlotUpdateIntervalId) { 
+                clearInterval(dynamicPlotUpdateIntervalId);
+                dynamicPlotUpdateIntervalId = null;
+            }
         } else if (now >= start && now <= end) {
-            // Pass is currently happening
-            countdownElement.textContent = '(Satellite is in view...)'; // Added brackets
-            countdownElement.className = 'pass-in-view';
-            // Keep interval running to clear after pass ends
+            // Pass is currently IN VIEW - show countdown TO THE END
+            if(nextPassAtRow) nextPassAtRow.style.display = 'none'; // Hide
+            if(countdownRow) countdownRow.style.display = '';     // Show
+            if(inViewStatusText) inViewStatusText.textContent = 'Satellite is in view...';
+            if(countdownRowTh) countdownRowTh.textContent = 'Time left in view:';
+            if(maxElevationRow) maxElevationRow.style.display = 'none'; // Hide
+            if(durationRow) durationRow.style.display = 'none';        // Hide
+            if(directionRow) directionRow.style.display = 'none';      // Hide
+            if(inViewStatusRow) inViewStatusRow.style.display = '';  // Show status row // Set status text
+
+            const diffSeconds = Math.round((end - now) / 1000);
+            let timeLeftString = '(Ending now...)';
+            if (diffSeconds > 0) {
+                const hours = Math.floor(diffSeconds / 3600);
+                const minutes = Math.floor((diffSeconds % 3600) / 60);
+                const seconds = diffSeconds % 60;
+                if (hours > 0) {
+                    timeLeftString = ` ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
+                } else {
+                    timeLeftString = ` ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
+                }
+            }
+            countdownElement.textContent = timeLeftString; // Only show the time here
+            countdownElement.className = 'pass-in-view'; // Keep this class for styling
+            
+            // Dynamic plot update logic (already here, no changes needed for that part)
+            if (!dynamicPlotUpdateIntervalId && typeof window.calculateCurrentLookAngle === 'function' && satellite && satellite.satrec) {
+                console.log('[DEBUG satPage] In-view: Setting up dynamicPlotUpdateIntervalId.'); // DEBUG
+                const observerLat = parseFloat(localStorage.getItem('observerLat'));
+                const observerLon = parseFloat(localStorage.getItem('observerLon'));
+                console.log(`[DEBUG satPage] Observer Coords: Lat=${observerLat}, Lon=${observerLon}`); // DEBUG
+                console.log('[DEBUG satPage] satellite.satrec exists:', !!satellite.satrec); // DEBUG
+
+                if (!isNaN(observerLat) && !isNaN(observerLon)) {
+                    // --- Make an IMMEDIATE first call to update the marker and initial path --- 
+                    const initialTime = new Date();
+                    const initialLookAngle = window.calculateCurrentLookAngle(satellite.satrec, initialTime, observerLat, observerLon);
+                    // console.log('[DEBUG satPage] Initial call: calculateCurrentLookAngle returned:', initialLookAngle); // DEBUG
+                    
+                    let initialRemainingPathPoints = [];
+                    if (initialLookAngle && initialLookAngle.elevation >= 0 && currentPassDetails && currentPassDetails.endTime && satellite.satrec) {
+                        // Calculate path from current marker to end of pass
+                        initialRemainingPathPoints = window.calculateTrajectorySegment(
+                            satellite.satrec, 
+                            initialTime, // Start from now
+                            currentPassDetails.endTime, 
+                            observerLat, 
+                            observerLon
+                        );
+                        // Prepend the exact current marker location to ensure the line starts there
+                        if (initialRemainingPathPoints.length === 0 || 
+                            (initialRemainingPathPoints[0].azimuth !== initialLookAngle.azimuth || initialRemainingPathPoints[0].elevation !== initialLookAngle.elevation)) {
+                            initialRemainingPathPoints.unshift({ azimuth: initialLookAngle.azimuth, elevation: initialLookAngle.elevation });
+                        }
+                    }
+
+                    if (initialLookAngle) {
+                        updatePlotlyDynamicElements('polarPlot', initialLookAngle.azimuth, initialLookAngle.elevation, initialRemainingPathPoints);
+                    }
+                    // --- End of immediate call ---
+
+                    dynamicPlotUpdateIntervalId = setInterval(() => {
+                        const currentTime = new Date();
+                        const lookAngle = window.calculateCurrentLookAngle(satellite.satrec, currentTime, observerLat, observerLon);
+                        // console.log('[DEBUG satPage] Interval: calculateCurrentLookAngle returned:', lookAngle); // DEBUG
+                        
+                        let remainingPathPoints = [];
+                        if (lookAngle && lookAngle.elevation >= 0 && currentPassDetails && currentPassDetails.endTime && satellite.satrec) {
+                           // Calculate path from current marker to end of pass
+                           remainingPathPoints = window.calculateTrajectorySegment(
+                               satellite.satrec, 
+                               currentTime, // Start from now
+                               currentPassDetails.endTime, 
+                               observerLat, 
+                               observerLon
+                           );
+                           // Prepend the exact current marker location
+                            if (remainingPathPoints.length === 0 || 
+                                (remainingPathPoints[0].azimuth !== lookAngle.azimuth || remainingPathPoints[0].elevation !== lookAngle.elevation)) {
+                                remainingPathPoints.unshift({ azimuth: lookAngle.azimuth, elevation: lookAngle.elevation });
+                            }
+                            // console.log(`[DEBUG satPage] Interval: remainingPathPoints length=${remainingPathPoints.length}`); // DEBUG
+                        }
+
+                        if (lookAngle) {
+                            updatePlotlyDynamicElements('polarPlot', lookAngle.azimuth, lookAngle.elevation, remainingPathPoints);
+                        } else {
+                            // If lookAngle is null (e.g. sat went below horizon before pass end time by direct calc),
+                            // still update to hide marker and clear path
+                            updatePlotlyDynamicElements('polarPlot', 0, -1, []);
+                        }
+                    }, 5000); // Update every 5 seconds
+                } else {
+                    console.warn('[DEBUG satPage] Observer lat/lon are NaN, cannot start dynamic plot updates.');
+                }
+            } else if (!dynamicPlotUpdateIntervalId) {
+                // Log if interval is NOT set up and why
+                console.warn('[DEBUG satPage] In-view: Dynamic plot interval NOT set. Conditions not met:',
+                    {
+                        hasInterval: !!dynamicPlotUpdateIntervalId,
+                        hasCalcFunc: typeof window.calculateCurrentLookAngle === 'function',
+                        hasSatellite: !!satellite,
+                        hasSatrec: !!(satellite && satellite.satrec)
+                    });
+            }
         } else {
-            // Pass has ended
+            // Pass has ended (or currentPassDetails became null for other reasons)
             countdownElement.textContent = '';
-            countdownElement.className = ''; // Clear classes
-            currentPassDetails = null; // Clear stored details
-            if (passCountdownIntervalId) clearInterval(passCountdownIntervalId); // Stop the interval
+            countdownElement.className = ''; 
+            if(nextPassAtRow) nextPassAtRow.style.display = 'none';
+            if(countdownRow) countdownRow.style.display = 'none';
+            if(maxElevationRow) maxElevationRow.style.display = 'none';
+            if(durationRow) durationRow.style.display = 'none';
+            if(directionRow) directionRow.style.display = 'none';
+            if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
+            if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
+            
+            currentPassDetails = null; 
+            if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
             passCountdownIntervalId = null;
+            if (dynamicPlotUpdateIntervalId) { 
+                clearInterval(dynamicPlotUpdateIntervalId);
+                dynamicPlotUpdateIntervalId = null;
+            }
+            updatePlotlyDynamicElements('polarPlot', 0, -1, []); 
         }
     };
 
@@ -879,6 +1032,12 @@ function stopAndClearCountdown() {
     if (passCountdownIntervalId) {
         clearInterval(passCountdownIntervalId);
         passCountdownIntervalId = null;
+    }
+    if (dynamicPlotUpdateIntervalId) { // Also clear dynamic plot interval
+        clearInterval(dynamicPlotUpdateIntervalId);
+        dynamicPlotUpdateIntervalId = null;
+        // Optionally hide the live marker
+        updatePlotlyDynamicElements('polarPlot', 0, -1, []);
     }
     currentPassDetails = null;
     const countdownElement = document.getElementById('pass-countdown-status');
@@ -1051,6 +1210,7 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
                 if (!satrec || satrec.error !== 0) {
                     throw new Error(`Failed to initialize satrec (source: ${tleSource}, error ${satrec?.error})`);
                 }
+                satellite.satrec = satrec; // Store satrec on the global satellite object
 
                 // Propagate position for NOW
                 const now = new Date();
@@ -1135,11 +1295,9 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
              // Restore original labels and row visibility
              if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';
             //  if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation'; // Commented out
-             // Restore labels for duration/direction if needed (assuming they exist)
+            //  Restore labels for duration/direction if needed (assuming they exist)
             //  const durationLabel = durationRow?.querySelector('th'); // Commented out
             //  const directionLabel = directionRow?.querySelector('th'); // Commented out
-            //  if(durationLabel) durationLabel.textContent = 'Duration'; // Commented out
-            //  if(directionLabel) directionLabel.textContent = 'Direction'; // Commented out
              
              // Ensure rows are visible again - this logic is problematic with dynamic rows, rely on parent display
             //  if (durationRow) durationRow.style.display = ''; // Commented out
@@ -1154,10 +1312,16 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
              if (typeof window.calculateNextPass !== 'function') {
                  throw new Error('calculateNextPass function is not available globally.');
              }
-             const nextPass = await window.calculateNextPass(satellite, observerLat, observerLon);
+             const nextPassData = await window.calculateNextPass(satellite, observerLat, observerLon);
              if (passResultsDiv) {
-                 if (nextPass) {
+                 if (nextPassData && nextPassData.startTime) { // Check for startTime to ensure it has pass data
+                    // Store the satrec from the pass calculation
+                    if (nextPassData.satrec) {
+                        satellite.satrec = nextPassData.satrec;
+                    }
+
                     // Display Pass Data
+                    const nextPass = nextPassData; // Use the returned object
 
                     // Hide the 'no pass' message and show the details table
                     if (noPassMessageDiv) noPassMessageDiv.style.display = 'none';
@@ -1174,7 +1338,7 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
                     document.getElementById('passDirection').innerHTML = nextPass.direction;
 
                     // --- Start the countdown timer --- 
-                    startOrUpdateCountdown(nextPass.startTime, nextPass.endTime);
+                    startOrUpdateCountdown(nextPass.startTime, nextPass.endTime, nextPass.direction, nextPass.lookAnglePoints);
 
                  } else {
                     // Show the 'no pass' message and hide the details table
@@ -1282,7 +1446,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     } else {
         // Handle pass trajectory for non-GEO
         if (lookAnglePoints.length > 0) {
-            const r = lookAnglePoints.map(p => Math.max(0, 90 - p.elevation)); // Ensure r is not negative
+            const r = lookAnglePoints.map(p => Math.max(0, 90 - p.elevation));
             const theta = lookAnglePoints.map(p => p.azimuth);
             
             // Only include points above horizon for plotting the line
@@ -1395,6 +1559,11 @@ function clearPolarPlotly(plotDivId, keepObserverMarker = false) {
         Plotly.purge(plotDivId); // Remove the plot instance
         plotDiv.style.display = 'none'; // Hide the container
     }
+    // Stop and clear any dynamic plot updates
+    if (dynamicPlotUpdateIntervalId) {
+        clearInterval(dynamicPlotUpdateIntervalId);
+        dynamicPlotUpdateIntervalId = null;
+    }
     // --- Conditionally remove observer marker ---
     if (!keepObserverMarker && observerMarker) {
         map.removeLayer(observerMarker);
@@ -1424,3 +1593,94 @@ window.addEventListener('scroll', handleFooterVisibility);
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(handleFooterVisibility, 100); 
 });
+
+// --- NEW Function to update the live satellite marker AND dynamic path on Plotly ---
+function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingPathPoints) {
+    // console.log(`[DEBUG satPage] updatePlotlyDynamicElements called with Az: ${currentAz}, El: ${currentEl}, Path Points: ${remainingPathPoints.length}`); // DEBUG
+    const plotDiv = document.getElementById(plotDivId);
+    if (!plotDiv) {
+        // console.warn('[DEBUG satPage] updatePlotlyDynamicElements: plotDiv not found'); // DEBUG
+        return;
+    }
+    if (!plotDiv.data) {
+        // console.warn('[DEBUG satPage] updatePlotlyDynamicElements: plotDiv.data is undefined (plot not fully initialized?)'); // DEBUG
+        return;
+    }
+    // console.log('[DEBUG satPage] updatePlotlyDynamicElements: plotDiv and plotDiv.data found.'); // DEBUG
+
+    const markerTraceName = 'Live Position';
+    const pathTraceName = 'Satellite Path'; // Assuming this is the name used in drawPolarPlotly
+    let markerTraceIndex = -1;
+    let pathTraceIndex = -1;
+
+    for (let i = 0; i < plotDiv.data.length; i++) {
+        if (plotDiv.data[i].name === markerTraceName) markerTraceIndex = i;
+        if (plotDiv.data[i].name === pathTraceName) pathTraceIndex = i;
+        if (markerTraceIndex !== -1 && pathTraceIndex !== -1) break;
+    }
+
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const markerColor = currentTheme === 'dark' ? 'lime' : 'red';
+    const pathLineColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgb(117, 184, 240)'; // From drawPolarPlotly
+
+    const direction = currentPassDetails ? currentPassDetails.direction : null;
+    let markerAngle = 0;
+    if (direction === "North &rarr; South") markerAngle = 180;
+
+    // Update Marker
+    if (currentEl >= 0) { // Only draw/update if satellite is above horizon
+        const markerRVal = [90 - currentEl];
+        const markerThetaVal = [currentAz];
+        const markerUpdateOps = {
+            r: [markerRVal],
+            theta: [markerThetaVal],
+            'marker.angle': [[markerAngle]],
+            'marker.symbol': [['triangle-up']],
+            visible: [true]
+        };
+
+        if (markerTraceIndex !== -1) {
+            Plotly.restyle(plotDivId, markerUpdateOps, [markerTraceIndex]);
+        } else {
+            const newMarkerTrace = {
+                type: 'scatterpolar',
+                r: markerRVal,
+                theta: markerThetaVal,
+                mode: 'markers',
+                name: markerTraceName,
+                marker: { color: markerColor, size: 14, symbol: 'triangle-up', angle: markerAngle },
+                hoverinfo: 'text',
+                text: `Az: ${currentAz.toFixed(1)}°, El: ${currentEl.toFixed(1)}°`,
+                showlegend: false
+            };
+            Plotly.addTraces(plotDivId, newMarkerTrace);
+            // Re-find trace index after adding
+            for (let i = 0; i < plotDiv.data.length; i++) { if (plotDiv.data[i].name === markerTraceName) markerTraceIndex = i;}
+        }
+    } else {
+        if (markerTraceIndex !== -1) {
+            Plotly.restyle(plotDivId, { visible: [false] }, [markerTraceIndex]);
+        }
+    }
+
+    // Update Path Line
+    if (pathTraceIndex !== -1) {
+        if (remainingPathPoints && remainingPathPoints.length > 0) {
+            const pathR = remainingPathPoints.map(p => Math.max(0, 90 - p.elevation));
+            const pathTheta = remainingPathPoints.map(p => p.azimuth);
+            const pathUpdateOps = {
+                r: [pathR],
+                theta: [pathTheta],
+                visible: [true]
+            };
+            Plotly.restyle(plotDivId, pathUpdateOps, [pathTraceIndex]);
+        } else {
+            // No remaining path, hide the line trace
+            Plotly.restyle(plotDivId, { visible: [false] }, [pathTraceIndex]);
+        }
+    } else {
+        // console.warn('[DEBUG satPage] updatePlotlyDynamicElements: Path trace not found to update.');
+        // This could happen if drawPolarPlotly hasn't run or didn't create the path trace.
+        // Optionally, we could attempt to draw it here if it's missing, but that might complicate things.
+    }
+}

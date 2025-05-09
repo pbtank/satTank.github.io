@@ -396,8 +396,15 @@ body[data-theme='light'] .js-plotly-plot .scatter .lines {
     padding-bottom: 0.6em; /* Add some space below the countdown row */
 }
 
+.countdown-row th {
+    padding-right: 0;
+    width: auto; /* Encourage this column to be only as wide as its content */
+}
+
 .countdown-value-cell {
     vertical-align: middle;
+    padding-left: 0;
+    text-align: left; /* Explicitly align content to the left */
 }
 
 /* Style for Geostationary Status Message */
@@ -1022,7 +1029,7 @@ body[data-theme='dark'] .footer-content a {
 #pass-countdown-status {
     font-family: 'NType82 Mono', monospace;
     font-size: 1.1rem; /* Match table data size */
-    padding-left: 1em; /* Add some space from the time */
+    padding-left: 0rem; /* Add some space from the time */
 }
 
 /* Style for the countdown timer (future pass) */
@@ -1034,6 +1041,7 @@ body[data-theme='dark'] .footer-content a {
 .pass-in-view {
     /* Default color (used in dark mode) */
     color: rgba(80, 200, 120, 0.9); /* Match dark mode green */
+    padding-left: 0rem;
 }
 
 /* Override countdown color for light mode to be blue */
