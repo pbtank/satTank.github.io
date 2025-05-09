@@ -623,8 +623,8 @@ function updatePositionInfo(position) {
     const { lat, lng, alt, velocity, time } = position;
 
     // Update each element individually
-    document.getElementById('timeUTC').textContent = time.toISOString();
-    document.getElementById('timeLocal').textContent = time.toLocaleString();
+    // document.getElementById('timeUTC').textContent = time.toISOString();
+    // document.getElementById('timeLocal').textContent = time.toLocaleString();
     document.getElementById('latitude').textContent = `${lat.toFixed(4)}°`;
     document.getElementById('longitude').textContent = `${lng.toFixed(4)}°`;
     document.getElementById('altitude').textContent = `${alt.toFixed(2)} km`;
@@ -901,7 +901,7 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             if(countdownRowTh) countdownRowTh.textContent = 'Time left in view:';
             if(maxElevationRow) maxElevationRow.style.display = 'none'; // Hide
             if(durationRow) durationRow.style.display = 'none';        // Hide
-            if(directionRow) directionRow.style.display = 'none';      // Hide
+            if(directionRow) directionRow.style.display = '';
             if(inViewStatusRow) inViewStatusRow.style.display = '';  // Show status row // Set status text
 
             const diffSeconds = Math.round((end - now) / 1000);

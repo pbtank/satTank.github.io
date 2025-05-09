@@ -3,7 +3,7 @@
 // Constants for pass prediction (moved here for modularity)
 const PASS_PREDICTION_INTERVAL = 30000; // 30 seconds (Reduced loop iterations)
 const MAX_PREDICTION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const MIN_ELEVATION = 10; // Minimum elevation angle for a pass (degrees)
+const MIN_ELEVATION = 0; // Minimum elevation angle for a pass (degrees)
 
 // Function to calculate next pass using the provided satellite object
 async function calculateNextPass(satellite, observerLat, observerLon) { // Accept full satellite object
