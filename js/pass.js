@@ -360,9 +360,9 @@ async function calculatePassDirection(satrec, passStartTime, passEndTime, observ
 
         // FLIPPED primary logic for N/S determination based on latitude change:
         if (latDiff > 0) {
-            return 'North &rarr; South'; // Latitude increased, but labeling it N-S for this test
+            return 'South &rarr; North'; // Latitude increased, so S->N
         } else {
-            return 'South &rarr; North'; // Latitude decreased, but labeling it S-N for this test
+            return 'North &rarr; South'; // Latitude decreased, so N->S
         }
 
     } catch (error) {
