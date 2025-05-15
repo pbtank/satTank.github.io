@@ -840,13 +840,11 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
         // For other rows, find by TD ID then get parent TR
         const maxElevationTd = document.getElementById('maxElevation');
         const durationTd = document.getElementById('passDuration');
-        const directionTd = document.getElementById('passDirection');
         const inViewStatusRow = document.getElementById('in-view-status-row');
         const inViewStatusText = document.getElementById('in-view-status-text');
 
         const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
         const durationRow = durationTd ? durationTd.closest('tr') : null;
-        const directionRow = directionTd ? directionTd.closest('tr') : null;
 
         if (!currentPassDetails) {
             if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
@@ -861,7 +859,6 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             if(countdownRow) countdownRow.style.display = 'none';
             if(maxElevationRow) maxElevationRow.style.display = 'none';
             if(durationRow) durationRow.style.display = 'none';
-            if(directionRow) directionRow.style.display = 'none';
             if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
             if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
             return;
@@ -878,7 +875,6 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             if(countdownRowTh) countdownRowTh.textContent = 'Next pass in';
             if(maxElevationRow) maxElevationRow.style.display = ''; // Show
             if(durationRow) durationRow.style.display = '';       // Show
-            if(directionRow) directionRow.style.display = '';     // Show
             if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
             if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
 
@@ -905,7 +901,6 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             if(countdownRowTh) countdownRowTh.textContent = 'Time left in view:';
             if(maxElevationRow) maxElevationRow.style.display = 'none'; // Hide
             if(durationRow) durationRow.style.display = 'none';        // Hide
-            if(directionRow) directionRow.style.display = '';
             if(inViewStatusRow) inViewStatusRow.style.display = '';  // Show status row // Set status text
 
             const diffSeconds = Math.round((end - now) / 1000);
@@ -1011,7 +1006,6 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             if(countdownRow) countdownRow.style.display = 'none';
             if(maxElevationRow) maxElevationRow.style.display = 'none';
             if(durationRow) durationRow.style.display = 'none';
-            if(directionRow) directionRow.style.display = 'none';
             if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
             if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
             
@@ -1093,12 +1087,10 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
     const nextPassRow = document.querySelector('#pass-details-table .next-pass-row');
     const maxElevationTd = document.getElementById('maxElevation');
     const durationTd = document.getElementById('passDuration');
-    const directionTd = document.getElementById('passDirection');
     const inViewStatusRow = document.getElementById('in-view-status-row');
     const inViewStatusText = document.getElementById('in-view-status-text');
     const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
     const durationRow = durationTd ? durationTd.closest('tr') : null;
-    const directionRow = directionTd ? directionTd.closest('tr') : null;
     const nextPassLabel = nextPassRow ? nextPassRow.querySelector('th') : null;
     const nextPassCell = nextPassRow ? nextPassRow.querySelector('td') : null;
     const maxElevationLabel = maxElevationRow ? maxElevationRow.querySelector('th') : null;
@@ -1155,12 +1147,14 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
 
     // --- Check if Geostationary ---
     if (window.isGeostationary(satellite)) {
-         console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
+        // Always hide the countdown row for GEO satellites
+        const countdownRow = document.querySelector('#pass-details-table .countdown-row');
+        if (countdownRow) countdownRow.style.display = 'none';
+        console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
         // predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles';
 
         // Hide pass-specific rows immediately
         if (durationRow) durationRow.style.display = 'none';
-        if (directionRow) directionRow.style.display = 'none';
 
         // --- Integrated satrec creation and look angle calculation ---
         let satrec;
@@ -1259,6 +1253,9 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
                 geoStatusMessage.textContent = ''; // Clear message
                 geoStatusMessage.className = ''; // Clear class
                 clearPolarPlotly('polarPlot', true); // Keep observer marker
+                // Hide the countdown row if GEO is below horizon
+                const countdownRow = document.querySelector('#pass-details-table .countdown-row');
+                if (countdownRow) countdownRow.style.display = 'none';
             } else { // Error during calculation
                 nextPassCell.textContent = 'Error calculating';
                 nextPassRow.style.display = '';
@@ -1329,7 +1326,6 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
                 document.getElementById('nextPassTime').textContent = localStartTime;
                 document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
                 document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
-                document.getElementById('passDirection').innerHTML = nextPass.direction;
 
                 // --- Start the countdown timer --- 
                 startOrUpdateCountdown(nextPass.startTime, nextPass.endTime, nextPass.direction, nextPass.lookAnglePoints);
@@ -1418,6 +1414,8 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
 
     let dataTraces = [];
     let visiblePointExists = false;
+    let visibleR = [];
+    let visibleTheta = [];
 
     if (isGeostationary) {
         // Handle single point for GEO
@@ -1442,32 +1440,16 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         if (lookAnglePoints.length > 0) {
             const r = lookAnglePoints.map(p => Math.max(0, 90 - p.elevation));
             const theta = lookAnglePoints.map(p => p.azimuth);
-            
-            // Only include points above horizon for plotting the line
-            const visibleR = [];
-            const visibleTheta = [];
             lookAnglePoints.forEach((p, index) => {
                 if (p.elevation >= 0) {
                     visibleR.push(r[index]);
                     visibleTheta.push(theta[index]);
                 }
             });
-
-            if (visibleR.length > 0) {
-                 visiblePointExists = true;
-                 const trace = {
-                    type: 'scatterpolar',
-                    r: visibleR,
-                    theta: visibleTheta,
-                    mode: 'lines', 
-                    name: 'Satellite Path',
-                    line: { color: pathLineColor, width: 2.5 },
-                    hoverinfo: 'none' // Disable hover text for path trace
-                };
-                dataTraces.push(trace);
-            }
         }
-        // If no visible points, dataTraces remains empty
+        if (visibleR.length > 0 && visibleTheta.length > 0) {
+            visiblePointExists = true;
+        }
     }
 
     if (!visiblePointExists) {
@@ -1541,7 +1523,77 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         staticPlot: true // Makes the plot non-interactive (disables zoom, pan, hover, modebar)
     };
 
-    // Create or update the plot, adding the config object
+    // Add start and end markers for the pass BEFORE rendering the plot
+    const startMarkerColor = currentTheme === 'dark' ? 'rgb(0,255,0)' : 'rgb(0,204,0)';
+    const endMarkerColor = currentTheme === 'dark' ? 'rgb(255,0,0)' : 'rgb(204,0,0)';
+    const borderColor = currentTheme === 'dark' ? '#fff' : '#000';
+    if (!isGeostationary && Array.isArray(lookAnglePoints) && lookAnglePoints.length > 1) {
+        // Satellite Path (add first)
+        if (visibleR.length > 0 && visibleTheta.length > 0) {
+            dataTraces.push({
+                type: 'scatterpolar',
+                r: visibleR,
+                theta: visibleTheta,
+                mode: 'lines',
+                name: 'Satellite Path',
+                line: { color: pathLineColor, width: 2.5 },
+                hoverinfo: 'none',
+                showlegend: true,
+                legendgroup: 'path'
+            });
+        }
+        // Start marker (theme-aware green, circle)
+        dataTraces.push({
+            type: 'scatterpolar',
+            r: [90 - lookAnglePoints[0].elevation],
+            theta: [lookAnglePoints[0].azimuth],
+            mode: 'markers',
+            name: 'Start',
+            marker: {
+                color: startMarkerColor,
+                fillcolor: startMarkerColor,
+                size: 16,
+                symbol: 'circle',
+                opacity: 1,
+                line: { color: startMarkerColor, width: 2 },
+                colorscale: null,
+                cmin: 0,
+                cmax: 0,
+                showscale: false
+            },
+            showlegend: true,
+            legendgroup: 'start'
+        });
+        // End marker
+        let endIdx = lookAnglePoints.length - 1;
+        while (endIdx > 0 && lookAnglePoints[endIdx].elevation < 0) {
+            endIdx--;
+        }
+        if (lookAnglePoints[endIdx].elevation >= 0) {
+            dataTraces.push({
+                type: 'scatterpolar',
+                r: [90 - lookAnglePoints[endIdx].elevation],
+                theta: [lookAnglePoints[endIdx].azimuth],
+                mode: 'markers',
+                name: 'End',
+                marker: {
+                    color: endMarkerColor,
+                    fillcolor: endMarkerColor,
+                    size: 16,
+                    symbol: 'circle',
+                    opacity: 1,
+                    line: { color: endMarkerColor, width: 2 },
+                    colorscale: null,
+                    cmin: 0,
+                    cmax: 0,
+                    showscale: false
+                },
+                showlegend: true,
+                legendgroup: 'end'
+            });
+        }
+    }
+
     Plotly.react(plotDivId, dataTraces, layout, config); 
     plotDiv.style.display = 'block'; // Show the plot
 }

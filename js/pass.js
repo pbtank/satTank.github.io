@@ -335,23 +335,42 @@ async function calculatePassDirection(satrec, passStartTime, passEndTime, observ
         const latDiff = latEndDegrees - latStartDegrees;
 
         if (Math.abs(latDiff) < 0.5) { // If latitude change is very small (e.g., less than 0.5 degree)
-            // Fallback to azimuth-based method for predominantly E-W passes or very short passes
-            // console.log('[calculatePassDirection] Latitude change is small, falling back to azimuth method.');
-            const positionAndVelocity = window.satellite.propagate(satrec, passStartTime); // Use passStartTime for azimuth check
-            if (!positionAndVelocity || !positionAndVelocity.position) return 'Unknown (Azimuth Fallback Prop Fail)';
-            
+            // Improved: Use azimuth at start and end to determine main direction
             const observerGd = {
                 longitude: observerLon * Math.PI / 180,
                 latitude:  observerLat * Math.PI / 180,
                 height: 0.370
             };
-            const gmst = window.satellite.gstime(passStartTime);
-            const positionEcf = window.satellite.eciToEcf(positionAndVelocity.position, gmst);
-            const lookAngles = window.satellite.ecfToLookAngles(observerGd, positionEcf);
-            const azimuth = lookAngles.azimuth * 180 / Math.PI;
-            
-            // Current fallback: Azimuth 0-180 (Eastward) -> S-N, 180-360 (Westward) -> N-S
-            if (azimuth >= 0 && azimuth < 180) { 
+            const posVelStart = window.satellite.propagate(satrec, passStartTime);
+            const gmstStart = window.satellite.gstime(passStartTime);
+            const posEcfStart = window.satellite.eciToEcf(posVelStart.position, gmstStart);
+            const lookStart = window.satellite.ecfToLookAngles(observerGd, posEcfStart);
+            const azStart = (lookStart.azimuth * 180 / Math.PI + 360) % 360;
+
+            const posVelEnd = window.satellite.propagate(satrec, passEndTime);
+            const gmstEnd = window.satellite.gstime(passEndTime);
+            const posEcfEnd = window.satellite.eciToEcf(posVelEnd.position, gmstEnd);
+            const lookEnd = window.satellite.ecfToLookAngles(observerGd, posEcfEnd);
+            const azEnd = (lookEnd.azimuth * 180 / Math.PI + 360) % 360;
+
+            // SE (90-180) to NW (270-360)
+            if (azStart >= 90 && azStart < 180 && azEnd >= 270 && azEnd < 360) {
+                return 'SE &rarr; NW';
+            }
+            // SW (180-270) to NE (0-90)
+            if (azStart >= 180 && azStart < 270 && azEnd >= 0 && azEnd < 90) {
+                return 'SW &rarr; NE';
+            }
+            // E (60-120) to W (240-300)
+            if (azStart >= 60 && azStart < 120 && azEnd >= 240 && azEnd < 300) {
+                return 'East &rarr; West';
+            }
+            // W (240-300) to E (60-120)
+            if (azStart >= 240 && azStart < 300 && azEnd >= 60 && azEnd < 120) {
+                return 'West &rarr; East';
+            }
+            // Otherwise, fallback to N/S
+            if (azStart >= 0 && azStart < 180) { 
                 return 'South &rarr; North'; 
             } else { 
                 return 'North &rarr; South';
