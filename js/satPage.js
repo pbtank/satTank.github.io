@@ -1524,9 +1524,8 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     };
 
     // Add start and end markers for the pass BEFORE rendering the plot
-    const startMarkerColor = currentTheme === 'dark' ? 'rgb(0,255,0)' : 'rgb(0,204,0)';
-    const endMarkerColor = currentTheme === 'dark' ? 'rgb(255,0,0)' : 'rgb(204,0,0)';
-    const borderColor = currentTheme === 'dark' ? '#fff' : '#000';
+    const startMarkerColor = currentTheme === 'dark' ? 'rgb(0,255,0)' : 'rgb(0,128,0)'; // Dark green for light
+    const endMarkerColor = currentTheme === 'dark' ? 'rgb(255,0,0)' : 'rgb(128,0,0)';     // Dark red for light
     if (!isGeostationary && Array.isArray(lookAnglePoints) && lookAnglePoints.length > 1) {
         // Satellite Path (add first)
         if (visibleR.length > 0 && visibleTheta.length > 0) {
@@ -1537,6 +1536,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                 mode: 'lines',
                 name: 'Satellite Path',
                 line: { color: pathLineColor, width: 2.5 },
+                marker: { opacity: 0 }, // Hide markers on the path itself
                 hoverinfo: 'none',
                 showlegend: true,
                 legendgroup: 'path'
@@ -1550,16 +1550,11 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
             mode: 'markers',
             name: 'Start',
             marker: {
-                color: startMarkerColor,
-                fillcolor: startMarkerColor,
+                color: startMarkerColor,     // General color / line color
+                fillcolor: startMarkerColor, // Explicit fill color
                 size: 16,
                 symbol: 'circle',
-                opacity: 1,
-                line: { color: startMarkerColor, width: 2 },
-                colorscale: null,
-                cmin: 0,
-                cmax: 0,
-                showscale: false
+                line: { color: startMarkerColor, width: 2 } // Explicit line color
             },
             showlegend: true,
             legendgroup: 'start'
@@ -1577,16 +1572,11 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                 mode: 'markers',
                 name: 'End',
                 marker: {
-                    color: endMarkerColor,
-                    fillcolor: endMarkerColor,
+                    color: endMarkerColor,    // General color / line color
+                    fillcolor: endMarkerColor, // Explicit fill color
                     size: 16,
                     symbol: 'circle',
-                    opacity: 1,
-                    line: { color: endMarkerColor, width: 2 },
-                    colorscale: null,
-                    cmin: 0,
-                    cmax: 0,
-                    showscale: false
+                    line: { color: endMarkerColor, width: 2 } // Explicit line color
                 },
                 showlegend: true,
                 legendgroup: 'end'
