@@ -846,6 +846,8 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
         const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
         const durationRow = durationTd ? durationTd.closest('tr') : null;
 
+        const countdownLabel = document.querySelector('.countdown-label');
+
         if (!currentPassDetails) {
             if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
             if (dynamicPlotUpdateIntervalId) { // Clear dynamic plot interval
@@ -872,7 +874,7 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             // Pass is in the future - show countdown TO THE START
             if(nextPassAtRow) nextPassAtRow.style.display = ''; // Show
             if(countdownRow) countdownRow.style.display = '';    // Show
-            if(countdownRowTh) countdownRowTh.textContent = 'Next pass in';
+            if (countdownLabel) countdownLabel.textContent = 'Next pass in';
             if(maxElevationRow) maxElevationRow.style.display = ''; // Show
             if(durationRow) durationRow.style.display = '';       // Show
             if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
@@ -897,8 +899,7 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
             // Pass is currently IN VIEW - show countdown TO THE END
             if(nextPassAtRow) nextPassAtRow.style.display = 'none'; // Hide
             if(countdownRow) countdownRow.style.display = '';     // Show
-            if(inViewStatusText) inViewStatusText.textContent = 'Satellite is in view...';
-            if(countdownRowTh) countdownRowTh.textContent = 'Time left in view:';
+            if (countdownLabel) countdownLabel.textContent = 'Time left in view:';
             if(maxElevationRow) maxElevationRow.style.display = 'none'; // Hide
             if(durationRow) durationRow.style.display = 'none';        // Hide
             if(inViewStatusRow) inViewStatusRow.style.display = '';  // Show status row // Set status text
@@ -1017,6 +1018,14 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
                 dynamicPlotUpdateIntervalId = null;
             }
             updatePlotlyDynamicElements('polarPlot', 0, -1, []); 
+            // --- Trigger next pass prediction automatically ---
+            const savedLat = localStorage.getItem('observerLat');
+            const savedLon = localStorage.getItem('observerLon');
+            if (savedLat && savedLon) {
+                setTimeout(() => {
+                    updatePassPredictions(parseFloat(savedLat), parseFloat(savedLon), false);
+                }, 500); // Small delay to ensure UI is cleared before updating
+            }
         }
     };
 
@@ -1318,8 +1327,23 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
                 if (noPassMessageDiv) noPassMessageDiv.style.display = 'none';
                 if (passDetailsTable) passDetailsTable.style.display = ''; // Show table
 
-                // Call Plotly function for non-GEO
-                drawPolarPlotly('polarPlot', nextPass.lookAnglePoints, false);
+                // In updatePassPredictions, after getting nextPassData for non-GEO:
+                // Store the full pass points for the current pass
+                let fullPassLookAnglePoints = null;
+
+                // ... inside the block where nextPassData && nextPassData.startTime ...
+                if (nextPassData && nextPassData.startTime) {
+                    // Store the full pass points if available
+                    if (nextPassData.lookAnglePoints) {
+                        fullPassLookAnglePoints = nextPassData.lookAnglePoints;
+                    }
+                    // ...
+                    // Call Plotly function for non-GEO, always pass the full pass points for start/end markers
+                    drawPolarPlotly('polarPlot', nextPass.lookAnglePoints, false, fullPassLookAnglePoints);
+                    // ...
+                }
+                // ...
+
                 const localStartTime = nextPass.startTime.toLocaleString(undefined, {
                     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
                 });
@@ -1382,12 +1406,17 @@ async function updatePassPredictions(observerLat, observerLon, shouldScroll = tr
 }
 
 // --- NEW Plotly Visualization Function --- //
-function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
+function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary, fullPassLookAnglePoints = null) {
     const plotDiv = document.getElementById(plotDivId);
     if (!plotDiv) {
         console.error(`Plotly container #${plotDivId} not found.`);
         return;
     }
+
+    // Use full pass points for start/end markers if provided
+    const markerPoints = Array.isArray(fullPassLookAnglePoints) && fullPassLookAnglePoints.length > 1
+        ? fullPassLookAnglePoints
+        : lookAnglePoints;
 
     // Define a color variable for light mode elements
     const lightModeAccentColor = 'rgb(117, 184, 240)';
@@ -1400,6 +1429,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         ? 'rgba(180, 180, 180, 0.4)' // Light gray transparent grid for dark mode
         : 'rgba(200, 200, 200, 0.6)'; // Standard light gray transparent grid for light mode
     const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#000000'; // Axis line color
+    const borderColor = currentTheme === 'dark' ? '#ffffff' : '#000000'; // Border color for markers
     // Define theme-dependent path line color
     const pathLineColor = currentTheme === 'dark' 
         ? 'rgba(80,200,120,0.7)' // Match green used for button and dot in dark mode
@@ -1459,14 +1489,19 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     }
 
     // Add a center dot with slightly more blue in light mode
-    const greenDotColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(117,184,240,0.7)';
+    const centerDotColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(117,184,240,0.7)';
     dataTraces.push({
         type: 'scatterpolar',
         r: [0], // Center of the plot (user location)
         theta: [0], // Angle is irrelevant at r=0
         mode: 'markers',
         name: 'Observer Location',
-        marker: { color: greenDotColor, size: 18, symbol: 'circle' },
+        marker: { 
+            color: centerDotColor, 
+            size: 18, 
+            symbol: 'circle',
+            line: { color: borderColor, width: 1 }
+        },
         showlegend: false
     });
 
@@ -1524,9 +1559,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     };
 
     // Add start and end markers for the pass BEFORE rendering the plot
-    const startMarkerColor = currentTheme === 'dark' ? 'rgb(0,255,0)' : 'rgb(0,128,0)'; // Dark green for light
-    const endMarkerColor = currentTheme === 'dark' ? 'rgb(255,0,0)' : 'rgb(128,0,0)';     // Dark red for light
-    if (!isGeostationary && Array.isArray(lookAnglePoints) && lookAnglePoints.length > 1) {
+    if (!isGeostationary && Array.isArray(markerPoints) && markerPoints.length > 1) {
         // Satellite Path (add first)
         if (visibleR.length > 0 && visibleTheta.length > 0) {
             dataTraces.push({
@@ -1536,28 +1569,28 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                 mode: 'lines',
                 name: 'Satellite Path',
                 line: { color: pathLineColor, width: 2.5 },
-                marker: { opacity: 0 }, // Hide markers on the path itself
                 hoverinfo: 'none',
                 showlegend: true,
                 legendgroup: 'path'
             });
         }
-        // Start marker (theme-aware green, circle)
+        // Start marker (always at full pass start)
         dataTraces.push({
             type: 'scatterpolar',
-            r: [90 - lookAnglePoints[0].elevation],
-            theta: [lookAnglePoints[0].azimuth],
+            r: [90 - markerPoints[0].elevation],
+            theta: [markerPoints[0].azimuth],
             mode: 'markers',
             name: 'Start',
             marker: {
-                color: startMarkerColor,     // General color / line color
-                fillcolor: startMarkerColor, // Explicit fill color
+                color: 'green',
                 size: 16,
                 symbol: 'circle',
-                line: { color: startMarkerColor, width: 2 } // Explicit line color
+                line: { color: borderColor, width: 1 }
             },
             showlegend: true,
-            legendgroup: 'start'
+            legendgroup: 'start',
+            hoverinfo: 'text',
+            text: ['Pass Start']
         });
         // End marker
         let endIdx = lookAnglePoints.length - 1;
@@ -1572,19 +1605,28 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
                 mode: 'markers',
                 name: 'End',
                 marker: {
-                    color: endMarkerColor,    // General color / line color
-                    fillcolor: endMarkerColor, // Explicit fill color
+                    color: 'red', // Use built-in color name for compatibility
                     size: 16,
                     symbol: 'circle',
-                    line: { color: endMarkerColor, width: 2 } // Explicit line color
+                    line: { color: borderColor, width: 1 }
                 },
                 showlegend: true,
-                legendgroup: 'end'
+                legendgroup: 'end',
+                hoverinfo: 'text',
+                text: ['Pass End']
             });
         }
     }
 
-    Plotly.react(plotDivId, dataTraces, layout, config); 
+    // Create the plot with explicit color settings
+    const plotConfig = {
+        ...config,
+        displayModeBar: false,
+        responsive: true
+    };
+
+    // Create the plot
+    Plotly.react(plotDivId, dataTraces, layout, plotConfig);
     plotDiv.style.display = 'block'; // Show the plot
 }
 
@@ -1632,38 +1674,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- NEW Function to update the live satellite marker AND dynamic path on Plotly ---
 function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingPathPoints) {
-    // console.log(`[DEBUG satPage] updatePlotlyDynamicElements called with Az: ${currentAz}, El: ${currentEl}, Path Points: ${remainingPathPoints.length}`); // DEBUG
     const plotDiv = document.getElementById(plotDivId);
-    if (!plotDiv) {
-        // console.warn('[DEBUG satPage] updatePlotlyDynamicElements: plotDiv not found'); // DEBUG
+    if (!plotDiv || !plotDiv.data) {
         return;
     }
-    if (!plotDiv.data) {
-        // console.warn('[DEBUG satPage] updatePlotlyDynamicElements: plotDiv.data is undefined (plot not fully initialized?)'); // DEBUG
-        return;
-    }
-    // console.log('[DEBUG satPage] updatePlotlyDynamicElements: plotDiv and plotDiv.data found.'); // DEBUG
 
     const markerTraceName = 'Live Position';
-    const pathTraceName = 'Satellite Path'; // Assuming this is the name used in drawPolarPlotly
+    const pathTraceName = 'Satellite Path';
     let markerTraceIndex = -1;
     let pathTraceIndex = -1;
 
     for (let i = 0; i < plotDiv.data.length; i++) {
         if (plotDiv.data[i].name === markerTraceName) markerTraceIndex = i;
         if (plotDiv.data[i].name === pathTraceName) pathTraceIndex = i;
+        // Do NOT touch traces named 'Start' or 'End' (fixed markers)
         if (markerTraceIndex !== -1 && pathTraceIndex !== -1) break;
     }
 
     const currentTheme = document.body.getAttribute('data-theme') || 'light';
-    const markerColor = currentTheme === 'dark' ? 'lime' : 'red';
-    const pathLineColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgb(117, 184, 240)'; // From drawPolarPlotly
+    const markerColor = currentTheme === 'dark' ? 'green' : 'rgba(80,200,120,0.7)';
+    const pathLineColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(43, 96, 241, 0.7)';
 
     const direction = currentPassDetails ? currentPassDetails.direction : null;
     let markerAngle = 0;
     if (direction === "North &rarr; South") markerAngle = 180;
 
-    // Update Marker
+    // Update ONLY the Live Position marker (triangle)
     if (currentEl >= 0) { // Only draw/update if satellite is above horizon
         const markerRVal = [90 - currentEl];
         const markerThetaVal = [currentAz];
@@ -1672,6 +1708,7 @@ function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingP
             theta: [markerThetaVal],
             'marker.angle': [[markerAngle]],
             'marker.symbol': [['triangle-up']],
+            'marker.color': [[markerColor]],
             visible: [true]
         };
 
@@ -1684,14 +1721,17 @@ function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingP
                 theta: markerThetaVal,
                 mode: 'markers',
                 name: markerTraceName,
-                marker: { color: markerColor, size: 14, symbol: 'triangle-up', angle: markerAngle },
+                marker: { 
+                    color: markerColor, 
+                    size: 14, 
+                    symbol: 'triangle-down', 
+                    angle: markerAngle 
+                },
                 hoverinfo: 'text',
                 text: `Az: ${currentAz.toFixed(1)}°, El: ${currentEl.toFixed(1)}°`,
                 showlegend: false
             };
             Plotly.addTraces(plotDivId, newMarkerTrace);
-            // Re-find trace index after adding
-            for (let i = 0; i < plotDiv.data.length; i++) { if (plotDiv.data[i].name === markerTraceName) markerTraceIndex = i;}
         }
     } else {
         if (markerTraceIndex !== -1) {
@@ -1699,7 +1739,7 @@ function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingP
         }
     }
 
-    // Update Path Line
+    // Update ONLY the path line (if present)
     if (pathTraceIndex !== -1) {
         if (remainingPathPoints && remainingPathPoints.length > 0) {
             const pathR = remainingPathPoints.map(p => Math.max(0, 90 - p.elevation));
@@ -1707,6 +1747,7 @@ function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingP
             const pathUpdateOps = {
                 r: [pathR],
                 theta: [pathTheta],
+                'line.color': [pathLineColor],
                 visible: [true]
             };
             Plotly.restyle(plotDivId, pathUpdateOps, [pathTraceIndex]);
@@ -1714,11 +1755,8 @@ function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingP
             // No remaining path, hide the line trace
             Plotly.restyle(plotDivId, { visible: [false] }, [pathTraceIndex]);
         }
-    } else {
-        // console.warn('[DEBUG satPage] updatePlotlyDynamicElements: Path trace not found to update.');
-        // This could happen if drawPolarPlotly hasn't run or didn't create the path trace.
-        // Optionally, we could attempt to draw it here if it's missing, but that might complicate things.
     }
+    // Do NOT update or touch the Start/End marker traces here.
 }
 
 // Function to update UTC Clock
