@@ -2,7 +2,7 @@
 
 [![GitHub Pages](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen)](https://carbform.github.io/carbsat)
 [![License](https://img.shields.io/badge/License-Unlicense-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.1%20Beta-orange)](https://github.com/carbform/carbsat/releases)
+[![Version](https://img.shields.io/badge/Version-0.2%20Beta-orange)](https://github.com/carbform/carbsat/releases)
 
 A modern, minimalistic web application for real-time satellite tracking with interactive orbit visualization and pass prediction capabilities.
 
