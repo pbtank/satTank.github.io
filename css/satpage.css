@@ -427,21 +427,10 @@ body[data-theme='light'] .js-plotly-plot .scatter .lines {
     padding-bottom: 0.6em; /* Add some space below the countdown row */
 }
 
-.countdown-row th {
-    padding-right: 0.3em; /* Reduce from default */
-    width: auto;
-    text-align: right;
-    font-size: 1.2rem;
-}
-
 .countdown-value-cell {
     padding-left: 0.3em; /* Reduce from default */
     text-align: left;
     font-size: 1.2rem;
-}
-
-.countdown-row {
-    text-align: center;
 }
 
 /* Style for Geostationary Status Message */
@@ -1086,6 +1075,11 @@ body[data-theme='light'] .countdown-timer {
     color: #3498db !important;
 }
 
+/* Override countdown color for dark mode to be green */
+body[data-theme='dark'] .countdown-timer {
+    color: rgba(80, 200, 120, 0.9) !important; /* Green for dark mode */
+}
+
 /* Override 'in view' color for light mode to be blue */
 body[data-theme='light'] .pass-in-view {
     color: #3498db !important;
@@ -1103,12 +1097,42 @@ body[data-theme='light'] .pass-in-view {
 
 /* Style for no pass message */
 #no-pass-message {
-    color: var(--text-secondary);
-    font-family: 'NType82 Mono', monospace; /* Set font family */
-    font-size: 1rem;
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) auto;
+    max-width: 400px;
+    font-family: 'NType82 Mono', monospace;
+    font-size: 1.1rem;
     text-align: center;
-    margin-top: var(--spacing-md);
     display: none; /* Hidden by default */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Light mode no-pass message */
+body[data-theme='light'] #no-pass-message {
+    background-color: #f8f9fa;
+    border-color: #e74c3c;
+    color: #e74c3c;
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.15);
+}
+
+/* Dark mode no-pass message */
+body[data-theme='dark'] #no-pass-message {
+    background-color: #1a1a1a;
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.2);
+}
+
+/* Add an icon before the text */
+#no-pass-message::before {
+    content: "⚠️";
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: var(--spacing-sm);
 }
 
 /* UTC Clock Styles */
@@ -1207,17 +1231,4 @@ body[data-theme='light'] .pass-in-view {
 #right-column-info .info-table td {
     width: auto !important;
     word-break: break-word;
-}
-
-.countdown-label {
-    font-size: 1.2rem;
-    margin-right: 0.3em;
-}
-
-/* Remove unnecessary spacing rules for .countdown-row th and .countdown-value-cell */
-.countdown-row th,
-.countdown-row td,
-.countdown-value-cell {
-    padding-left: 0;
-    padding-right: 0;
 }

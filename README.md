@@ -1,47 +1,137 @@
-# SatTank
+# 🛰️ SatTank
 
-A minimalistic web application to track satellites in real-time, visualize their orbits, ground tracks, and footprints on an interactive map, and predict passes over a specific location.
+[![GitHub Pages](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen)](https://carbform.github.io/carbsat)
+[![License](https://img.shields.io/badge/License-Unlicense-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-2.1%20Beta-orange)](https://github.com/carbform/carbsat/releases)
 
-## Features
+A modern, minimalistic web application for real-time satellite tracking with interactive orbit visualization and pass prediction capabilities.
 
-*   **Real-time Satellite Tracking:** View the current position of numerous satellites on an interactive world map.
-*   **Orbit Visualization:** Display satellite orbits, ground tracks, and sensor footprints.
-*   **Pass Prediction:** Calculate and visualize upcoming satellite passes for any observer location using polar plots.
-*   **Data Filtering & Sorting:** Easily find satellites by category or sort the main list.
-*   **Custom TLE Input:** Add and track satellites using custom Two-Line Element sets.
+## ✨ Features
 
-## Usage
+- 🌍 **Real-time Satellite Tracking** - Track hundreds of satellites on an interactive world map
+- 🛰️ **Orbit Visualization** - Display satellite orbits, ground tracks, and sensor footprints
+- 📊 **Pass Prediction** - Calculate upcoming passes with polar plot visualizations
+- 🔍 **Smart Filtering** - Search and categorize satellites with advanced filtering
+- 📡 **Custom TLE Support** - Add your own Two-Line Element sets for custom tracking
+- 🌙 **Dark/Light Theme** - Responsive design with theme switching
+- ⏰ **Live UTC Clock** - Real-time UTC display for accurate timing
 
-This application is hosted on GitHub Pages. You can access it directly via the repository's GitHub Pages link:
+## 🚀 Live Demo
 
-[https://carbform.github.io/carbsat]
+**[Launch SatTank →](https://carbform.github.io/carbsat)**
 
-1.  The main page lists active satellites. You can sort them or filter by category.
-2.  Click on a satellite name to view its dedicated tracking page.
-3.  On the tracking page:
-    *   Observe the satellite's real-time position on the map.
-    *   Use the map controls to change the map type or toggle overlays (orbit, ground track, footprint).
-    *   View detailed satellite information and orbital elements in the side panels.
-    *   Enter observer latitude and longitude in the "Next Pass at a Location" panel and click "Predict" to see upcoming passes and a polar plot visualization.
+## 🖥️ Screenshots
 
-## Attributions
+### Main Satellite List
+Interactive table with sorting and filtering capabilities.
 
-This project utilizes several excellent open-source libraries and data sources:
+### Satellite Tracking Page
+Real-time position tracking with orbital data and pass predictions.
 
-*   **Satellite Data:** Two-Line Element (TLE) sets primarily sourced from [Celestrak](https://celestrak.org/), maintained by Dr. T.S. Kelso.
-*   **Core Calculation Library:** [satellite.js](https://github.com/shashwatak/satellite-js) for orbital propagation and coordinate transformations.
-*   **Mapping Library:** [Leaflet](https://leafletjs.com/) for interactive maps.
-    *   **Map Tiles:** OpenStreetMap, CARTO (Dark), Esri (Satellite), OpenTopoMap.
-*   **Charting Library:** [Plotly.js](https://plotly.com/javascript/) for polar plot pass visualizations.
-*   **Table Library:** [DataTables](https://datatables.net/) for interactive satellite list tables.
-*   **Icons:** [Font Awesome](https://fontawesome.com/) for UI icons.
-*   **Fonts:** IBM Plex Mono, NType82, Ndot-55.
+## 🛠️ Tech Stack & Dependencies
 
-## Development
+### Core Libraries
+- **[satellite.js](https://github.com/shashwatak/satellite-js)** - SGP4 orbital propagation
+- **[Leaflet](https://leafletjs.com/)** - Interactive mapping
+- **[Plotly.js](https://plotly.com/javascript/)** - Polar plot visualizations
+- **[DataTables](https://datatables.net/)** - Enhanced table functionality
 
-Developed by:
+### Map Providers
+- **[OpenStreetMap](https://www.openstreetmap.org/)** - Default map tiles
+- **[CartoDB](https://carto.com/)** - Dark theme tiles
+- **[Esri](https://www.esri.com/)** - Satellite imagery
+- **[OpenTopoMap](https://opentopomap.org/)** - Topographic maps
 
-*   [Priyansu Tank](https://pbtank.github.io/Tank_Priyansu/)
-*   [Carbform](https://github.com/carbform)
+### UI Components
+- **[Font Awesome](https://fontawesome.com/)** - Icons and symbols
+- **[IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono)** - Monospace typography
 
-Version: 2.1 (Beta)
+### Data Sources
+- **[CelesTrak](https://celestrak.org/)** - Two-Line Element (TLE) data by Dr. T.S. Kelso
+- **[NORAD](https://www.space-track.org/)** - Official satellite catalog data
+
+## 📋 Usage
+
+### Basic Tracking
+1. Browse the satellite list on the main page
+2. Use filters to find specific satellite categories
+3. Click any satellite name to view its tracking page
+
+### Pass Prediction
+1. Navigate to a satellite's tracking page
+2. Enter your observer coordinates (latitude/longitude)
+3. Click **"Predict Passes"** to generate pass forecasts
+4. View upcoming passes with elevation, azimuth, and timing data
+5. Analyze pass geometry using the interactive polar plot
+
+### Map Controls
+- **Map Type**: Switch between street, satellite, dark, and topographic views
+- **Overlays**: Toggle orbit paths, ground tracks, and sensor footprints
+- **Real-time Updates**: Satellite positions update automatically
+
+## 🔧 Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/carbform/carbsat.git
+
+# Navigate to project directory
+cd carbsat
+
+# Serve locally (Python 3)
+python -m http.server 8000
+
+# Or with Node.js
+npx serve .
+
+# Access at http://localhost:8000
+```
+
+## 📁 Project Structure
+
+```
+carbsat/
+├── index.html              # Main satellite list page
+├── js/
+│   ├── main.js             # Main page functionality
+│   ├── satPage.js          # Satellite tracking page
+│   └── lib/                # Third-party libraries
+├── css/
+│   ├── style.css           # Main page styles
+│   └── satpage.css         # Tracking page styles
+├── src/                    # Fonts and assets
+└── data/                   # TLE data files
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the Unlicense License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Dr. T.S. Kelso** and **[CelesTrak](https://celestrak.org/)** for providing accurate TLE data
+- **David A. Vallado** for SGP4 orbital mechanics algorithms
+- **NASA** and **NORAD** for satellite tracking standards
+- Open source community for the excellent libraries used in this project
+
+## 👨‍💻 Authors
+
+- **[Priyansu Tank](https://pbtank.github.io/Tank_Priyansu/)**
+- **[Carbform](https://github.com/carbform)**
+
+---
+
+<div align="center">
+  <strong>Made with ❤️ in India 🇮🇳</strong><br>
+  <em>Version 0.2 (Beta) | Star ⭐ this repo if you find it useful!</em>
+</div>

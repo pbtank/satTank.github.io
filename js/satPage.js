@@ -846,7 +846,7 @@ function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) 
         const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
         const durationRow = durationTd ? durationTd.closest('tr') : null;
 
-        const countdownLabel = document.querySelector('.countdown-label');
+        const countdownLabel = countdownRowTh; // Use the th element directly
 
         if (!currentPassDetails) {
             if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
