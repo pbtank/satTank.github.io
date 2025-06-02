@@ -14,6 +14,7 @@ let observerMarker = null; // To hold the observer's location marker
 let currentMapLayer; // Renamed for clarity and consistency
 let passCountdownIntervalId = null; // Interval ID for the countdown timer
 let currentPassDetails = null; // Store details of the currently displayed pass
+let dynamicPlotUpdateIntervalId = null; // Interval ID for updating the live satellite marker on the plot
 
 // --- Favicon Paths ---
 const defaultFaviconHref = 'favicon.ico'; // Assuming default is in root
@@ -42,6 +43,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // --- Get Favicon Link Element ---
     faviconLink = document.getElementById('favicon-link');
     // --- End Get Favicon Link ---
+
+    // Initialize UTC Clock
+    updateUtcClock();
+    setInterval(updateUtcClock, 1000);
 
     // Check if satellite.js is loaded
     if (typeof window.satellite === 'undefined') {
@@ -105,10 +110,30 @@ document.addEventListener('DOMContentLoaded', async function() {
         displaySatelliteInfo(); // Display static info
         startTracking(); // Start dynamic updates
 
-        // Add event listener for predict passes button
-        const predictPassesBtn = document.getElementById('predictPassesBtn');
-        if (predictPassesBtn) {
-            predictPassesBtn.addEventListener('click', updatePassPredictions);
+        // Automatically trigger pass prediction if location is available
+        const savedLat = localStorage.getItem('observerLat');
+        const savedLon = localStorage.getItem('observerLon');
+        const locationStatusMessage = document.getElementById('location-status-message');
+
+        if (savedLat && savedLon) {
+            if (locationStatusMessage) {
+                locationStatusMessage.textContent = `Using saved location: Lat ${parseFloat(savedLat).toFixed(2)}°, Lon ${parseFloat(savedLon).toFixed(2)}°. Predicting passes...`;
+                locationStatusMessage.classList.add('info-message');
+            }
+            // Call updatePassPredictions directly, as the button is gone
+            // We need to pass the lat/lon as the input fields are also gone from this page
+            updatePassPredictions(parseFloat(savedLat), parseFloat(savedLon)); 
+        } else {
+            if (locationStatusMessage) {
+                locationStatusMessage.innerHTML = 'Observer location not set. Please <a href="index.html">go to the main page</a> to set it.';
+                locationStatusMessage.classList.add('error-message');
+            }
+            // Optionally, clear or hide the pass results section if no location is set
+            const passResultsDiv = document.querySelector('.pass-results');
+            if (passResultsDiv) {
+                passResultsDiv.style.display = 'none';
+            }
+            clearPolarPlotly('polarPlot');
         }
 
         // console.log('Satellite data:', satellite);
@@ -166,17 +191,41 @@ function setTheme(theme) {
 
     // --- Trigger Plotly redraw if visible --- 
     const plotDiv = document.getElementById('polarPlot');
-    const predictButton = document.getElementById('predictPassesBtn');
-    const observerLatInput = document.getElementById('observerLat');
-    const observerLonInput = document.getElementById('observerLon');
+    // const predictButton = document.getElementById('predictPassesBtn'); // Removed
+    // const observerLatInput = document.getElementById('observerLat'); // Removed
+    // const observerLonInput = document.getElementById('observerLon'); // Removed
 
-    // Check if plot exists, button exists, and lat/lon have values
-    if (plotDiv && plotDiv.style.display !== 'none' && predictButton && 
-        observerLatInput?.value && observerLonInput?.value) {
-         console.log('Theme changed, triggering redraw of Plotly chart...');
-         // Re-run the prediction logic by simulating a button click
-         // This ensures drawPolarPlotly is called with correct data
-         predictButton.click(); 
+    // Check if plot exists and is currently visible
+    if (plotDiv && plotDiv.style.display !== 'none') {
+        const savedLat = localStorage.getItem('observerLat');
+        const savedLon = localStorage.getItem('observerLon');
+
+        if (savedLat && savedLon) {
+            console.log('Theme changed, triggering redraw of Plotly chart with saved location (no scroll)...');
+            // Re-run pass predictions which will in turn call drawPolarPlotly.
+            // updatePassPredictions handles clearing the old plot and observer marker.
+            // Pass false for shouldScroll to prevent scrolling.
+            updatePassPredictions(parseFloat(savedLat), parseFloat(savedLon), false);
+        } else {
+            // This case implies a plot is visible but location was somehow lost from localStorage,
+            // or the plot was generated without relying on localStorage (which shouldn't happen with current flow).
+            console.warn('Theme changed and plot is visible, but observer location not found in localStorage. Plot may not update its theme correctly.');
+        }
+    }
+
+    // --- Update Observer Marker Icon if it exists --- 
+    if (observerMarker && map && map.hasLayer(observerMarker)) { 
+        const newObserverIconUrl = theme === 'dark' ? 'src/images/observer_pin_dark.png' : 'src/images/observer_pin_light.png';
+        const newObserverIcon = L.icon({
+            iconUrl: newObserverIconUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+        observerMarker.setIcon(newObserverIcon);
+        // console.log(`Observer marker icon updated for ${theme} theme.`);
     }
 }
 
@@ -578,8 +627,8 @@ function updatePositionInfo(position) {
     const { lat, lng, alt, velocity, time } = position;
 
     // Update each element individually
-    document.getElementById('timeUTC').textContent = time.toISOString();
-    document.getElementById('timeLocal').textContent = time.toLocaleString();
+    // document.getElementById('timeUTC').textContent = time.toISOString();
+    // document.getElementById('timeLocal').textContent = time.toLocaleString();
     document.getElementById('latitude').textContent = `${lat.toFixed(4)}°`;
     document.getElementById('longitude').textContent = `${lng.toFixed(4)}°`;
     document.getElementById('altitude').textContent = `${alt.toFixed(2)} km`;
@@ -592,14 +641,6 @@ function calculateGroundSpeed(velocity, altitude) {
     if (altitude <= -EARTH_RADIUS_KM) return 0; // Avoid division by zero or negative radius
     return velocity * (EARTH_RADIUS_KM / (EARTH_RADIUS_KM + altitude));
 }
-
-// Removed isInDaylight function
-
-// Removed calculateSunPosition function
-
-// Removed getDayOfYear function
-
-// Removed latLngToCartesian function
 
 // Helper function to get object type description
 function getObjectType(typeCode) {
@@ -776,7 +817,7 @@ function calculateGroundTrackPoints() {
 // --- NEW Countdown Timer Functionality ---
 
 // Function to start or update the countdown timer
-function startOrUpdateCountdown(startTime, endTime) {
+function startOrUpdateCountdown(startTime, endTime, direction, lookAnglePoints) {
     // Clear any existing interval
     if (passCountdownIntervalId) {
         clearInterval(passCountdownIntervalId);
@@ -787,14 +828,41 @@ function startOrUpdateCountdown(startTime, endTime) {
     if (!countdownElement) return;
 
     // Store pass times for the interval function
-    currentPassDetails = { startTime, endTime };
+    currentPassDetails = { startTime, endTime, direction, originalLookAnglePoints: lookAnglePoints };
 
     // Function to update the display
     const updateDisplay = () => {
+        // Get references to table rows and relevant TH/TD elements
+        const nextPassAtRow = document.querySelector('#pass-details-table .next-pass-row');
+        const countdownRow = document.querySelector('#pass-details-table .countdown-row');
+        const countdownRowTh = countdownRow ? countdownRow.querySelector('th') : null;
+        
+        // For other rows, find by TD ID then get parent TR
+        const maxElevationTd = document.getElementById('maxElevation');
+        const durationTd = document.getElementById('passDuration');
+        const inViewStatusRow = document.getElementById('in-view-status-row');
+        const inViewStatusText = document.getElementById('in-view-status-text');
+
+        const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
+        const durationRow = durationTd ? durationTd.closest('tr') : null;
+
+        const countdownLabel = countdownRowTh; // Use the th element directly
+
         if (!currentPassDetails) {
             if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
+            if (dynamicPlotUpdateIntervalId) { // Clear dynamic plot interval
+                clearInterval(dynamicPlotUpdateIntervalId);
+                dynamicPlotUpdateIntervalId = null;
+            }
             countdownElement.textContent = '';
             countdownElement.className = ''; // Clear classes
+            // Hide all rows if no current pass details (e.g. pass ended, or initial state before prediction)
+            if(nextPassAtRow) nextPassAtRow.style.display = 'none';
+            if(countdownRow) countdownRow.style.display = 'none';
+            if(maxElevationRow) maxElevationRow.style.display = 'none';
+            if(durationRow) durationRow.style.display = 'none';
+            if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
+            if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
             return;
         }
 
@@ -803,33 +871,161 @@ function startOrUpdateCountdown(startTime, endTime) {
         const end = currentPassDetails.endTime;
 
         if (now < start) {
-            // Pass is in the future - show countdown
+            // Pass is in the future - show countdown TO THE START
+            if(nextPassAtRow) nextPassAtRow.style.display = ''; // Show
+            if(countdownRow) countdownRow.style.display = '';    // Show
+            if (countdownLabel) countdownLabel.textContent = 'Next pass in';
+            if(maxElevationRow) maxElevationRow.style.display = ''; // Show
+            if(durationRow) durationRow.style.display = '';       // Show
+            if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
+            if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
+
             const diffSeconds = Math.round((start - now) / 1000);
-            if (diffSeconds <= 0) {
-                // Time is very close or slightly passed, switch to 'in view'
-                countdownElement.textContent = '(Satellite is in view...)'; // Added brackets
+            if (diffSeconds <= 0) { // Should ideally not happen if logic is tight, but handles edge case
+                countdownElement.textContent = '(Starting now...)';
                 countdownElement.className = 'pass-in-view';
-                // Keep interval running to switch when pass ends
             } else {
                 const hours = Math.floor(diffSeconds / 3600);
                 const minutes = Math.floor((diffSeconds % 3600) / 60);
                 const seconds = diffSeconds % 60;
-                // Changed format to H h M m S s
-                countdownElement.textContent = `(in ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s)`; 
+                countdownElement.textContent = ` ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
                 countdownElement.className = 'countdown-timer';
             }
+            if (dynamicPlotUpdateIntervalId) { 
+                clearInterval(dynamicPlotUpdateIntervalId);
+                dynamicPlotUpdateIntervalId = null;
+            }
         } else if (now >= start && now <= end) {
-            // Pass is currently happening
-            countdownElement.textContent = '(Satellite is in view...)'; // Added brackets
-            countdownElement.className = 'pass-in-view';
-            // Keep interval running to clear after pass ends
+            // Pass is currently IN VIEW - show countdown TO THE END
+            if(nextPassAtRow) nextPassAtRow.style.display = 'none'; // Hide
+            if(countdownRow) countdownRow.style.display = '';     // Show
+            if (countdownLabel) countdownLabel.textContent = 'Time left in view:';
+            if(maxElevationRow) maxElevationRow.style.display = 'none'; // Hide
+            if(durationRow) durationRow.style.display = 'none';        // Hide
+            if(inViewStatusRow) inViewStatusRow.style.display = '';  // Show status row // Set status text
+
+            const diffSeconds = Math.round((end - now) / 1000);
+            let timeLeftString = '(Ending now...)';
+            if (diffSeconds > 0) {
+                const hours = Math.floor(diffSeconds / 3600);
+                const minutes = Math.floor((diffSeconds % 3600) / 60);
+                const seconds = diffSeconds % 60;
+                if (hours > 0) {
+                    timeLeftString = ` ${hours}h ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
+                } else {
+                    timeLeftString = ` ${minutes}m ${String(seconds).padStart(2, '0')}s`; 
+                }
+            }
+            countdownElement.textContent = timeLeftString; // Only show the time here
+            countdownElement.className = 'pass-in-view'; // Keep this class for styling
+            
+            // Dynamic plot update logic (already here, no changes needed for that part)
+            if (!dynamicPlotUpdateIntervalId && typeof window.calculateCurrentLookAngle === 'function' && satellite && satellite.satrec) {
+                console.log('[DEBUG satPage] In-view: Setting up dynamicPlotUpdateIntervalId.'); // DEBUG
+                const observerLat = parseFloat(localStorage.getItem('observerLat'));
+                const observerLon = parseFloat(localStorage.getItem('observerLon'));
+                console.log(`[DEBUG satPage] Observer Coords: Lat=${observerLat}, Lon=${observerLon}`); // DEBUG
+                console.log('[DEBUG satPage] satellite.satrec exists:', !!satellite.satrec); // DEBUG
+
+                if (!isNaN(observerLat) && !isNaN(observerLon)) {
+                    // --- Make an IMMEDIATE first call to update the marker and initial path --- 
+                    const initialTime = new Date();
+                    const initialLookAngle = window.calculateCurrentLookAngle(satellite.satrec, initialTime, observerLat, observerLon);
+                    // console.log('[DEBUG satPage] Initial call: calculateCurrentLookAngle returned:', initialLookAngle); // DEBUG
+                    
+                    let initialRemainingPathPoints = [];
+                    if (initialLookAngle && initialLookAngle.elevation >= 0 && currentPassDetails && currentPassDetails.endTime && satellite.satrec) {
+                        // Calculate path from current marker to end of pass
+                        initialRemainingPathPoints = window.calculateTrajectorySegment(
+                            satellite.satrec, 
+                            initialTime, // Start from now
+                            currentPassDetails.endTime, 
+                            observerLat, 
+                            observerLon
+                        );
+                        // Prepend the exact current marker location to ensure the line starts there
+                        if (initialRemainingPathPoints.length === 0 || 
+                            (initialRemainingPathPoints[0].azimuth !== initialLookAngle.azimuth || initialRemainingPathPoints[0].elevation !== initialLookAngle.elevation)) {
+                            initialRemainingPathPoints.unshift({ azimuth: initialLookAngle.azimuth, elevation: initialLookAngle.elevation });
+                        }
+                    }
+
+                    if (initialLookAngle) {
+                        updatePlotlyDynamicElements('polarPlot', initialLookAngle.azimuth, initialLookAngle.elevation, initialRemainingPathPoints);
+                    }
+                    // --- End of immediate call ---
+
+                    dynamicPlotUpdateIntervalId = setInterval(() => {
+                        const currentTime = new Date();
+                        const lookAngle = window.calculateCurrentLookAngle(satellite.satrec, currentTime, observerLat, observerLon);
+                        // console.log('[DEBUG satPage] Interval: calculateCurrentLookAngle returned:', lookAngle); // DEBUG
+                        
+                        let remainingPathPoints = [];
+                        if (lookAngle && lookAngle.elevation >= 0 && currentPassDetails && currentPassDetails.endTime && satellite.satrec) {
+                           // Calculate path from current marker to end of pass
+                           remainingPathPoints = window.calculateTrajectorySegment(
+                               satellite.satrec, 
+                               currentTime, // Start from now
+                               currentPassDetails.endTime, 
+                               observerLat, 
+                               observerLon
+                           );
+                           // Prepend the exact current marker location
+                            if (remainingPathPoints.length === 0 || 
+                                (remainingPathPoints[0].azimuth !== lookAngle.azimuth || remainingPathPoints[0].elevation !== lookAngle.elevation)) {
+                                remainingPathPoints.unshift({ azimuth: lookAngle.azimuth, elevation: lookAngle.elevation });
+                            }
+                            // console.log(`[DEBUG satPage] Interval: remainingPathPoints length=${remainingPathPoints.length}`); // DEBUG
+                        }
+
+                        if (lookAngle) {
+                            updatePlotlyDynamicElements('polarPlot', lookAngle.azimuth, lookAngle.elevation, remainingPathPoints);
+                        } else {
+                            // If lookAngle is null (e.g. sat went below horizon before pass end time by direct calc),
+                            // still update to hide marker and clear path
+                            updatePlotlyDynamicElements('polarPlot', 0, -1, []);
+                        }
+                    }, 5000); // Update every 5 seconds
+                } else {
+                    console.warn('[DEBUG satPage] Observer lat/lon are NaN, cannot start dynamic plot updates.');
+                }
+            } else if (!dynamicPlotUpdateIntervalId) {
+                // Log if interval is NOT set up and why
+                console.warn('[DEBUG satPage] In-view: Dynamic plot interval NOT set. Conditions not met:',
+                    {
+                        hasInterval: !!dynamicPlotUpdateIntervalId,
+                        hasCalcFunc: typeof window.calculateCurrentLookAngle === 'function',
+                        hasSatellite: !!satellite,
+                        hasSatrec: !!(satellite && satellite.satrec)
+                    });
+            }
         } else {
-            // Pass has ended
+            // Pass has ended (or currentPassDetails became null for other reasons)
             countdownElement.textContent = '';
-            countdownElement.className = ''; // Clear classes
-            currentPassDetails = null; // Clear stored details
-            if (passCountdownIntervalId) clearInterval(passCountdownIntervalId); // Stop the interval
+            countdownElement.className = ''; 
+            if(nextPassAtRow) nextPassAtRow.style.display = 'none';
+            if(countdownRow) countdownRow.style.display = 'none';
+            if(maxElevationRow) maxElevationRow.style.display = 'none';
+            if(durationRow) durationRow.style.display = 'none';
+            if(inViewStatusRow) inViewStatusRow.style.display = 'none'; // Hide status row
+            if(inViewStatusText) inViewStatusText.textContent = '';      // Clear status text
+            
+            currentPassDetails = null; 
+            if (passCountdownIntervalId) clearInterval(passCountdownIntervalId);
             passCountdownIntervalId = null;
+            if (dynamicPlotUpdateIntervalId) { 
+                clearInterval(dynamicPlotUpdateIntervalId);
+                dynamicPlotUpdateIntervalId = null;
+            }
+            updatePlotlyDynamicElements('polarPlot', 0, -1, []); 
+            // --- Trigger next pass prediction automatically ---
+            const savedLat = localStorage.getItem('observerLat');
+            const savedLon = localStorage.getItem('observerLon');
+            if (savedLat && savedLon) {
+                setTimeout(() => {
+                    updatePassPredictions(parseFloat(savedLat), parseFloat(savedLon), false);
+                }, 500); // Small delay to ensure UI is cleared before updating
+            }
         }
     };
 
@@ -844,6 +1040,12 @@ function stopAndClearCountdown() {
         clearInterval(passCountdownIntervalId);
         passCountdownIntervalId = null;
     }
+    if (dynamicPlotUpdateIntervalId) { // Also clear dynamic plot interval
+        clearInterval(dynamicPlotUpdateIntervalId);
+        dynamicPlotUpdateIntervalId = null;
+        // Optionally hide the live marker
+        updatePlotlyDynamicElements('polarPlot', 0, -1, []);
+    }
     currentPassDetails = null;
     const countdownElement = document.getElementById('pass-countdown-status');
     if (countdownElement) {
@@ -855,9 +1057,76 @@ function stopAndClearCountdown() {
 // --- End Countdown Timer Functionality ---
 
 // Update the updatePassPredictions function to handle async operations
-async function updatePassPredictions() {
+// MODIFIED: Now accepts observerLat and observerLon as parameters
+// MODIFIED: Added shouldScroll parameter (defaults to true)
+async function updatePassPredictions(observerLat, observerLon, shouldScroll = true) {
     // Reset favicon to default at the start of prediction
-    // setFavicon(defaultFaviconHref); 
+    if (faviconLink) {
+        faviconLink.href = defaultFaviconHref;
+    }
+
+    // Get the location error div
+    const locationErrorDiv = document.getElementById('location-validation-error');
+    if (locationErrorDiv) {
+        locationErrorDiv.style.display = 'none'; // Hide any previous error
+    }
+
+    // Basic validation for observer coordinates
+    let validationError = null;
+    if (isNaN(observerLat) || isNaN(observerLon)) {
+        validationError = 'Invalid latitude or longitude values provided.';
+    } else if (observerLat < -90 || observerLat > 90 || observerLon < -180 || observerLon > 180) {
+        validationError = 'Latitude must be -90 to 90, Longitude must be -180 to 180.';
+    }
+
+    if (validationError) {
+        if (locationErrorDiv) {
+            locationErrorDiv.textContent = validationError;
+            locationErrorDiv.style.display = 'block';
+        }
+        return;
+    }
+
+    // Always add/update the observer marker if coordinates are valid
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const lightModeIconUrl = 'src/images/observer_pin_light.png';
+    const darkModeIconUrl = 'src/images/observer_pin_dark.png';
+    const observerIconUrl = currentTheme === 'dark' ? darkModeIconUrl : lightModeIconUrl;
+    // --- Define pass details table elements ---
+    const nextPassRow = document.querySelector('#pass-details-table .next-pass-row');
+    const maxElevationTd = document.getElementById('maxElevation');
+    const durationTd = document.getElementById('passDuration');
+    const inViewStatusRow = document.getElementById('in-view-status-row');
+    const inViewStatusText = document.getElementById('in-view-status-text');
+    const maxElevationRow = maxElevationTd ? maxElevationTd.closest('tr') : null;
+    const durationRow = durationTd ? durationTd.closest('tr') : null;
+    const nextPassLabel = nextPassRow ? nextPassRow.querySelector('th') : null;
+    const nextPassCell = nextPassRow ? nextPassRow.querySelector('td') : null;
+    const maxElevationLabel = maxElevationRow ? maxElevationRow.querySelector('th') : null;
+    const maxElevationCell = maxElevationRow ? maxElevationRow.querySelector('td') : null;
+    const geoStatusMessage = document.getElementById('geo-status-message');
+
+    try {
+        const observerIcon = L.icon({
+            iconUrl: observerIconUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+        if (observerMarker) {
+            observerMarker.setLatLng([observerLat, observerLon]);
+            observerMarker.setIcon(observerIcon);
+        } else {
+            observerMarker = L.marker([observerLat, observerLon], { icon: observerIcon })
+                .addTo(map)
+                .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(2)}°<br>Lon ${observerLon.toFixed(2)}°`);
+        }
+    } catch (iconError) {
+        console.warn(`Could not create observer marker icon (using ${observerIconUrl}): ${iconError}. Marker not added.`);
+        observerMarker = null;
+    }
 
     // --- Stop any existing countdown --- 
     stopAndClearCountdown();
@@ -868,307 +1137,257 @@ async function updatePassPredictions() {
         return;
     }
 
-    // Use correct input IDs from HTML for observer location
-    const observerLatInput = document.getElementById('observerLat');
-    const observerLonInput = document.getElementById('observerLon');
-    const observerLat = parseFloat(observerLatInput.value);
-    const observerLon = parseFloat(observerLonInput.value);
-    const locationErrorDiv = document.getElementById('location-validation-error'); // Get the new error div
     const passResultsDiv = document.querySelector('.pass-results'); // Get the results container
 
-    // Clear previous location validation errors
-    if (locationErrorDiv) {
-        locationErrorDiv.textContent = '';
-        locationErrorDiv.style.display = 'none';
-    }
     // Hide previous results when starting a new prediction
     if (passResultsDiv) {
         passResultsDiv.style.display = 'none';
     }
-     // Clear the plot and remove the observer marker at the start
-     clearPolarPlotly('polarPlot');
-
-
-    // Basic validation for observer coordinates
-    let validationError = null;
-    if (isNaN(observerLat) || isNaN(observerLon)) {
-        validationError = 'Please enter valid latitude and longitude values.';
-    } else if (observerLat < -90 || observerLat > 90 || observerLon < -180 || observerLon > 180) {
-        validationError = 'Latitude must be -90 to 90, Longitude must be -180 to 180.';
-    }
-
-    if (validationError) {
-        if (locationErrorDiv) {
-            locationErrorDiv.textContent = validationError;
-            locationErrorDiv.style.display = 'block'; // Show the specific error message
-        }
-        // DO NOT call showError here, as it hides the map.
-        // clearPolarPlotly('polarPlot'); // Already called at the start
-        return; // Stop execution
-    }
-
+    // Clear the plot but DO NOT remove the observer marker
+    clearPolarPlotly('polarPlot', true);
 
     // Show loading state for prediction
-    const predictButton = document.getElementById('predictPassesBtn');
-    const originalButtonText = predictButton.innerHTML;
-    predictButton.disabled = true;
-    predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    // const passResults = document.querySelector('.pass-results'); // Already got this
-    const canvas = document.getElementById('pass-visualization-canvas'); // Keep for potential future use?
-    // Get table rows and cells for dynamic updates
-    const passResultRows = passResultsDiv?.querySelectorAll('table.info-table tr');
-    // ... (rest of the variable declarations for table cells) ...
-    const nextPassRow = passResultRows?.[0];
-    const maxElevationRow = passResultRows?.[1];
-    const durationRow = passResultRows?.[2];
-    const directionRow = passResultRows?.[3];
+    const locationStatusMessage = document.getElementById('location-status-message');
+    if (locationStatusMessage) {
+        locationStatusMessage.textContent = 'Calculating pass predictions...';
+        locationStatusMessage.classList.remove('error-message');
+        locationStatusMessage.classList.add('info-message');
+    }
 
-    const nextPassLabel = nextPassRow?.querySelector('th');
-    const nextPassCell = nextPassRow?.querySelector('td');
-    const maxElevationLabel = maxElevationRow?.querySelector('th');
-    const maxElevationCell = maxElevationRow?.querySelector('td');
-    const geoStatusMessage = document.getElementById('geo-status-message'); // Get status message element
+    // --- Check if Geostationary ---
+    if (window.isGeostationary(satellite)) {
+        // Always hide the countdown row for GEO satellites
+        const countdownRow = document.querySelector('#pass-details-table .countdown-row');
+        if (countdownRow) countdownRow.style.display = 'none';
+        console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
+        // predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles';
+
+        // Hide pass-specific rows immediately
+        if (durationRow) durationRow.style.display = 'none';
+
+        // --- Integrated satrec creation and look angle calculation ---
+        let satrec;
+        let tleSource = 'Unknown';
+        let lookAngles = null;
+        try {
+             // Logic adapted from calculateSatellitePosition to get satrec
+             if (satellite.TLE_LINE1 && satellite.TLE_LINE2 && /* ... TLE format checks ... */
+                 satellite.TLE_LINE1.startsWith('1 ') && satellite.TLE_LINE2.startsWith('2 ')) { // Basic check
+                tleSource = 'Embedded';
+                satrec = window.satellite.twoline2satrec(satellite.TLE_LINE1, satellite.TLE_LINE2);
+            } else if (satellite.OBJECT_NAME && satellite.NORAD_CAT_ID && satellite.EPOCH && satellite.MEAN_MOTION) {
+                tleSource = 'Celestrak JSON';
+                const satJson = { /* ... construct satJson object from satellite properties ... */
+                    OBJECT_NAME: satellite.OBJECT_NAME,
+                    OBJECT_ID: satellite.OBJECT_ID || satellite.INTL_DES || 'UNKNOWN',
+                    EPOCH: satellite.EPOCH,
+                    MEAN_MOTION: parseFloat(satellite.MEAN_MOTION),
+                    ECCENTRICITY: parseFloat(satellite.ECCENTRICITY),
+                    INCLINATION: parseFloat(satellite.INCLINATION),
+                    RA_OF_ASC_NODE: parseFloat(satellite.RA_OF_ASC_NODE),
+                    ARG_OF_PERICENTER: parseFloat(satellite.ARG_OF_PERICENTER),
+                    MEAN_ANOMALY: parseFloat(satellite.MEAN_ANOMALY),
+                    EPHEMERIS_TYPE: satellite.EPHEMERIS_TYPE || 0,
+                    CLASSIFICATION_TYPE: satellite.CLASSIFICATION_TYPE || "U",
+                    NORAD_CAT_ID: parseInt(satellite.NORAD_CAT_ID),
+                    ELEMENT_SET_NO: satellite.ELEMENT_SET_NO || 999,
+                    REV_AT_EPOCH: satellite.REV_AT_EPOCH || 0,
+                    BSTAR: satellite.BSTAR || 0.0001,
+                    MEAN_MOTION_DOT: satellite.MEAN_MOTION_DOT || 0,
+                    MEAN_MOTION_DDOT: satellite.MEAN_MOTION_DDOT || 0
+                };
+                 if (isNaN(satJson.NORAD_CAT_ID) || isNaN(satJson.MEAN_MOTION) || !satJson.EPOCH) {
+                    throw new Error('Incomplete Celestrak JSON data for satrec creation');
+                }
+                satrec = window.satellite.json2satrec(satJson);
+            } else {
+                throw new Error('Satellite object format not recognized or missing required data.');
+            }
+
+            if (!satrec || satrec.error !== 0) {
+                throw new Error(`Failed to initialize satrec (source: ${tleSource}, error ${satrec?.error})`);
+            }
+            satellite.satrec = satrec; // Store satrec on the global satellite object
+
+            // Propagate position for NOW
+            const now = new Date();
+            const positionAndVelocity = window.satellite.propagate(satrec, now);
+            if (!positionAndVelocity || !positionAndVelocity.position) {
+                throw new Error('Propagation failed for current time.');
+            }
+
+            // Calculate Look Angles
+            const gmst = window.satellite.gstime(now);
+            const positionEcf = window.satellite.eciToEcf(positionAndVelocity.position, gmst);
+            const observerGd = {
+                longitude: observerLon * Math.PI / 180,
+                latitude: observerLat * Math.PI / 180,
+                height: 0.1 // Assume low height
+            };
+            const lookAnglesRad = window.satellite.ecfToLookAngles(observerGd, positionEcf);
+            lookAngles = {
+                azimuth: lookAnglesRad.azimuth * 180 / Math.PI,
+                elevation: lookAnglesRad.elevation * 180 / Math.PI
+            };
+        } catch (calcError) {
+             console.error("[GEO Calculation] Error:", calcError);
+             lookAngles = null;
+        }
+        // --- End integrated calculation ---
+
+        // Display results based on calculated lookAngles
+        if (passResultsDiv && nextPassRow && maxElevationRow && nextPassLabel && maxElevationLabel && nextPassCell && maxElevationCell && geoStatusMessage) {
+
+            nextPassLabel.textContent = ' Current Azimuth';
+            maxElevationLabel.textContent = 'Current Elevation';
+
+            // Clear potentially conflicting classes first
+            geoStatusMessage.classList.remove('status-not-visible');
+            nextPassCell.classList.remove('status-not-visible');
+
+            if (lookAngles && lookAngles.elevation >= 0) {
+                nextPassCell.textContent = `${lookAngles.azimuth.toFixed(1)}°`;
+                maxElevationCell.textContent = `${lookAngles.elevation.toFixed(1)}°`;
+                nextPassRow.style.display = '';
+                maxElevationRow.style.display = '';
+                // Set GEO/GSO visible message and apply the correct class
+                geoStatusMessage.textContent = 'Satellite is in view currently...';
+                geoStatusMessage.className = 'geosync-status'; // Apply the new class
+            } else if (lookAngles) { // Calculated but below horizon
+                nextPassCell.textContent = 'Below Horizon (not visible from the location)';
+                nextPassCell.classList.add('status-not-visible');
+                nextPassRow.style.display = '';
+                nextPassLabel.textContent = '';
+                maxElevationRow.style.display = 'none';
+                geoStatusMessage.textContent = ''; // Clear message
+                geoStatusMessage.className = ''; // Clear class
+                clearPolarPlotly('polarPlot', true); // Keep observer marker
+                // Hide the countdown row if GEO is below horizon
+                const countdownRow = document.querySelector('#pass-details-table .countdown-row');
+                if (countdownRow) countdownRow.style.display = 'none';
+            } else { // Error during calculation
+                nextPassCell.textContent = 'Error calculating';
+                nextPassRow.style.display = '';
+                maxElevationRow.style.display = 'none';
+                geoStatusMessage.textContent = ''; // Clear message
+                geoStatusMessage.className = ''; // Clear class
+                clearPolarPlotly('polarPlot', true); // Keep observer marker even on calc error for GEO sat
+            }
+            passResultsDiv.style.display = 'block';
+
+            // Call visualization ONLY if GEO/GSO satellite is visible
+            if (lookAngles && lookAngles.elevation >= 0) {
+                drawPolarPlotly('polarPlot', [lookAngles], true);
+            } else {
+                clearPolarPlotly('polarPlot', true); // Keep observer marker
+            }
+        } else {
+             console.error("Pass prediction table elements not found for GEO/GSO display.");
+             clearPolarPlotly('polarPlot', true); // Keep observer marker
+        }
+
+    } else {
+        // --- Not Geostationary/Geosynchronous: Perform Pass Prediction ---
+         console.log(`Satellite ${satellite.OBJECT_NAME} is not geostationary/geosynchronous. Predicting passes...`);
+        // predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting Passes...'; // Button removed
+        // Clear GEO/GSO status message and class for non-GEO/GSO cases
+
+         // Restore original labels and row visibility
+         if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';
+        //  if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation'; // Commented out
+        //  Restore labels for duration/direction if needed (assuming they exist)
+        //  const durationLabel = durationRow?.querySelector('th'); // Commented out
+        //  const directionLabel = directionRow?.querySelector('th'); // Commented out
+         
+         // Ensure rows are visible again - this logic is problematic with dynamic rows, rely on parent display
+        //  if (durationRow) durationRow.style.display = ''; // Commented out
+        //  if (directionRow) directionRow.style.display = ''; // Commented out
 
 
-    // Clear status message initially
-    if (geoStatusMessage) geoStatusMessage.textContent = '';
+         // Get references to the message div and details table
+         const noPassMessageDiv = document.getElementById('no-pass-message');
+         const passDetailsTable = document.getElementById('pass-details-table');
 
-    // passResultsDiv display is handled above and within the try/catch/finally
-    // if (passResultsDiv) passResultsDiv.style.display = 'none';
-    if (canvas) canvas.style.display = 'none';
+         // Ensure the global calculateNextPass function exists
+         if (typeof window.calculateNextPass !== 'function') {
+             throw new Error('calculateNextPass function is not available globally.');
+         }
+         const nextPassData = await window.calculateNextPass(satellite, observerLat, observerLon);
+         if (passResultsDiv) {
+             if (nextPassData && nextPassData.startTime) { // Check for startTime to ensure it has pass data
+                // Store the satrec from the pass calculation
+                if (nextPassData.satrec) {
+                    satellite.satrec = nextPassData.satrec;
+                }
+
+                // Display Pass Data
+                const nextPass = nextPassData; // Use the returned object
+
+                // Hide the 'no pass' message and show the details table
+                if (noPassMessageDiv) noPassMessageDiv.style.display = 'none';
+                if (passDetailsTable) passDetailsTable.style.display = ''; // Show table
+
+                // In updatePassPredictions, after getting nextPassData for non-GEO:
+                // Store the full pass points for the current pass
+                let fullPassLookAnglePoints = null;
+
+                // ... inside the block where nextPassData && nextPassData.startTime ...
+                if (nextPassData && nextPassData.startTime) {
+                    // Store the full pass points if available
+                    if (nextPassData.lookAnglePoints) {
+                        fullPassLookAnglePoints = nextPassData.lookAnglePoints;
+                    }
+                    // ...
+                    // Call Plotly function for non-GEO, always pass the full pass points for start/end markers
+                    drawPolarPlotly('polarPlot', nextPass.lookAnglePoints, false, fullPassLookAnglePoints);
+                    // ...
+                }
+                // ...
+
+                const localStartTime = nextPass.startTime.toLocaleString(undefined, {
+                    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                document.getElementById('nextPassTime').textContent = localStartTime;
+                document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
+                document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
+
+                // --- Start the countdown timer --- 
+                startOrUpdateCountdown(nextPass.startTime, nextPass.endTime, nextPass.direction, nextPass.lookAnglePoints);
+
+             } else {
+                // Show the 'no pass' message and hide the details table
+                if (passDetailsTable) passDetailsTable.style.display = 'none'; // Hide table
+                if (noPassMessageDiv) {
+                     noPassMessageDiv.textContent = 'No pass for the location in the next 24 hours!';
+                     noPassMessageDiv.style.display = 'block'; // Show message div
+                }
+
+                clearPolarPlotly('polarPlot', true); // Keep observer marker when no pass
+                // Ensure countdown is cleared if no pass
+                stopAndClearCountdown();
+             }
+             passResultsDiv.style.display = 'block';
+         }
+    }
 
     try {
-        // --- Add Observer Marker to Map ---
-        const currentTheme = document.body.getAttribute('data-theme') || 'light';
-        const lightModeIconUrl = 'src/images/observer_pin_light.png';
-        const darkModeIconUrl = 'src/images/observer_pin_dark.png';
-        const observerIconUrl = currentTheme === 'dark' ? darkModeIconUrl : lightModeIconUrl;
+        // Restore button state - No button to restore
+        // predictButton.disabled = false;
+        // predictButton.innerHTML = originalButtonText;
 
-        try {
-            const observerIcon = L.icon({
-                iconUrl: observerIconUrl,
-                iconSize: [25, 41], // Standard marker size
-                iconAnchor: [12, 41], // Point of the icon
-                popupAnchor: [1, -34], // Popup location relative to anchor
-                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                shadowSize: [41, 41]
-            });
-
-            observerMarker = L.marker([observerLat, observerLon], { icon: observerIcon })
-                              .addTo(map)
-                              .bindPopup(`Observer Location<br>Lat: ${observerLat.toFixed(4)}°<br>Lon: ${observerLon.toFixed(4)}°`);
-            // Optionally pan to the marker
-            // map.panTo([observerLat, observerLon]);
-
-        } catch (iconError) {
-             console.warn(`Could not create observer marker icon (using ${observerIconUrl}): ${iconError}. Marker not added.`);
-             observerMarker = null;
-        }
-        // --- End Add Observer Marker to Map ---
-
-        // --- Check if Geostationary ---
-        if (window.isGeostationary(satellite)) {
-             console.log(`Satellite ${satellite.OBJECT_NAME} identified as geostationary.`);
-            predictButton.innerHTML = '<i class="fas fa-satellite"></i> Calculate Look Angles';
-
-            // Hide pass-specific rows immediately
-            if (durationRow) durationRow.style.display = 'none';
-            if (directionRow) directionRow.style.display = 'none';
-
-            // --- Integrated satrec creation and look angle calculation ---
-            let satrec;
-            let tleSource = 'Unknown';
-            let lookAngles = null;
-            try {
-                 // Logic adapted from calculateSatellitePosition to get satrec
-                 if (satellite.TLE_LINE1 && satellite.TLE_LINE2 && /* ... TLE format checks ... */
-                     satellite.TLE_LINE1.startsWith('1 ') && satellite.TLE_LINE2.startsWith('2 ')) { // Basic check
-                    tleSource = 'Embedded';
-                    satrec = window.satellite.twoline2satrec(satellite.TLE_LINE1, satellite.TLE_LINE2);
-                } else if (satellite.OBJECT_NAME && satellite.NORAD_CAT_ID && satellite.EPOCH && satellite.MEAN_MOTION) {
-                    tleSource = 'Celestrak JSON';
-                    const satJson = { /* ... construct satJson object from satellite properties ... */
-                        OBJECT_NAME: satellite.OBJECT_NAME,
-                        OBJECT_ID: satellite.OBJECT_ID || satellite.INTL_DES || 'UNKNOWN',
-                        EPOCH: satellite.EPOCH,
-                        MEAN_MOTION: parseFloat(satellite.MEAN_MOTION),
-                        ECCENTRICITY: parseFloat(satellite.ECCENTRICITY),
-                        INCLINATION: parseFloat(satellite.INCLINATION),
-                        RA_OF_ASC_NODE: parseFloat(satellite.RA_OF_ASC_NODE),
-                        ARG_OF_PERICENTER: parseFloat(satellite.ARG_OF_PERICENTER),
-                        MEAN_ANOMALY: parseFloat(satellite.MEAN_ANOMALY),
-                        EPHEMERIS_TYPE: satellite.EPHEMERIS_TYPE || 0,
-                        CLASSIFICATION_TYPE: satellite.CLASSIFICATION_TYPE || "U",
-                        NORAD_CAT_ID: parseInt(satellite.NORAD_CAT_ID),
-                        ELEMENT_SET_NO: satellite.ELEMENT_SET_NO || 999,
-                        REV_AT_EPOCH: satellite.REV_AT_EPOCH || 0,
-                        BSTAR: satellite.BSTAR || 0.0001,
-                        MEAN_MOTION_DOT: satellite.MEAN_MOTION_DOT || 0,
-                        MEAN_MOTION_DDOT: satellite.MEAN_MOTION_DDOT || 0
-                    };
-                     if (isNaN(satJson.NORAD_CAT_ID) || isNaN(satJson.MEAN_MOTION) || !satJson.EPOCH) {
-                        throw new Error('Incomplete Celestrak JSON data for satrec creation');
-                    }
-                    satrec = window.satellite.json2satrec(satJson);
-                } else {
-                    throw new Error('Satellite object format not recognized or missing required data.');
-                }
-
-                if (!satrec || satrec.error !== 0) {
-                    throw new Error(`Failed to initialize satrec (source: ${tleSource}, error ${satrec?.error})`);
-                }
-
-                // Propagate position for NOW
-                const now = new Date();
-                const positionAndVelocity = window.satellite.propagate(satrec, now);
-                if (!positionAndVelocity || !positionAndVelocity.position) {
-                    throw new Error('Propagation failed for current time.');
-                }
-
-                // Calculate Look Angles
-                const gmst = window.satellite.gstime(now);
-                const positionEcf = window.satellite.eciToEcf(positionAndVelocity.position, gmst);
-                const observerGd = {
-                    longitude: observerLon * Math.PI / 180,
-                    latitude: observerLat * Math.PI / 180,
-                    height: 0.1 // Assume low height
-                };
-                const lookAnglesRad = window.satellite.ecfToLookAngles(observerGd, positionEcf);
-                lookAngles = {
-                    azimuth: lookAnglesRad.azimuth * 180 / Math.PI,
-                    elevation: lookAnglesRad.elevation * 180 / Math.PI
-                };
-            } catch (calcError) {
-                 console.error("[GEO Calculation] Error:", calcError);
-                 lookAngles = null;
-            }
-            // --- End integrated calculation ---
-
-            // Display results based on calculated lookAngles
-            if (passResultsDiv && nextPassRow && maxElevationRow && nextPassLabel && maxElevationLabel && nextPassCell && maxElevationCell && geoStatusMessage) {
-
-                nextPassLabel.textContent = ' Current Azimuth';
-                maxElevationLabel.textContent = 'Current Elevation';
-
-                // Clear potentially conflicting classes first
-                geoStatusMessage.classList.remove('status-not-visible');
-                nextPassCell.classList.remove('status-not-visible');
-
-                if (lookAngles && lookAngles.elevation >= 0) {
-                    nextPassCell.textContent = `${lookAngles.azimuth.toFixed(1)}°`;
-                    maxElevationCell.textContent = `${lookAngles.elevation.toFixed(1)}°`;
-                    nextPassRow.style.display = '';
-                    maxElevationRow.style.display = '';
-                    // Set GEO/GSO visible message and apply the correct class
-                    geoStatusMessage.textContent = 'Satellite is in view currently...';
-                    geoStatusMessage.className = 'geosync-status'; // Apply the new class
-                } else if (lookAngles) { // Calculated but below horizon
-                    nextPassCell.textContent = 'Below Horizon (not visible from the location)';
-                    nextPassCell.classList.add('status-not-visible');
-                    nextPassRow.style.display = '';
-                    nextPassLabel.textContent = '';
-                    maxElevationRow.style.display = 'none';
-                    geoStatusMessage.textContent = ''; // Clear message
-                    geoStatusMessage.className = ''; // Clear class
-                } else { // Error during calculation
-                    nextPassCell.textContent = 'Error calculating';
-                    nextPassRow.style.display = '';
-                    maxElevationRow.style.display = 'none';
-                    geoStatusMessage.textContent = ''; // Clear message
-                    geoStatusMessage.className = ''; // Clear class
-                }
-                passResultsDiv.style.display = 'block';
-
-                // Call visualization ONLY if GEO/GSO satellite is visible
-                if (lookAngles && lookAngles.elevation >= 0) {
-                    drawPolarPlotly('polarPlot', [lookAngles], true);
-                } else {
-                    clearPolarPlotly('polarPlot'); // Clear if not visible or error
-                }
+        // Update location status message after prediction attempt
+        const finalLocationStatusMessage = document.getElementById('location-status-message');
+        if (finalLocationStatusMessage) {
+            const savedLat = localStorage.getItem('observerLat');
+            const savedLon = localStorage.getItem('observerLon');
+            if (savedLat && savedLon) {
+                 finalLocationStatusMessage.textContent = `Pass predictions for: Lat ${parseFloat(savedLat).toFixed(2)}°, Lon ${parseFloat(savedLon).toFixed(2)}°.`;
             } else {
-                 console.error("Pass prediction table elements not found for GEO/GSO display.");
-                 clearPolarPlotly('polarPlot'); // Clear plot if elements missing
-            }
-
-        } else {
-            // --- Not Geostationary/Geosynchronous: Perform Pass Prediction ---
-             console.log(`Satellite ${satellite.OBJECT_NAME} is not geostationary/geosynchronous. Predicting passes...`);
-            predictButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting Passes...';
-            // Clear GEO/GSO status message and class for non-GEO/GSO cases
-            if (geoStatusMessage) {
-                geoStatusMessage.textContent = '';
-                geoStatusMessage.className = ''; // Clear class
-            }
-
-             // Restore original labels and row visibility
-             if (nextPassLabel) nextPassLabel.textContent = 'Next Pass at';
-             if (maxElevationLabel) maxElevationLabel.textContent = 'Max Elevation';
-             // Restore labels for duration/direction if needed (assuming they exist)
-             const durationLabel = durationRow?.querySelector('th');
-             const directionLabel = directionRow?.querySelector('th');
-             if(durationLabel) durationLabel.textContent = 'Duration';
-             if(directionLabel) directionLabel.textContent = 'Direction';
-             // Ensure rows are visible again
-             if (durationRow) durationRow.style.display = '';
-             if (directionRow) directionRow.style.display = '';
-
-
-             // Get references to the message div and details table
-             const noPassMessageDiv = document.getElementById('no-pass-message');
-             const passDetailsTable = document.getElementById('pass-details-table');
-
-             // Ensure the global calculateNextPass function exists
-             if (typeof window.calculateNextPass !== 'function') {
-                 throw new Error('calculateNextPass function is not available globally.');
-             }
-             const nextPass = await window.calculateNextPass(satellite, observerLat, observerLon);
-             if (passResultsDiv) {
-                 if (nextPass) {
-                    // Display Pass Data
-
-                    // Hide the 'no pass' message and show the details table
-                    if (noPassMessageDiv) noPassMessageDiv.style.display = 'none';
-                    if (passDetailsTable) passDetailsTable.style.display = ''; // Show table
-
-                    // Call Plotly function for non-GEO
-                    drawPolarPlotly('polarPlot', nextPass.lookAnglePoints, false);
-                    const localStartTime = nextPass.startTime.toLocaleString(undefined, {
-                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    });
-                    document.getElementById('nextPassTime').textContent = localStartTime;
-                    document.getElementById('maxElevation').textContent = `${nextPass.maxElevation.toFixed(1)}°`;
-                    document.getElementById('passDuration').textContent = `${Math.floor(nextPass.duration / 60)}m ${Math.floor(nextPass.duration % 60)}s`;
-                    document.getElementById('passDirection').innerHTML = nextPass.direction;
-
-                    // --- Start the countdown timer --- 
-                    startOrUpdateCountdown(nextPass.startTime, nextPass.endTime);
-
-                 } else {
-                    // Show the 'no pass' message and hide the details table
-                    if (passDetailsTable) passDetailsTable.style.display = 'none'; // Hide table
-                    if (noPassMessageDiv) {
-                         noPassMessageDiv.textContent = 'No pass for the location in the next 24 hours!';
-                         noPassMessageDiv.style.display = 'block'; // Show message div
-                    }
-
-                    clearPolarPlotly('polarPlot'); // Clear plot if no pass
-                    // Ensure countdown is cleared if no pass
-                    stopAndClearCountdown();
-                 }
-                 passResultsDiv.style.display = 'block';
-             }
-        }
-
-        // --- Scroll into view AFTER results are potentially displayed --- 
-        // Check if either the results table or the plot is visible
-        if (passResultsDiv && passResultsDiv.style.display === 'block') {
-            // Scroll the main container for pass predictions into view
-            const passContainer = document.querySelector('.pass-predictions-container');
-            if (passContainer) {
-                passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // This case should ideally not be hit if logic is correct, but as a fallback:
+                finalLocationStatusMessage.innerHTML = 'Observer location not set. Please <a href="index.html">go to the main page</a> to set it.';
+                finalLocationStatusMessage.classList.add('error-message');
             }
         }
-
     } catch (error) {
         console.error('[updatePassPredictions] Error:', error);
         // Use the specific location error div for calculation errors too
@@ -1180,31 +1399,24 @@ async function updatePassPredictions() {
         if (passResultsDiv) {
             passResultsDiv.style.display = 'none';
         }
-        clearPolarPlotly('polarPlot'); // Clear plot and observer marker on error
+        clearPolarPlotly('polarPlot', true); // Keep observer marker on error
         // Ensure countdown is cleared on error
         stopAndClearCountdown();
-
-        // Optionally scroll even on error if the error message is shown in the results area
-        if (locationErrorDiv && locationErrorDiv.style.display === 'block') {
-            const passContainer = document.querySelector('.pass-predictions-container');
-            if (passContainer) {
-                passContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-    } finally {
-        // Restore button state
-        predictButton.disabled = false;
-        predictButton.innerHTML = originalButtonText;
     }
 }
 
 // --- NEW Plotly Visualization Function --- //
-function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
+function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary, fullPassLookAnglePoints = null) {
     const plotDiv = document.getElementById(plotDivId);
     if (!plotDiv) {
         console.error(`Plotly container #${plotDivId} not found.`);
         return;
     }
+
+    // Use full pass points for start/end markers if provided
+    const markerPoints = Array.isArray(fullPassLookAnglePoints) && fullPassLookAnglePoints.length > 1
+        ? fullPassLookAnglePoints
+        : lookAnglePoints;
 
     // Define a color variable for light mode elements
     const lightModeAccentColor = 'rgb(117, 184, 240)';
@@ -1217,6 +1429,7 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         ? 'rgba(180, 180, 180, 0.4)' // Light gray transparent grid for dark mode
         : 'rgba(200, 200, 200, 0.6)'; // Standard light gray transparent grid for light mode
     const lineColor = currentTheme === 'dark' ? '#aaaaaa' : '#000000'; // Axis line color
+    const borderColor = currentTheme === 'dark' ? '#ffffff' : '#000000'; // Border color for markers
     // Define theme-dependent path line color
     const pathLineColor = currentTheme === 'dark' 
         ? 'rgba(80,200,120,0.7)' // Match green used for button and dot in dark mode
@@ -1231,6 +1444,8 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
 
     let dataTraces = [];
     let visiblePointExists = false;
+    let visibleR = [];
+    let visibleTheta = [];
 
     if (isGeostationary) {
         // Handle single point for GEO
@@ -1253,34 +1468,18 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     } else {
         // Handle pass trajectory for non-GEO
         if (lookAnglePoints.length > 0) {
-            const r = lookAnglePoints.map(p => Math.max(0, 90 - p.elevation)); // Ensure r is not negative
+            const r = lookAnglePoints.map(p => Math.max(0, 90 - p.elevation));
             const theta = lookAnglePoints.map(p => p.azimuth);
-            
-            // Only include points above horizon for plotting the line
-            const visibleR = [];
-            const visibleTheta = [];
             lookAnglePoints.forEach((p, index) => {
                 if (p.elevation >= 0) {
                     visibleR.push(r[index]);
                     visibleTheta.push(theta[index]);
                 }
             });
-
-            if (visibleR.length > 0) {
-                 visiblePointExists = true;
-                 const trace = {
-                    type: 'scatterpolar',
-                    r: visibleR,
-                    theta: visibleTheta,
-                    mode: 'lines', 
-                    name: 'Satellite Path',
-                    line: { color: pathLineColor, width: 2.5 },
-                    hoverinfo: 'none' // Disable hover text for path trace
-                };
-                dataTraces.push(trace);
-            }
         }
-        // If no visible points, dataTraces remains empty
+        if (visibleR.length > 0 && visibleTheta.length > 0) {
+            visiblePointExists = true;
+        }
     }
 
     if (!visiblePointExists) {
@@ -1290,14 +1489,19 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
     }
 
     // Add a center dot with slightly more blue in light mode
-    const greenDotColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(117,184,240,0.7)';
+    const centerDotColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(117,184,240,0.7)';
     dataTraces.push({
         type: 'scatterpolar',
         r: [0], // Center of the plot (user location)
         theta: [0], // Angle is irrelevant at r=0
         mode: 'markers',
         name: 'Observer Location',
-        marker: { color: greenDotColor, size: 18, symbol: 'circle' },
+        marker: { 
+            color: centerDotColor, 
+            size: 18, 
+            symbol: 'circle',
+            line: { color: borderColor, width: 1 }
+        },
         showlegend: false
     });
 
@@ -1354,20 +1558,92 @@ function drawPolarPlotly(plotDivId, lookAnglePoints, isGeostationary) {
         staticPlot: true // Makes the plot non-interactive (disables zoom, pan, hover, modebar)
     };
 
-    // Create or update the plot, adding the config object
-    Plotly.react(plotDivId, dataTraces, layout, config); 
+    // Add start and end markers for the pass BEFORE rendering the plot
+    if (!isGeostationary && Array.isArray(markerPoints) && markerPoints.length > 1) {
+        // Satellite Path (add first)
+        if (visibleR.length > 0 && visibleTheta.length > 0) {
+            dataTraces.push({
+                type: 'scatterpolar',
+                r: visibleR,
+                theta: visibleTheta,
+                mode: 'lines',
+                name: 'Satellite Path',
+                line: { color: pathLineColor, width: 2.5 },
+                hoverinfo: 'none',
+                showlegend: true,
+                legendgroup: 'path'
+            });
+        }
+        // Start marker (always at full pass start)
+        dataTraces.push({
+            type: 'scatterpolar',
+            r: [90 - markerPoints[0].elevation],
+            theta: [markerPoints[0].azimuth],
+            mode: 'markers',
+            name: 'Start',
+            marker: {
+                color: 'green',
+                size: 16,
+                symbol: 'circle',
+                line: { color: borderColor, width: 1 }
+            },
+            showlegend: true,
+            legendgroup: 'start',
+            hoverinfo: 'text',
+            text: ['Pass Start']
+        });
+        // End marker
+        let endIdx = lookAnglePoints.length - 1;
+        while (endIdx > 0 && lookAnglePoints[endIdx].elevation < 0) {
+            endIdx--;
+        }
+        if (lookAnglePoints[endIdx].elevation >= 0) {
+            dataTraces.push({
+                type: 'scatterpolar',
+                r: [90 - lookAnglePoints[endIdx].elevation],
+                theta: [lookAnglePoints[endIdx].azimuth],
+                mode: 'markers',
+                name: 'End',
+                marker: {
+                    color: 'red', // Use built-in color name for compatibility
+                    size: 16,
+                    symbol: 'circle',
+                    line: { color: borderColor, width: 1 }
+                },
+                showlegend: true,
+                legendgroup: 'end',
+                hoverinfo: 'text',
+                text: ['Pass End']
+            });
+        }
+    }
+
+    // Create the plot with explicit color settings
+    const plotConfig = {
+        ...config,
+        displayModeBar: false,
+        responsive: true
+    };
+
+    // Create the plot
+    Plotly.react(plotDivId, dataTraces, layout, plotConfig);
     plotDiv.style.display = 'block'; // Show the plot
 }
 
 // Function to clear/hide the Plotly plot
-function clearPolarPlotly(plotDivId) {
+function clearPolarPlotly(plotDivId, keepObserverMarker = false) {
      const plotDiv = document.getElementById(plotDivId);
     if (plotDiv) {
         Plotly.purge(plotDivId); // Remove the plot instance
         plotDiv.style.display = 'none'; // Hide the container
     }
-    // --- Also remove observer marker ---
-    if (observerMarker) {
+    // Stop and clear any dynamic plot updates
+    if (dynamicPlotUpdateIntervalId) {
+        clearInterval(dynamicPlotUpdateIntervalId);
+        dynamicPlotUpdateIntervalId = null;
+    }
+    // --- Conditionally remove observer marker ---
+    if (!keepObserverMarker && observerMarker) {
         map.removeLayer(observerMarker);
         observerMarker = null;
     }
@@ -1395,3 +1671,99 @@ window.addEventListener('scroll', handleFooterVisibility);
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(handleFooterVisibility, 100); 
 });
+
+// --- NEW Function to update the live satellite marker AND dynamic path on Plotly ---
+function updatePlotlyDynamicElements(plotDivId, currentAz, currentEl, remainingPathPoints) {
+    const plotDiv = document.getElementById(plotDivId);
+    if (!plotDiv || !plotDiv.data) {
+        return;
+    }
+
+    const markerTraceName = 'Live Position';
+    const pathTraceName = 'Satellite Path';
+    let markerTraceIndex = -1;
+    let pathTraceIndex = -1;
+
+    for (let i = 0; i < plotDiv.data.length; i++) {
+        if (plotDiv.data[i].name === markerTraceName) markerTraceIndex = i;
+        if (plotDiv.data[i].name === pathTraceName) pathTraceIndex = i;
+        // Do NOT touch traces named 'Start' or 'End' (fixed markers)
+        if (markerTraceIndex !== -1 && pathTraceIndex !== -1) break;
+    }
+
+    const currentTheme = document.body.getAttribute('data-theme') || 'light';
+    const markerColor = currentTheme === 'dark' ? 'green' : 'rgba(80,200,120,0.7)';
+    const pathLineColor = currentTheme === 'dark' ? 'rgba(80,200,120,0.7)' : 'rgba(43, 96, 241, 0.7)';
+
+    const direction = currentPassDetails ? currentPassDetails.direction : null;
+    let markerAngle = 0;
+    if (direction === "North &rarr; South") markerAngle = 180;
+
+    // Update ONLY the Live Position marker (triangle)
+    if (currentEl >= 0) { // Only draw/update if satellite is above horizon
+        const markerRVal = [90 - currentEl];
+        const markerThetaVal = [currentAz];
+        const markerUpdateOps = {
+            r: [markerRVal],
+            theta: [markerThetaVal],
+            'marker.angle': [[markerAngle]],
+            'marker.symbol': [['triangle-up']],
+            'marker.color': [[markerColor]],
+            visible: [true]
+        };
+
+        if (markerTraceIndex !== -1) {
+            Plotly.restyle(plotDivId, markerUpdateOps, [markerTraceIndex]);
+        } else {
+            const newMarkerTrace = {
+                type: 'scatterpolar',
+                r: markerRVal,
+                theta: markerThetaVal,
+                mode: 'markers',
+                name: markerTraceName,
+                marker: { 
+                    color: markerColor, 
+                    size: 14, 
+                    symbol: 'triangle-down', 
+                    angle: markerAngle 
+                },
+                hoverinfo: 'text',
+                text: `Az: ${currentAz.toFixed(1)}°, El: ${currentEl.toFixed(1)}°`,
+                showlegend: false
+            };
+            Plotly.addTraces(plotDivId, newMarkerTrace);
+        }
+    } else {
+        if (markerTraceIndex !== -1) {
+            Plotly.restyle(plotDivId, { visible: [false] }, [markerTraceIndex]);
+        }
+    }
+
+    // Update ONLY the path line (if present)
+    if (pathTraceIndex !== -1) {
+        if (remainingPathPoints && remainingPathPoints.length > 0) {
+            const pathR = remainingPathPoints.map(p => Math.max(0, 90 - p.elevation));
+            const pathTheta = remainingPathPoints.map(p => p.azimuth);
+            const pathUpdateOps = {
+                r: [pathR],
+                theta: [pathTheta],
+                'line.color': [pathLineColor],
+                visible: [true]
+            };
+            Plotly.restyle(plotDivId, pathUpdateOps, [pathTraceIndex]);
+        } else {
+            // No remaining path, hide the line trace
+            Plotly.restyle(plotDivId, { visible: [false] }, [pathTraceIndex]);
+        }
+    }
+    // Do NOT update or touch the Start/End marker traces here.
+}
+
+// Function to update UTC Clock
+function updateUtcClock() {
+    const clockElement = document.getElementById('utc-time');
+    if (clockElement) {
+        const now = new Date();
+        clockElement.textContent = now.toUTCString().substring(17, 25); // HH:MM:SS
+    }
+}

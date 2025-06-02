@@ -12,10 +12,10 @@
     --bg-secondary: #f8f9fa;
     --text-primary: #2c3e50;
     --text-secondary: #7f8c8d;
-    --accent-color: #051df5;
+    --accent-color: #234fe0;
     --border-color: #e0e0e0;
     --hover-color: #f0f0f0;
-    --accent-color-path: #051df5;
+    --accent-color-path: #234fe0;
     
     /* Layout Dimensions */
     --header-height: 60px;
@@ -245,27 +245,58 @@ header {
 .info-table th {
     text-align: left;
     padding: var(--spacing-xs) var(--spacing-sm);
-    color: var (--text-secondary);
+    color: var(--text-secondary);
     font-weight: 500;
     font-size: 0.9rem;
-    /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
     font-family: 'NType82 Mono', monospace;
     white-space: nowrap;
+    vertical-align: middle; /* Ensure vertical alignment */
 }
 
 .info-table td {
-    padding: var(--spacing-xs) var (--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
     color: var(--text-primary);
-    /* font-family: 'NType82', var(--font-mono); */ /* Changed to NType82 Mono */
     font-family: 'NType82 Mono', monospace;
     font-size: 0.9rem;
     white-space: nowrap;
-    font-family: 'NType82 Mono', monospace; /* Ensure font */
+    vertical-align: middle; /* Ensure vertical alignment */
 }
 
-/* Explicitly set font for calculated data in right column panels */
-#right-column-info .panel .info-table td {
-    font-family: 'NType82 Mono', monospace; /* Ensure font */
+/* Ensure all cells in tracking data panel have consistent alignment */
+#right-column-info .panel:nth-child(2) .info-table td,
+#right-column-info .panel:nth-child(2) .info-table th {
+    vertical-align: middle;
+    line-height: 1.4; /* Consistent line height */
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+/* Ensure all cells in satellite info panel have consistent alignment */
+#right-column-info .panel:nth-child(1) .info-table td,
+#right-column-info .panel:nth-child(1) .info-table th {
+    vertical-align: middle;
+    line-height: 1.4; /* Consistent line height */
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+/* Ensure all cells in orbital elements panel have consistent alignment */
+#right-column-info .panel:nth-child(3) .info-table td,
+#right-column-info .panel:nth-child(3) .info-table th {
+    vertical-align: middle;
+    line-height: 1.4; /* Consistent line height */
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+/* Remove any extra padding or margin that might affect alignment */
+#right-column-info .panel .info-table {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ensure consistent cell heights */
+#right-column-info .panel .info-table td,
+#right-column-info .panel .info-table th {
+    height: 2.5em; /* Fixed height for all cells */
+    box-sizing: border-box;
 }
 
 /* Orbital Elements Panel */
@@ -353,8 +384,8 @@ header {
 }
 
 body[data-theme='light'] .predict-button {
-    background: rgb(117, 184, 240) !important;
-    color: #111 !important;
+    background: #3498db !important;
+    color: #fff !important;
 }
 
 .predict-button:hover {
@@ -362,15 +393,19 @@ body[data-theme='light'] .predict-button {
     box-shadow: 0 4px 16px rgba(179,198,224,0.18);
 }
 
-body[data-theme='light'] .predict-button {
-    background: rgba(34,139,34,0.7); /* Same as light mode plot dot */
-    color: #fff;
+body[data-theme='light'] .countdown-timer,
+body[data-theme='light'] .pass-in-view {
+    color: #3498db !important;
 }
 
-.predict-button:hover {
-    filter: brightness(1.08);
-    box-shadow: 0 4px 16px rgba(80,200,120,0.18);
+/* Plotly plot dot and lines (SVG/CSS override for light mode) */
+/* body[data-theme='light'] .js-plotly-plot .scatter .points path {
+    fill: #3498db !important;
+    stroke: #3498db !important;
 }
+body[data-theme='light'] .js-plotly-plot .scatter .lines {
+    stroke: #3498db !important;
+} */
 
 /* Pass Results */
 .pass-results {
@@ -384,6 +419,18 @@ body[data-theme='light'] .predict-button {
 .pass-results .info-table td {
     font-size: 1.1rem; /* Increased from 0.9rem */
     font-family: 'NType82 Mono', monospace; /* Ensure font */
+}
+
+/* Add spacing for specific rows in pass details table */
+.countdown-row th,
+.countdown-row td {
+    padding-bottom: 0.6em; /* Add some space below the countdown row */
+}
+
+.countdown-value-cell {
+    padding-left: 0.3em; /* Reduce from default */
+    text-align: left;
+    font-size: 1.2rem;
 }
 
 /* Style for Geostationary Status Message */
@@ -1007,8 +1054,8 @@ body[data-theme='dark'] .footer-content a {
 /* Countdown Timer / In View Status */
 #pass-countdown-status {
     font-family: 'NType82 Mono', monospace;
-    font-size: 1.1rem; /* Match table data size */
-    padding-left: 1em; /* Add some space from the time */
+    font-size: 1.2rem;
+    padding-left: 0rem; /* Add some space from the time */
 }
 
 /* Style for the countdown timer (future pass) */
@@ -1020,79 +1067,22 @@ body[data-theme='dark'] .footer-content a {
 .pass-in-view {
     /* Default color (used in dark mode) */
     color: rgba(80, 200, 120, 0.9); /* Match dark mode green */
+    padding-left: 0rem;
 }
 
 /* Override countdown color for light mode to be blue */
 body[data-theme='light'] .countdown-timer {
-    color: rgb(117, 184, 240); /* Bluish color */
+    color: #3498db !important;
+}
+
+/* Override countdown color for dark mode to be green */
+body[data-theme='dark'] .countdown-timer {
+    color: rgba(80, 200, 120, 0.9) !important; /* Green for dark mode */
 }
 
 /* Override 'in view' color for light mode to be blue */
 body[data-theme='light'] .pass-in-view {
-    color: rgb(117, 184, 240); /* Bluish color, matching button/plot dot */
-}
-
-/* REMOVE conflicting flexbox rules below */
-/* .footer-content { */
-/*    display: flex; */
-/*    flex-direction: row; */
-/*    justify-content: center; */
-/*    align-items: center; */
-/*    gap: 2.5rem; */
-/*    text-align: center; */
-/*    padding: 0 1.5rem; */
-/* } */
-
-/* .footer-content > * { */
-/*    margin: 0 0.5rem; */
-/* } */
-
-/* Keep the responsive rule for stacking, but ensure it doesn't re-introduce flex */
-@media (max-width: 768px) {
-    .footer-content {
-        /* Ensure grid stacking is used */
-        grid-template-columns: 1fr; /* Single column */
-        justify-items: center; /* Center items horizontally */
-        gap: var(--spacing-xs); /* Add small gap */
-        padding: 0 var(--spacing-md);
-        text-align: center;
-        /* Remove flex rules if they exist here */
-        /* flex-direction: column; */
-        /* gap: 1rem; */
-        /* padding: 0 0.5rem; */
-    }
-    /* Remove margin override if not needed with grid */
-    /* .footer-content > * { */
-    /*    margin: 0.5rem 0; */
-    /* } */
-}
-
-/* Countdown Timer / In View Status */
-#pass-countdown-status {
-    font-family: 'NType82 Mono', monospace;
-    font-size: 1.1rem; /* Match table data size */
-    padding-left: 1em; /* Add some space from the time */
-}
-
-/* Style for the countdown timer (future pass) */
-.countdown-timer {
-    color: var(--accent-color); /* Blue in light, green in dark by default */
-}
-
-/* Style for the 'in view' status (current pass) */
-.pass-in-view {
-    /* Default color (used in dark mode) */
-    color: rgba(80, 200, 120, 0.9); /* Match dark mode green */
-}
-
-/* Override countdown color for light mode to be blue */
-body[data-theme='light'] .countdown-timer {
-    color: rgb(117, 184, 240); /* Bluish color */
-}
-
-/* Override 'in view' color for light mode to be blue */
-body[data-theme='light'] .pass-in-view {
-    color: rgb(117, 184, 240); /* Bluish color, matching button/plot dot */
+    color: #3498db !important;
 }
 
 /* Style for location validation error */
@@ -1107,12 +1097,138 @@ body[data-theme='light'] .pass-in-view {
 
 /* Style for no pass message */
 #no-pass-message {
-    color: var(--text-secondary);
-    font-family: 'NType82 Mono', monospace; /* Set font family */
-    font-size: 1rem;
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) auto;
+    max-width: 400px;
+    font-family: 'NType82 Mono', monospace;
+    font-size: 1.1rem;
     text-align: center;
-    margin-top: var(--spacing-md);
     display: none; /* Hidden by default */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Light mode no-pass message */
+body[data-theme='light'] #no-pass-message {
+    background-color: #f8f9fa;
+    border-color: #e74c3c;
+    color: #e74c3c;
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.15);
+}
+
+/* Dark mode no-pass message */
+body[data-theme='dark'] #no-pass-message {
+    background-color: #1a1a1a;
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.2);
+}
+
+/* Add an icon before the text */
+#no-pass-message::before {
+    content: "⚠️";
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* UTC Clock Styles */
+.utc-clock {
+    position: absolute;
+    right: 80px; /* Position it to the left of the theme toggle */
+    top: 50%;
+    transform: translateY(-50%);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-family: 'NType82 Mono', monospace !important;
+    font-size: 1rem;
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+}
+
+#utc-time {
+    font-weight: 600;
+    font-family: 'NType82 Mono', monospace !important;
+}
+
+/* Dark Mode Adjustments */
+#pageBody[data-theme="dark"] .utc-clock {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Countdown Timer / In View Status */
+
+/* Add this rule to specifically target the TRACKING DATA panel's info-table and remove any extra left padding or margin */
+#right-column-info .panel:nth-child(2) .info-table {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* Optionally, ensure all info-tables in the right column have no left margin/padding for perfect alignment */
+#right-column-info .panel .info-table {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* --- Fix info-table alignment for all right column panels --- */
+#right-column-info .info-table th,
+#right-column-info .info-table td {
+    padding-left: 0 !important;
+    padding-right: var(--spacing-sm) !important;
+    vertical-align: middle;
+    line-height: 1.4;
+    height: auto !important;
+    box-sizing: border-box;
+}
+#right-column-info .info-table {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
+/* Remove previous fixed height rule */
+
+/* --- Force left alignment for all label cells in info-tables in right column --- */
+#right-column-info .info-table th,
+#right-column-info .info-table td:first-child {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    text-align: left;
+}
+
+#right-column-info .info-table th {
+    width: 11em !important;
+    min-width: 11em !important;
+    max-width: 11em !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    text-align: left;
+    box-sizing: border-box;
+    white-space: normal !important;
+}
+
+#right-column-info .info-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+#right-column-info .info-table th {
+    width: 11em !important;
+    min-width: 11em !important;
+    max-width: 11em !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    text-align: left;
+    box-sizing: border-box;
+}
+#right-column-info .info-table td {
+    width: auto !important;
+    word-break: break-word;
+}

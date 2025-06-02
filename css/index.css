@@ -8,7 +8,7 @@
 /* Font Declarations */
 @font-face {
     font-family: 'IBM Plex Mono'; /* Define the font family name */
-    src: url('../src/IBMPlexMono-Regular.ttf') format('truetype'); /* Correct path and format */
+    src: url('../src/Supply-Light.otf') format('opentype'); /* Correct path and format */
     font-weight: normal;
     font-style: normal;
 }
@@ -50,7 +50,7 @@
     --table-border-color: #dddddd;
     --table-row-hover-bg: #e9e9e9;
     --link-color: #0056b3;
-    --button-bg: #007bff;
+    --button-bg: #3d82cc;
     --button-text: #ffffff;
     --button-hover-bg: #0056b3;
     --input-border-color: #ced4da;
@@ -72,7 +72,6 @@
 	--bg-secondary: #000000;
 	--text-primary: #f5f5f5;
 	--text-secondary: #b0b0b0;
-	--accent-color: #4a9eff;
 	--border-color: #404040;
 	--hover-color: #333333;
     --background-color: #22272e;
@@ -83,7 +82,7 @@
     --table-border-color: #444c56;
     --table-row-hover-bg: #373e47;
     --link-color: #79c0ff;
-    --button-bg: #388bfd;
+    --button-bg: #3d82cc;
     --button-text: #ffffff;
     --button-hover-bg: #58a6ff;
     --input-border-color: #444c56;
@@ -119,68 +118,87 @@ body {
 	padding: var(--spacing-sm) 0;
 	background-color: var(--bg-primary);
 	margin-bottom: 0;
+    text-align: center;
+    /* padding: 20px 0; */ /* Adjusted by header-controls-row */
+    background-color: var(--header-bg-color);
+    color: var(--header-text-color);
+    font-family: 'Ndot-55', sans-serif;
+    position: relative; /* For absolute positioning of children if needed */
 }
 
 .header-content {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	max-width: 1200px;
+	max-width: 1200px; /* This can be used by header-controls-row as well */
 	margin: 0 auto;
-	padding: 0 var(--spacing-xl);
+	padding: 0 var(--spacing-xl); /* Horizontal padding for overall header content */
+}
+
+/* New container for the row of controls (category selector and action buttons) */
+.header-controls-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin: 1.5rem auto 0 auto;
+    gap: 2.5rem;
+    padding: 0;
+}
+
+.category-select-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    max-width: 250px;
+    flex: 0 0 250px;
+    min-width: 220px;
+    margin: 0;
+    padding: 0;
+}
+
+.observer-button-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 300px;
+    min-width: 200px;
+    margin: 0;
+    padding: 0;
+}
+
+.add-tle-button-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    max-width: 350px;
+    flex: 0 0 350px;
+    min-width: 180px;
+    margin: 0;
+    padding: 0;
 }
 
 .header-divider {
 	display: none; /* Hide the divider */
 }
 
-.subheading {
-	color: var(--text-secondary);
-	font-size: 1.1rem;
-	letter-spacing: 1px;
-	padding: var(--spacing-xs) 0;
-	margin-bottom: 0;
-	border-bottom: none; /* Remove bottom border */
-}
-
-/* Header Controls Container - REMOVED as elements are repositioned */
-/* #header-controls-container { ... } */
-/* .controls-group { ... } */
-
-/* Category Select Container Styles */
-.category-select-container {
-    display: flex;
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center items horizontally */
-    gap: 0.5rem; /* Adjust gap between heading and dropdown */
-    margin: 1rem auto 0.5rem auto; /* Keep centering the container */
-    padding: 0.5rem;
-    max-width: 1200px;
-    ;
-}
-
 /* Style the heading within the container */
 .category-select-container h5 {
-    font-size: 16px; /* Set font size for the heading */
+    font-size: 14px; /* Set font size for the heading */
     margin-bottom: 0; /* Remove default heading margin if needed */
     color: var(--text-secondary);
     font-family: 'IBM Plex Mono', monospace; /* Optional: Adjust color if needed */
 }
 
-/* ... existing category select styles ... */
-
 /* Add TLE Button Container Styles */
-.add-tle-button-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem; /* Space below the button */
-}
-
 #add-tle-btn {
     /* Adjust styles if needed, e.g., width */
     padding: 0.5rem 1.5rem; /* Example padding */
     font-size: 1rem;
 }
+
+/* Ensure buttons themselves have appropriate styling if not already covered by .btn */
 
 /* Active Satellites Checkbox Container (Inside Table Container) */
 .active-satellites-filter-container {
@@ -238,14 +256,7 @@ body {
 
 /* Header Controls Container */
 #header-controls-container {
-	max-width: 1200px;
-	margin: 0.5rem auto;
-	padding: 0.75rem 2rem;
-	/* background-color: var(--bg-secondary); */
-	/* border-radius: var(--radius-md); */
-	box-shadow: none;
-	border: none;
-	border-top: none; /* Remove top border */
+    display: none; /* Hide the old container as its content has been moved */
 }
 
 .controls-group {
@@ -584,58 +595,47 @@ body {
 	color: var(--text-primary);
 }
 
-/* Dark mode adjustments for footer */
-#pageBody[data-theme="dark"] #pageFooter {
-	background-color: var(--bg-primary);
-	border-color: var(--border-color);
-}
-
-#pageBody[data-theme="dark"] .footer-content {
-	color: var(--text-primary);
-}
-
-#pageBody[data-theme="dark"] .credits a {
-	color: var(--accent-color);
-}
-
 #pageBody[data-theme="dark"] .credits a:hover {
 	color: var(--text-primary);
 }
 
 /* Theme Toggle Styles */
 .theme-switch-wrapper {
-	position: absolute;
-	top: 10px;
-	right: 10px;
-	z-index: 9999;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
 }
 
 #theme-toggle.icon-button {
-	background: none;
-	border: none;
-	color: var(--text-primary);
-	cursor: pointer;
-	padding: 8px;
-	border-radius: 50%;
-	width: 40px;
-	height: 40px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: background-color var(--transition-fast), color var(--transition-fast);
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    font-size: 1.3rem;
+    line-height: 1;
 }
-
 #theme-toggle.icon-button:hover {
-	background-color: var(--hover-color);
+    background-color: var(--hover-color);
+    opacity: 0.8;
 }
-
 #theme-toggle i {
-	font-size: 1.2rem;
-	transition: transform var(--transition-fast);
+    font-size: 1.2rem;
+    color: inherit;
+    display: inline-block;
+    vertical-align: middle;
+    transition: transform var(--transition-fast);
 }
-
 #theme-toggle:hover i {
-	transform: scale(1.1);
+    transform: scale(1.1);
 }
 
 /* Dark Theme Specific Styles */
@@ -644,7 +644,7 @@ body {
 	--bg-secondary: #1a1a1a;
 	--text-primary: #f5f5f5;
 	--text-secondary: #b0b0b0;
-	--accent-color: #4a9eff;
+	--accent-color: #3667a0;
 	--border-color: #404040;
 	--hover-color: #333333;
 }
@@ -655,7 +655,7 @@ body {
 	--bg-secondary: #f8f9fa;
 	--text-primary: #2c3e50;
 	--text-secondary: #7f8c8d;
-	--accent-color: #3498db;
+	--accent-color: #8298b1;
 	--border-color: #e0e0e0;
 	--hover-color: #f0f0f0;
 }
@@ -869,11 +869,11 @@ th, td {
 
 #categoryDropdownContainer select,
 #sortingControls select {
-    padding: 0.3rem 0.5rem;
-    font-size: 1.1rem;
+    padding: 0.1rem 0.1rem;
+    font-size: 0.9rem;
     background-color: var(--background-color);
     color: var(--text-color);
-    border-radius: 3px;
+    border-radius: 0px;
 }
 
 #satelliteTableContainer {
@@ -1067,7 +1067,7 @@ table.dataTable tbody tr.even td:first-child {
 
 #pageBody[data-theme="dark"] #utc-clock {
 	background-color: #333;
-	color: #a6d8ff;
+	color: #157fd1;
 }
 
 #pageBody[data-theme="dark"] #tle-form {
@@ -1176,16 +1176,7 @@ table.dataTable tbody tr.even td:first-child {
 
 /* Flexbox styles for header controls */
 #header-controls-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 1rem var(--spacing-xl);
-    background-color: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none; /* Hide the old container as its content has been moved */
 }
 
 #center-controls {
@@ -1200,14 +1191,15 @@ table.dataTable tbody tr.even td:first-child {
 
 #categoryDropdownContainer label,
 #sortingControls label {
-    margin-right: 0.5rem;
+    margin-right: 0.9rem;
+    margin-left: 0.5rem;
     font-size: 0.9rem;
 }
 
 #categoryDropdownContainer select,
 #sortingControls select {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.6rem;
+    padding: 0.2rem 0.2rem;
+    font-size: 0.4rem;
     border: 1px solid var(--border-color);
     background-color: var(--background-color);
     color: var(--text-color);
@@ -1272,23 +1264,35 @@ table.dataTable tbody tr.even td:first-child {
 
 /* Add new button-based styles (similar to satpage.css) */
 .theme-switch-wrapper {
+    /* This class is used as a container for the theme toggle button. */
     /* Add some margin if needed for spacing */
     /* margin-left: auto; */ /* Optionally push to the right */
+    position: absolute; /* Keep its positioning */
+    top: 10px;
+    right: 10px; /* This was previously in a style attribute, moved here for consistency */
+    z-index: 9999; /* Ensure it stays on top */
 }
 
 /* Style the button used for the toggle */
 #theme-toggle.icon-button {
     background: none;
     border: none;
-    color: var(--text-color, #333); /* Use theme variable or default */
-    font-size: 1.3rem; /* Adjust icon size */
+    color: var(--text-primary);
     cursor: pointer;
-    padding: 0.3rem;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    font-size: 1.3rem;
     line-height: 1;
-    /* Add Font Awesome dependency if not already present */
 }
 
 #theme-toggle.icon-button:hover {
+    background-color: var(--hover-color);
     opacity: 0.8;
 }
 
@@ -1331,8 +1335,8 @@ body[data-theme="light"] #theme-toggle.icon-button {
 #sortingControls select,
 .form-control-sm {
     color: var(--accent-color);
-    font-weight: 500;
-    letter-spacing: 0.5px;
+    font-weight: 200;
+    letter-spacing: 0.2px;
 }
 
 /* Dark mode dropdown adjustments */
@@ -1612,58 +1616,71 @@ label {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
-    margin: 1rem auto;
-    padding: 0.5rem;
-    max-width: 1200px;
+    flex-direction: column;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
 }
 
 .category-select-container label {
     font-family: var(--font-primary);
-    font-size: 1.21rem;
+    font-size: 1.0rem;
     color: var(--text-primary);
     font-weight: 500;
     white-space: nowrap;
 }
 
 .category-select-container select {
-    min-width: 200px;
-    height: 35px;
-    padding: 0.25rem 0.75rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var (--radius-sm);
-    color: var(--text-primary);
-    font-size: 1.21rem;
-    font-family: var(--font-primary);
-    text-align: center;
-    text-align-last: center; /* For Firefox */
-    -webkit-appearance: none; /* For Safari */
-    -moz-appearance: none; /* For Firefox */
-    appearance: none; /* Standard */
-}
-
-/* Add a custom dropdown arrow - Default (Light Mode - Black Arrow) */
-.category-select-container select {
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 2.2rem 0 1rem;
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    font-size: 0.95rem;
+    border-radius: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 1em;
-    padding-right: 2.5rem; /* Make room for the arrow */
+    background-position: right 0.7rem center;
+    background-size: 1.1em;
+    box-shadow: 0 2px 6px rgba(52,152,219,0.08);
+    transition: background 0.2s, color 0.2s;
+    z-index: 10;
 }
 
-/* Center the text in the dropdown options */
+.category-select-container select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
+}
+
 .category-select-container select option {
-    text-align: center;
+    background: #fff;
+    color: var(--text-primary);
+    z-index: 1001;
 }
 
-/* Dark mode adjustments */
-#pageBody[data-theme="dark"] .category-select-container select {
-    background-color: var(--bg-primary);
-    border-color: var (--border-color);
-    color: var(--text-primary);
-    /* Override arrow for dark mode (White Arrow) */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+#pageBody[data-theme="dark"] .category-select-container select option {
+    background: #000;
+    color: #fff;
+}
+
+/* Button style for active satellites filter */
+.active-satellites-filter-btn {
+    cursor: pointer;
+    min-width: 120px;
+    max-width: 220px;
+    font-weight: 500;
+    text-align: center;
+    user-select: none;
+}
+
+.active-satellites-filter-btn.active {
+    background: #2176bd;
+    color: #fff;
 }
 
 /* --- Message Overlays (Loading, Error, Success) --- */
@@ -1765,6 +1782,290 @@ label {
 
 .close-message:hover {
     opacity: 0.7;
+}
+
+/* New container for header controls */
+#header-controls-container {
+    display: none; /* Hide the old container as its content has been moved */
+}
+
+.header-control-item {
+    display: flex;
+    flex-direction: column; /* Stack label and control vertically if needed */
+    align-items: center; /* Center items if stacked */
+}
+
+/* Specific styling for each control item if needed */
+.category-select-container {
+    flex-grow: 0; /* Changed from 1 to prevent taking up all space */
+    align-items: flex-start; /* Align to the start (left) */
+}
+
+.location-button-container {
+    display: flex;
+    flex-direction: row; /* Changed from column to row for horizontal stacking */
+    align-items: center;   /* Vertically aligns items in the center of the row */
+    justify-content: center; /* Horizontally centers the group of items */
+    gap: 20px;             /* Adjusted gap for horizontal spacing */
+    margin: 0; /* Changed from '1rem auto' */
+    padding: var(--spacing-md) var(--spacing-xl); /* Updated padding */
+}
+
+/* Style for the select dropdown and its label */
+.category-select-container h5 {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.category-select-container select {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    font-family: 'NType82Mono-Regular', monospace;
+}
+
+/* Observer Location Form Styling */
+.observer-location-container {
+    background-color: var(--panel-bg-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px auto; /* Centered with some margin */
+    max-width: 600px; /* Max width for the form */
+    border: 1px solid var(--border-color);
+}
+
+@media (max-width: 900px) {
+    .header-controls-row {
+        flex-direction: column;
+        gap: 1rem;
+        max-width: 98vw;
+    }
+    .category-select-container,
+    .observer-button-wrapper,
+    .add-tle-button-container {
+        justify-content: center !important;
+        width: 100%;
+        max-width: 100%;
+        flex: unset;
+    }
+}
+
+.main-controls-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin: 1.5rem auto 0 auto;
+}
+
+.table-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1100px;
+    margin: 1.5rem auto 0.5rem auto;
+}
+
+.category-select-row {
+    display: flex;
+    align-items: center;
+    gap: 0.0rem;
+}
+
+@media (max-width: 900px) {
+    .table-controls-row {
+        flex-direction: column;
+        gap: 1rem;
+        max-width: 98vw;
+    }
+    .category-select-row {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .active-satellites-filter-container {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+.controls-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 1100px;
+    margin: 2rem auto 1rem auto;
+    gap: 2rem;
+    padding: 0 1rem;
+}
+.controls-bar > * {
+    flex: 0 0 220px;
+    min-width: 160px;
+    max-width: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 32px;
+}
+#toggleLocationFormBtn, #add-tle-btn, .category-select-container select, .active-satellites-filter-btn {
+    height: 32px;
+    border-radius: 0;
+    font-size: 0.95rem;
+    font-family: var(--font-primary);
+    box-shadow: 0 2px 6px rgba(52,152,219,0.08);
+    padding: 0 0.9rem;
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.category-select-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+}
+.category-select-container select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 2.2rem 0 1rem;
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    font-size: 0.95rem;
+    border-radius: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1.1em;
+    box-shadow: 0 2px 6px rgba(52,152,219,0.08);
+    transition: background 0.2s, color 0.2s;
+    z-index: 10;
+}
+.category-select-container select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
+}
+.category-select-container select option {
+    background: #fff;
+    color: var(--text-primary);
+    z-index: 1001;
+}
+#pageBody[data-theme="dark"] .category-select-container select option {
+    background: #000;
+    color: #fff;
+}
+/* Button style for active satellites filter */
+.active-satellites-filter-btn {
+    cursor: pointer;
+    min-width: 120px;
+    max-width: 220px;
+    font-weight: 500;
+    text-align: center;
+    user-select: none;
+}
+.active-satellites-filter-btn.active {
+    background: #2176bd;
+    color: #fff;
+}
+
+.category-select-container select,
+.category-select-container select option {
+    text-align: center;
+}
+
+#pageBody[data-theme="dark"] #toggleLocationFormBtn,
+#pageBody[data-theme="dark"] #add-tle-btn,
+#pageBody[data-theme="dark"] .active-satellites-filter-btn,
+#pageBody[data-theme="dark"] .category-select-container select {
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+}
+
+/* Red (danger) style for open form buttons */
+#toggleLocationFormBtn.btn-danger,
+#add-tle-btn.btn-danger {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+    border: none;
+}
+
+/* Green style for Active Only button when toggled */
+#activeSatellitesBtn.active,
+.active-satellites-filter-btn.active {
+    background-color: #155724 !important;
+    color: #fff !important;
+    border: none;
+}
+
+#observer-location-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#observer-location-section .location-input-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+#observer-location-section .input-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+#observer-location-section input[type="number"] {
+    max-width: 90px;
+    min-width: 60px;
+    width: 90px;
+    text-align: center;
+    margin: 0 0.25rem;
+}
+
+#observer-location-section .input-hint {
+    margin-left: 0.5rem;
+    font-size: 0.95em;
+}
+
+#observer-location-section h5 {
+    font-size: 1.1em;
+    text-align: center;
+    font-weight: bold;
+}
+
+#observer-location-section .save-location-button-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+#observer-location-section #location-save-status,
+#observer-location-section #location-save-global-status {
+    text-align: center;
 }
 
 

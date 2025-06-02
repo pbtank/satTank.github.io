@@ -3,7 +3,7 @@
 // Constants for pass prediction (moved here for modularity)
 const PASS_PREDICTION_INTERVAL = 30000; // 30 seconds (Reduced loop iterations)
 const MAX_PREDICTION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const MIN_ELEVATION = 10; // Minimum elevation angle for a pass (degrees)
+const MIN_ELEVATION = 0; // Minimum elevation angle for a pass (degrees)
 
 // Function to calculate next pass using the provided satellite object
 async function calculateNextPass(satellite, observerLat, observerLon) { // Accept full satellite object
@@ -149,9 +149,15 @@ async function calculateNextPass(satellite, observerLat, observerLon) { // Accep
 
             // console.log('[calculateNextPass] Pass found. Calculating direction...');
              // Pass the created satrec to calculatePassDirection
-             const direction = await calculatePassDirection(satrec, passStart, observerLat, observerLon);
+             const direction = await calculatePassDirection(satrec, passStart, passEnd, observerLat, observerLon);
              // Calculate look angle points for the visualization
-             const lookAnglePoints = calculatePassLookAngles(satrec, passStart, passEnd, observerLat, observerLon);
+             // Ensure satrec is valid before calling this
+            let lookAnglePoints = [];
+            if (satrec && satrec.error === 0) {
+                lookAnglePoints = calculatePassLookAngles(satrec, passStart, passEnd, observerLat, observerLon);
+            } else {
+                console.warn("[calculateNextPass] Invalid satrec for look angle calculation during pass construction.");
+            }
              // console.log('[calculateNextPass] Pass direction calculated:', direction);
              return {
                  startTime: passStart,
@@ -159,15 +165,17 @@ async function calculateNextPass(satellite, observerLat, observerLon) { // Accep
                  maxElevation: maxElevation,
                  duration: (passEnd - passStart) / 1000, // Duration might be up to window end
                  direction: direction,
-                 lookAnglePoints: lookAnglePoints 
+                 lookAnglePoints: lookAnglePoints, 
+                 satrec: satrec // Ensure satrec is returned here
              };
         } else {
             // console.log('[calculateNextPass] No pass found within the prediction window.');
              return null;
         }
     } catch (error) {
-         console.error('[calculateNextPass] Main function error:', error);
-         throw error;
+        console.error(`[calculateNextPass] Error for ${satellite.OBJECT_NAME}:`, error.message, error.stack);
+        // setFavicon(sadFaviconHref); // Set sad favicon on error
+        return null; // Return null on any error during pass calculation
     }
 }
 
@@ -214,54 +222,176 @@ function calculatePassLookAngles(satrec, startTime, endTime, observerLat, observ
     return lookAnglePoints;
 }
 
-// Function to calculate pass direction using a pre-created satrec
-async function calculatePassDirection(satrec, time, observerLat, observerLon) { // Accepts satrec directly
-    try {
-        // No need to fetch TLE or create satrec here, it's passed in
-        // console.log('[calculatePassDirection] Starting with pre-created satrec at time:', time.toISOString());
+// Function to calculate a segment of look angles for a dynamic path
+function calculateTrajectorySegment(satrec, segmentStartTime, segmentEndTime, observerLat, observerLon, intervalMs = 30000) {
+    const lookAnglePoints = [];
+    let currentTime = new Date(segmentStartTime.getTime());
 
+    const observerGd = {
+        longitude: observerLon * Math.PI / 180,
+        latitude: observerLat * Math.PI / 180,
+        height: 0.370 // Observer height in km
+    };
+
+    // console.log(`[TrajectorySegment] Calculating from ${segmentStartTime.toISOString()} to ${segmentEndTime.toISOString()}`);
+
+    while (currentTime <= segmentEndTime) {
+        try {
+            const positionAndVelocity = window.satellite.propagate(satrec, currentTime);
+            if (!positionAndVelocity || !positionAndVelocity.position) {
+                currentTime = new Date(currentTime.getTime() + intervalMs);
+                continue;
+            }
+
+            const gmst = window.satellite.gstime(currentTime);
+            const positionEcf = window.satellite.eciToEcf(positionAndVelocity.position, gmst);
+            const lookAngles = window.satellite.ecfToLookAngles(observerGd, positionEcf);
+
+            const azimuth = lookAngles.azimuth * 180 / Math.PI;
+            const elevation = lookAngles.elevation * 180 / Math.PI;
+
+            if (!isNaN(azimuth) && !isNaN(elevation)) {
+                // Only add points that are at or after the segmentStartTime 
+                // (handles cases where intervalMs might cause the first point to be slightly before)
+                // And only add points if they are above a minimum elevation (e.g., 0 degrees for plotting)
+                if (currentTime.getTime() >= segmentStartTime.getTime() && elevation >= 0) {
+                    lookAnglePoints.push({ azimuth, elevation });
+                }
+            }
+        } catch(error) {
+            console.error(`[TrajectorySegment] Error at ${currentTime.toISOString()}:`, error);
+        }
+        currentTime = new Date(currentTime.getTime() + intervalMs);
+    }
+    // Ensure the very first point is the actual current satellite location if segmentStartTime is effectively "now"
+    // This might be better handled by prepending the current marker's exact Az/El to this list in satPage.js
+    // console.log(`[TrajectorySegment] Calculated ${lookAnglePoints.length} points.`);
+    return lookAnglePoints;
+}
+
+// Function to calculate current Look Angles (Az/El) for a specific time
+function calculateCurrentLookAngle(satrec, currentTime, observerLat, observerLon) {
+    if (!satrec) {
+        console.error("[calculateCurrentLookAngle] Invalid satrec provided.");
+        return null;
+    }
+
+    const observerGd = {
+        longitude: observerLon * Math.PI / 180,
+        latitude: observerLat * Math.PI / 180,
+        height: 0.370 // Observer height in km (standard value, adjust if needed)
+    };
+
+    try {
+        const positionAndVelocity = window.satellite.propagate(satrec, currentTime);
+        if (!positionAndVelocity || !positionAndVelocity.position) {
+            // console.warn(`[calculateCurrentLookAngle] Propagation failed for time: ${currentTime.toISOString()}`);
+            return null;
+        }
+
+        const gmst = window.satellite.gstime(currentTime);
+        const positionEcf = window.satellite.eciToEcf(positionAndVelocity.position, gmst);
+        const lookAnglesRad = window.satellite.ecfToLookAngles(observerGd, positionEcf);
+
+        // Convert to degrees
+        const azimuth = lookAnglesRad.azimuth * 180 / Math.PI;
+        const elevation = lookAnglesRad.elevation * 180 / Math.PI;
+
+        if (!isNaN(azimuth) && !isNaN(elevation)) {
+            return { azimuth, elevation, time: currentTime };
+        } else {
+            // console.warn(`[calculateCurrentLookAngle] NaN result for Az/El at ${currentTime.toISOString()}`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`[calculateCurrentLookAngle] Error during calculation at ${currentTime.toISOString()}:`, error);
+        return null;
+    }
+}
+
+// Function to calculate pass direction using a pre-created satrec
+async function calculatePassDirection(satrec, passStartTime, passEndTime, observerLat, observerLon) { // Added observerLat, observerLon for fallback
+    try {
         if (!satrec) {
              throw new Error('Invalid satrec received in calculatePassDirection');
         }
 
-        // Propagate to the specified time (pass start time)
-        const positionAndVelocity = window.satellite.propagate(satrec, time);
-         if (!positionAndVelocity || !positionAndVelocity.position) {
-            // console.warn(`[calculatePassDirection] Propagation failed for time: ${time.toISOString()}`);
-            return 'Unknown'; // Cannot determine direction if propagation fails
-         }
+        // Get Geodetic Latitude at Pass Start
+        const posVelStart = window.satellite.propagate(satrec, passStartTime);
+        if (!posVelStart || !posVelStart.position) return 'Unknown (Propagation Start Fail)';
+        const gmstStart = window.satellite.gstime(passStartTime);
+        const geoStart = window.satellite.eciToGeodetic(posVelStart.position, gmstStart);
+        const latStartDegrees = geoStart[0] * 180 / Math.PI;
 
-        const positionEci = positionAndVelocity.position;
+        // Get Geodetic Latitude at Pass End
+        const posVelEnd = window.satellite.propagate(satrec, passEndTime);
+        if (!posVelEnd || !posVelEnd.position) return 'Unknown (Propagation End Fail)';
+        const gmstEnd = window.satellite.gstime(passEndTime);
+        const geoEnd = window.satellite.eciToGeodetic(posVelEnd.position, gmstEnd);
+        const latEndDegrees = geoEnd[0] * 180 / Math.PI;
 
-        // Observer geodetic coordinates (ensure correct assignment)
-        const observerGd = {
-            longitude: observerLon * Math.PI / 180, // Longitude comes from observerLon
-            latitude: observerLat * Math.PI / 180,  // Latitude comes from observerLat
-            height: 0.370
-        };
+        // console.log(`[calculatePassDirection] LatStart: ${latStartDegrees.toFixed(2)}, LatEnd: ${latEndDegrees.toFixed(2)}`);
 
-        // Calculate GMST and ECF position
-        const gmst = window.satellite.gstime(time);
-        const positionEcf = window.satellite.eciToEcf(positionEci, gmst);
+        const latDiff = latEndDegrees - latStartDegrees;
 
-        // Calculate Look Angles
-        const lookAngles = window.satellite.ecfToLookAngles(observerGd, positionEcf);
-        const azimuth = lookAngles.azimuth * 180 / Math.PI; // Azimuth in degrees
+        if (Math.abs(latDiff) < 0.5) { // If latitude change is very small (e.g., less than 0.5 degree)
+            // Improved: Use azimuth at start and end to determine main direction
+            const observerGd = {
+                longitude: observerLon * Math.PI / 180,
+                latitude:  observerLat * Math.PI / 180,
+                height: 0.370
+            };
+            const posVelStart = window.satellite.propagate(satrec, passStartTime);
+            const gmstStart = window.satellite.gstime(passStartTime);
+            const posEcfStart = window.satellite.eciToEcf(posVelStart.position, gmstStart);
+            const lookStart = window.satellite.ecfToLookAngles(observerGd, posEcfStart);
+            const azStart = (lookStart.azimuth * 180 / Math.PI + 360) % 360;
 
-        // console.log(`[calculatePassDirection] Calculated Azimuth at pass start: ${azimuth.toFixed(1)}`);
+            const posVelEnd = window.satellite.propagate(satrec, passEndTime);
+            const gmstEnd = window.satellite.gstime(passEndTime);
+            const posEcfEnd = window.satellite.eciToEcf(posVelEnd.position, gmstEnd);
+            const lookEnd = window.satellite.ecfToLookAngles(observerGd, posEcfEnd);
+            const azEnd = (lookEnd.azimuth * 180 / Math.PI + 360) % 360;
 
-        // Determine direction based on azimuth at the start of the pass
-        if (azimuth >= 0 && azimuth < 180) { // Azimuth 0-180 (Eastward component) -> Generally South to North
-            return 'South &rarr; North';
-        } else { // Azimuth 180-360 (Westward component) -> Generally North to South
-            return 'North &rarr; South';
+            // SE (90-180) to NW (270-360)
+            if (azStart >= 90 && azStart < 180 && azEnd >= 270 && azEnd < 360) {
+                return 'SE &rarr; NW';
+            }
+            // SW (180-270) to NE (0-90)
+            if (azStart >= 180 && azStart < 270 && azEnd >= 0 && azEnd < 90) {
+                return 'SW &rarr; NE';
+            }
+            // E (60-120) to W (240-300)
+            if (azStart >= 60 && azStart < 120 && azEnd >= 240 && azEnd < 300) {
+                return 'East &rarr; West';
+            }
+            // W (240-300) to E (60-120)
+            if (azStart >= 240 && azStart < 300 && azEnd >= 60 && azEnd < 120) {
+                return 'West &rarr; East';
+            }
+            // Otherwise, fallback to N/S
+            if (azStart >= 0 && azStart < 180) { 
+                return 'South &rarr; North'; 
+            } else { 
+                return 'North &rarr; South';
+            }
         }
+
+        // FLIPPED primary logic for N/S determination based on latitude change:
+        if (latDiff > 0) {
+            return 'South &rarr; North'; // Latitude increased, so S->N
+        } else {
+            return 'North &rarr; South'; // Latitude decreased, so N->S
+        }
+
     } catch (error) {
-        // console.error('[calculatePassDirection] Error:', error);
-        return 'Unknown'; // Return Unknown on error
+        console.error('[calculatePassDirection] Error:', error);
+        return 'Unknown (Error)'; // Return Unknown on error
     }
 }
 
 // Make functions globally available if not using modules
 window.calculateNextPass = calculateNextPass;
 window.calculatePassDirection = calculatePassDirection; 
+window.calculateCurrentLookAngle = calculateCurrentLookAngle;
+window.calculateTrajectorySegment = calculateTrajectorySegment; // Expose new function 

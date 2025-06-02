@@ -169,33 +169,29 @@ function displaySatelliteTable(satellites) {
                 { type: 'string', targets: 0 }, // Name
                 { type: 'num', targets: 1 },    // NORAD ID
                 { orderable: false, targets: 2 }, // Tracking link/status
-                // Re-enable sorting for the last column (Launch Year or Edit)
-                // Treat as number for sorting Launch Year; 'Edit' links will be handled by DataTable
-                { orderable: true, type: 'num', targets: 3 } 
+                { orderable: true, type: 'num', targets: 3 }
             ],
             order: [[0, 'asc']], // Default sort by Name
             initComplete: function() {
-                // Find the checkbox within its new container
-                const $checkboxContainer = $('.active-satellites-filter-container');
-                const $checkbox = $checkboxContainer.find('#showActiveOnly');
+                // Find the new Active Only button
+                const $activeBtn = $('#activeSatellitesBtn');
 
                 // Remove existing filter logic first if it exists to avoid duplicates
                 $.fn.dataTable.ext.search.pop();
 
-                // Add the corrected custom filtering function
+                // Add the custom filtering function for active satellites
                 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
                     // Check if the filter should be active
-                    const showActiveOnly = $checkbox.is(':checked'); // Use the found checkbox
+                    const showActiveOnly = $activeBtn.hasClass('active');
                     if (!showActiveOnly) {
-                        return true; // Show all rows if checkbox is not checked
+                        return true; // Show all rows if filter is not active
                     }
 
-                    // If checkbox is checked, filter based on activeSatelliteIds
+                    // If filter is active, filter based on activeSatelliteIds
                     const noradIdString = data[1]; // Get NORAD ID string from column 1 data
                     const noradId = parseInt(noradIdString, 10);
 
                     if (isNaN(noradId)) {
-                        // console.warn(`Row ${dataIndex}: Could not parse NORAD ID: ${noradIdString}`);
                         return false; // Hide rows where ID cannot be parsed
                     }
 
@@ -203,9 +199,9 @@ function displaySatelliteTable(satellites) {
                     return activeSatelliteIds.has(noradId);
                 });
 
-                // Ensure change handler is attached only once to the correct checkbox
-                $checkbox.off('change').on('change', function() {
-                    console.log("Checkbox changed, redrawing table...");
+                // Attach click handler to toggle the filter
+                $activeBtn.off('click').on('click', function() {
+                    $(this).toggleClass('active');
                     dataTable.draw(); // Redraw table to apply the filter
                 });
             }
@@ -260,16 +256,20 @@ const categoryData = {};
 function toggleTleForm(show = null) { // Allow forcing show/hide
     const form = document.getElementById("tle-form");
     const btn = document.getElementById("add-tle-btn");
-    const isVisible = form.classList.contains('visible');
+    if (!form || !btn) return; // Guard clause if elements are not found
+
+    const isVisible = form.style.display === 'block'; // Check current display state
 
     if (show === true || (show === null && !isVisible)) {
-        form.classList.add('visible');
         form.style.display = 'block'; // Ensure it's visible
-        btn.innerText = "Hide Form";
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger'); // Use a different color to indicate active/cancel state
     } else if (show === false || (show === null && isVisible)) {
-        form.classList.remove('visible');
         form.style.display = 'none'; // Ensure it's hidden
-        btn.innerText = "Add Custom TLE";
+        btn.innerHTML = "Add Custom TLE";
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
         // Clear editing state when hiding
         document.getElementById('editingSatId').value = '';
         document.getElementById('customSatName').value = '';
@@ -528,34 +528,31 @@ function getEpochYearFromTLE(tleLine1) {
 
 // Function to populate the category dropdown
 function populateCategoryDropdown(categories) {
-    const dropdownContainer = document.getElementById('categorySelectContainer');
-    if (!dropdownContainer) return; // Guard clause
+    const categorySelect = document.getElementById('categorySelect');
+    if (!categorySelect) return; // Guard clause
 
-    // Start with the heading
-    let dropdownHTML = '<h5>Select Satellite Category</h5>'; 
-    // Add the select element
-    dropdownHTML += '<select id="categorySelect" class="form-control-sm">';
+    // Clear any existing options
+    categorySelect.innerHTML = '';
     // Add 'All' option first, not selected by default
-    dropdownHTML += '<option value="all">All Satellites</option>';
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All Satellites';
+    categorySelect.appendChild(allOption);
 
     categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
         // Set Weather as the default selected option
-        const selected = category === 'Weather' ? ' selected' : '';
-        dropdownHTML += `<option value="${category}"${selected}>${category}</option>`;
+        if (category === 'Weather') option.selected = true;
+        categorySelect.appendChild(option);
     });
 
-    dropdownHTML += '</select>';
-    // Now set the innerHTML including the heading and the select
-    dropdownContainer.innerHTML = dropdownHTML;
-
     // Add event listener to the dropdown
-    const categorySelect = document.getElementById('categorySelect');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-            const selectedCategory = this.value;
-            loadAndDisplaySatellites(selectedCategory);
-        });
-    }
+    categorySelect.addEventListener('change', function() {
+        const selectedCategory = this.value;
+        loadAndDisplaySatellites(selectedCategory);
+    });
 }
 
 // Function to load satellite data for all categories (used for filtering 'All')
@@ -619,6 +616,104 @@ async function loadAndDisplaySatellites(category) {
     }
 }
 
+// --- Observer Location Functions ---
+function saveObserverLocation() {
+    const latInput = document.getElementById('observerLat');
+    const lonInput = document.getElementById('observerLon');
+    const statusDiv = document.getElementById('location-save-status');
+    const globalStatusSpan = document.getElementById('location-save-global-status'); // Span for global message
+
+    const lat = parseFloat(latInput.value);
+    const lon = parseFloat(lonInput.value);
+
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+        statusDiv.textContent = 'Invalid latitude. Must be between -90 and 90.';
+        statusDiv.style.color = 'red';
+        return;
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+        statusDiv.textContent = 'Invalid longitude. Must be between -180 and 180.';
+        statusDiv.style.color = 'red';
+        return;
+    }
+
+    localStorage.setItem('observerLat', lat.toString());
+    localStorage.setItem('observerLon', lon.toString());
+
+    // Hide the form first
+    toggleLocationForm(false); 
+
+    // Then display the success message with saved values
+    showSuccessMessage(
+        'Check the next pass for any satellite !',
+        `Your location has been saved:<br>Lat <b>${lat.toFixed(2)}°</b>, Lon <b>${lon.toFixed(2)}°</b>`
+    );
+
+    // Then display the success message in the global span
+    if (globalStatusSpan) {
+        globalStatusSpan.textContent = `Location saved: Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+        globalStatusSpan.style.color = 'green';
+    }
+    
+    // Clear the form-specific status message as it's now global
+    if (statusDiv) {
+        statusDiv.textContent = ''; 
+    }
+
+    console.log("Observer location saved:", { lat, lon });
+    // Optionally, trigger other updates that depend on the observer location
+}
+
+function loadObserverLocation() {
+    const latInput = document.getElementById('observerLat');
+    const lonInput = document.getElementById('observerLon');
+    const statusDiv = document.getElementById('location-save-status');
+
+    if (!latInput || !lonInput || !statusDiv) {
+        return; // Elements not present, do nothing
+    }
+
+    const savedLat = localStorage.getItem('observerLat');
+    const savedLon = localStorage.getItem('observerLon');
+
+    if (savedLat && savedLon) {
+        latInput.value = parseFloat(savedLat).toFixed(2);
+        lonInput.value = parseFloat(savedLon).toFixed(2);
+        statusDiv.textContent = `Using saved location: Lat ${parseFloat(savedLat).toFixed(2)}°, Lon ${parseFloat(savedLon).toFixed(2)}°`;
+        statusDiv.classList.add('info-message'); // Add a class for info styling
+    } else {
+        statusDiv.textContent = 'Enter your coordinates to save them for pass predictions.';
+        statusDiv.classList.add('info-message');
+    }
+}
+
+// --- End Observer Location Functions ---
+
+// --- Toggle Location Form Function ---
+function toggleLocationForm(show = null) {
+    const form = document.getElementById("observer-location-section");
+    const btn = document.getElementById("toggleLocationFormBtn");
+    const globalStatusSpan = document.getElementById('location-save-global-status'); // Get the global status span
+
+    if (!form || !btn) return;
+
+    const isVisible = form.style.display === 'block';
+
+    if (show === true || (show === null && !isVisible)) {
+        form.style.display = 'block';
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
+        if (globalStatusSpan) globalStatusSpan.textContent = ''; // Clear global message when opening form
+    } else if (show === false || (show === null && isVisible)) {
+        form.style.display = 'none';
+        btn.innerHTML = "Set Location";
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
+        // Do not clear the global message here, as it might have just been set by saveObserverLocation
+    }
+}
+
 // --- Consolidated Initialization --- //
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM loaded, starting initialization...");
@@ -643,7 +738,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup Add TLE button listeners
     const addTleBtn = document.getElementById('add-tle-btn');
     if (addTleBtn) {
-        addTleBtn.addEventListener('click', toggleTleForm);
+        addTleBtn.addEventListener('click', () => toggleTleForm()); // Pass no args to toggle
     }
 
     // Setup Save TLE button listener
@@ -651,6 +746,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (saveTleBtn) {
         saveTleBtn.addEventListener('click', handleFormSubmission);
     }
+
+    // --- Observer Location Setup ---
+    const saveLocationBtn = document.getElementById('saveLocationBtn');
+    if (saveLocationBtn) {
+        saveLocationBtn.addEventListener('click', saveObserverLocation);
+    }
+    loadObserverLocation(); // Load saved location on page load
+
+    const toggleLocationBtn = document.getElementById('toggleLocationFormBtn');
+    if (toggleLocationBtn) {
+        toggleLocationBtn.addEventListener('click', () => toggleLocationForm());
+    }
+    // --- End Observer Location Setup ---
 
     // --- Load Categories and Initial Data ---
     try {
@@ -671,6 +779,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof setupSortingControls === 'function') {
             setupSortingControls();
         }
+
+        // Ensure the TLE form is hidden by default (toggleTleForm(false) handles this)
+        toggleTleForm(false);
+        // Ensure the Location form is hidden by default
+        toggleLocationForm(false);
 
         hideLoading();
 

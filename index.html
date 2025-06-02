@@ -37,30 +37,38 @@
                 <img src="src\images\logo_light.png" alt="satTank Logo" class="header-logo light-logo">
                 <img src="src\images\logo_dark.png" alt="satTank Logo" class="header-logo dark-logo">
             </div>
-            <div class="header-divider"></div>
+            
             <div class="subheading">CATALOGUES | TRACKING</div>
         </div>
     </header>
-    <!-- Category Select Container - Moved outside controls group -->
-    <div id="categorySelectContainer" class="category-select-container">
-        
-        <select id="categorySelect" class="form-control-sm">
-            <option value="all">All Satellites</option>
-            <option value="Active">Active</option>
-            <option value="Stations">Stations</option>
-            <option value="Weather">Weather</option>
-            <option value="NOAA" selected>NOAA</option>
-            <option value="GOES">GOES</option>
-            <option value="Resource">Resource</option>
-            <option value="Amateur">Amateur</option>
-            <option value="Starlink">Starlink</option>
-            <option value="Custom">Custom</option>
-        </select>
-    </div>
-
-    <!-- Add TLE Button Container (Moved and Centered) -->
-    <div class="add-tle-button-container">
+    <!-- Unified controls bar below header -->
+    <div class="controls-bar">
+        <button id="toggleLocationFormBtn" class="btn btn-primary">Set Location</button>
         <button id="add-tle-btn" class="btn btn-primary">Add Custom TLE</button>
+        <div class="category-select-container">
+            <select id="categorySelect" class="form-control-sm"></select>
+        </div>
+        <button id="activeSatellitesBtn" class="active-satellites-filter-btn">Active Only</button>
+    </div>
+    <!-- Observer Location Input Section (Hidden by default) -->
+    <div id="observer-location-section" class="observer-location-container panel" style="display: none;">
+        <h5>Set Your Location</h5>
+        <div class="location-input-form">
+            <div class="input-group">
+                <label for="observerLat">Latitude (°N):</label>
+                <input type="number" id="observerLat" name="observerLat" step="0.01" required placeholder="(-90 to 90)">
+                <span class="input-hint" style="font-family:'NType82Mono-Regular',monospace;">(-90 to 90)</span>
+            </div>
+            <div class="input-group">
+                <label for="observerLon">Longitude (°E):</label>
+                <input type="number" id="observerLon" name="observerLon" step="0.01" required placeholder="(-180 to 180)">
+                <span class="input-hint" style="font-family:'NType82Mono-Regular',monospace;">(-180 to 180)</span>
+            </div>
+        </div>
+        <div class="save-location-button-container">
+            <button id="saveLocationBtn" class="btn btn-success">Save Location</button>
+        </div>
+        <div id="location-save-status" style="text-align: center; margin-top: 10px; font-family: 'NType82Mono-Regular', monospace;"></div>
     </div>
 
     <!-- Hidden TLE Form -->
@@ -87,14 +95,6 @@
         <button type="button" onclick="toggleTleForm()" class="btn btn-secondary">Cancel</button>
     </div>
 
-    <!-- Active Filter (Moved Here - BEFORE table container) -->
-    <div class="active-satellites-filter-container">
-         <div class="active-satellites-filter">
-             <input type="checkbox" id="showActiveOnly" />
-             <label for="showActiveOnly">Active Only</label>
-         </div>
-    </div>
-
     <!-- Satellite Table Container -->
     <div id="satelliteTableContainer">
         <!-- Table will be generated here by JS -->
@@ -102,14 +102,14 @@
 
     <footer id="pageFooter">
         <div class="footer-content">
-            <div class="version">Version: 2.1 (Beta)</div>
+            <div class="version">Version: 0.2 (Beta)</div>
             <div class="credits">
                 <a href="https://pbtank.github.io/Tank_Priyansu/"
                     style="text-decoration-line: underline;">Priyansu Tank</a> & <a
                     href="https://carbform.github.io" style="text-decoration-line: underline;">Carbform</a>
-                <div class="attribution">
+    <!-- <div class="attribution">
                     Using data from <a href="https://celestrak.org/" style="font-size: 15px;">Celestrak</a>
-                </div>
+                </div>       -->
             </div>
             <div class="india-flag">
                 <img src="src/images/india.png" alt="India flag">
@@ -159,39 +159,16 @@
                 window.location.href = "satPage.html?ID=" + ID + "&name=" + name;
             });
 
-            // Setup TLE form button listeners
-            const addTleBtn = document.getElementById('add-tle-btn');
-
-            if (addTleBtn) {
-                addTleBtn.addEventListener('click', toggleTleForm);
-            }
+            // The following event listener for add-tle-btn is removed
+            // to prevent conflict with the one in js/index.js
+            // const addTleBtn = document.getElementById('add-tle-btn');
+            // if (addTleBtn) {
+            // addTleBtn.addEventListener('click', toggleTleForm);
+            // }
         });
 
-        function toggleTleForm() {
-            var form = document.getElementById("tle-form");
-            var btn = document.getElementById("add-tle-btn");
-            const isVisible = form.style.display === "block";
-
-            if (!isVisible) {
-                // Show the form
-                form.style.display = "block";
-                // Change button to red background with black icon
-                btn.innerHTML = '<i class="fas fa-times" style="color: black;"></i>';
-                btn.style.backgroundColor = 'rgb(256,256, 256)';
-                btn.style.borderColor = 'red'; // Match border color
-                btn.classList.remove('btn-primary'); // Remove default blue class
-                btn.classList.add('btn-danger'); // Add danger class for consistency (optional)
-            } else {
-                // Hide the form
-                form.style.display = "none";
-                // Change button back to default text and style
-                btn.innerHTML = "Add Custom TLE";
-                btn.style.backgroundColor = ''; // Reset background color
-                btn.style.borderColor = ''; // Reset border color
-                btn.classList.remove('btn-danger'); // Remove danger class
-                btn.classList.add('btn-primary'); // Add back default blue class
-            }
-        }
+        // The inline toggleTleForm function is removed as its logic is now handled by js/index.js
+        // function toggleTleForm() { ... }
     </script>
 </body>
 
